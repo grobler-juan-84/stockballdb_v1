@@ -1,0 +1,47 @@
+---
+description: Keep MoneyBallDB docs concise; one owner per topic; index routes readers
+globs: docs/**/*.md
+alwaysApply: false
+---
+
+# Docs audit — concise, non-duplicative
+
+When creating or editing Markdown under `docs/`, treat `MoneyBallDB_index.md` as the router. Workflows ask “what do I need?” → index → the owning doc.
+
+## Ownership
+
+| Concern | Owning doc |
+| ------- | ---------- |
+| Why / principles / rules | `MoneyBallDB_manifesto.md` |
+| Which assets / indicators | `MoneyBallDB_universe.md` |
+| Tables, keys, fields | `MoneyBallDB_schema.md` |
+| Providers | `MoneyBallDB_sources.md` |
+| Build / update / derive / validate | `MoneyBallDB_workflow.md` |
+| Field formulas / definitions | `MoneyBallDB_definitions.md` |
+
+## Rules
+
+1. **One owner per fact.** Do not restate another doc’s content. Link to the owner instead.
+2. **Index first.** New docs get a numbered entry + one or two sentence blurb in the index, and a row in the Routing table when useful.
+3. **Duplicate only if it speeds work** — e.g. Observed vs Derived *field labels* in schema, a one-line operational constraint with a manifesto link. Never copy full rationales.
+4. **Prefer pointers over essays.** Example: schema may say “calendar begins 1957 (see manifesto §…)” — not the three reasons why.
+5. **Stay concise.** Cut sections that only rephrase tables or philosophy already owned elsewhere.
+6. **Cross-link companions** at the top of each doc; keep the index Routing table accurate when ownership changes.
+
+## Bad vs good
+
+```markdown
+<!-- ❌ BAD: universe repeats manifesto philosophy -->
+MoneyBallDB should not invent unavailable history. Missing values are OK...
+
+<!-- ✅ GOOD: universe owns scope; points elsewhere for rules -->
+Expansion and historical-integrity rules: see manifesto.
+```
+
+```markdown
+<!-- ❌ BAD: schema repeats 1957 rationale -->
+1957 because SPY..., Saturdays..., S&P 500...
+
+<!-- ✅ GOOD -->
+Calendar begins **1957** (rationale: manifesto). Other datasets need not.
+```
