@@ -1,22 +1,22 @@
-# MoneyBallDB — Schema
+# StockBallDB — Schema
 
 **Version:** 1  
 **Status:** Initial Schema  
 **Last Updated:** 2026-08-23
 
-> Companion docs: [index](MoneyBallDB_index.md) · [manifesto](MoneyBallDB_manifesto.md) · [universe](MoneyBallDB_universe.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md)
 
 ## Purpose
 
-Structural design of MoneyBallDB: tables, responsibilities, relationships, keys, and principal fields.
+Structural design of StockBallDB: tables, responsibilities, relationships, keys, and principal fields.
 
 | Topic | Document |
 | ----- | -------- |
-| Philosophy and rules | [manifesto](MoneyBallDB_manifesto.md) |
-| Asset / indicator scope | [universe](MoneyBallDB_universe.md) |
-| Providers | `MoneyBallDB_sources.md` |
-| Build / update / derive / validate | `MoneyBallDB_workflow.md` |
-| Field formulas | `MoneyBallDB_definitions.md` |
+| Philosophy and rules | [manifesto](StockBallDB_manifesto.md) |
+| Asset / indicator scope | [universe](StockBallDB_universe.md) |
+| Providers | `StockBallDB_sources.md` |
+| Build / update / derive / validate | `StockBallDB_workflow.md` |
+| Field formulas | `StockBallDB_definitions.md` |
 
 PostgreSQL migrations in Git are the authoritative implementation.
 
@@ -55,7 +55,7 @@ trading_days.date
 **Grain:** One row per valid market trading day  
 **Primary key:** `date`
 
-Valid trading dates against which other datasets align. Calendar begins **1957** (rationale: [manifesto §6](MoneyBallDB_manifesto.md#6-why-trading_days-begins-in-1957)); other datasets need not.
+Valid trading dates against which other datasets align. Calendar begins **1957** (rationale: [manifesto §6](StockBallDB_manifesto.md#6-why-trading_days-begins-in-1957)); other datasets need not.
 
 ```text
 date
@@ -115,7 +115,7 @@ trend_regime, momentum_regime, volatility_regime
 **Grain:** trading day  
 **Primary key:** `date` · **FK:** `date → trading_days.date`
 
-Macro / monetary context as of each trading day. Where point-in-time reconstruction is required, store what was publicly available then (see [manifesto §5](MoneyBallDB_manifesto.md#5-historical-integrity)).
+Macro / monetary context as of each trading day. Where point-in-time reconstruction is required, store what was publicly available then (see [manifesto §5](StockBallDB_manifesto.md#5-historical-integrity)).
 
 ```text
 inflation_rate, core_inflation_rate
@@ -162,4 +162,4 @@ is_election_period, is_payday_period
 
 ## Evolution
 
-Version 1 starting schema. Fields and tables may change via version-controlled migrations. Principles: [manifesto](MoneyBallDB_manifesto.md).
+Version 1 starting schema. Fields and tables may change via version-controlled migrations. Principles: [manifesto](StockBallDB_manifesto.md).

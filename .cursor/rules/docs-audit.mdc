@@ -1,23 +1,23 @@
 ---
-description: Keep MoneyBallDB docs concise; one owner per topic; index routes readers
+description: Keep StockBallDB docs concise; one owner per topic; index routes readers
 globs: docs/**/*.md
 alwaysApply: false
 ---
 
 # Docs audit — concise, non-duplicative
 
-When creating or editing Markdown under `docs/`, treat `MoneyBallDB_index.md` as the router. Workflows ask “what do I need?” → index → the owning doc.
+When creating or editing Markdown under `docs/`, treat `StockBallDB_index.md` as the router. Workflows ask “what do I need?” → index → the owning doc.
 
 ## Ownership
 
 | Concern | Owning doc |
 | ------- | ---------- |
-| Why / principles / rules | `MoneyBallDB_manifesto.md` |
-| Which assets / indicators | `MoneyBallDB_universe.md` |
-| Tables, keys, fields | `MoneyBallDB_schema.md` |
-| Providers | `MoneyBallDB_sources.md` |
-| Build / update / derive / validate | `MoneyBallDB_workflow.md` |
-| Field formulas / definitions | `MoneyBallDB_definitions.md` |
+| Why / principles / rules | `StockBallDB_manifesto.md` |
+| Which assets / indicators | `StockBallDB_universe.md` |
+| Tables, keys, fields | `StockBallDB_schema.md` |
+| Providers | `StockBallDB_sources.md` |
+| Build / update / derive / validate | `StockBallDB_workflow.md` |
+| Field formulas / definitions | `StockBallDB_definitions.md` |
 
 ## Rules
 
@@ -32,7 +32,7 @@ When creating or editing Markdown under `docs/`, treat `MoneyBallDB_index.md` as
 
 ```markdown
 <!-- ❌ BAD: universe repeats manifesto philosophy -->
-MoneyBallDB should not invent unavailable history. Missing values are OK...
+StockBallDB should not invent unavailable history. Missing values are OK...
 
 <!-- ✅ GOOD: universe owns scope; points elsewhere for rules -->
 Expansion and historical-integrity rules: see manifesto.

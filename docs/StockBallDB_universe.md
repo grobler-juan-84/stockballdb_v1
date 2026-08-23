@@ -1,13 +1,13 @@
-# MoneyBallDB — Universe
+# StockBallDB — Universe
 
 **Version 0.01**  
 **Date:** 2026-08-23
 
-> Companion docs: [index](MoneyBallDB_index.md) · [manifesto](MoneyBallDB_manifesto.md) · [schema](MoneyBallDB_schema.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [schema](StockBallDB_schema.md)
 
 ## Purpose
 
-Defines the assets and market indicators currently in MoneyBallDB scope. Version 1 is a starting point, not a permanent boundary. Expansion rules and historical-integrity principles live in the [manifesto](MoneyBallDB_manifesto.md).
+Defines the assets and market indicators currently in StockBallDB scope. Version 1 is a starting point, not a permanent boundary. Expansion rules and historical-integrity principles live in the [manifesto](StockBallDB_manifesto.md).
 
 Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, and the U.S. dollar — small enough to build pipelines and validation first, broad enough for useful market context.
 
@@ -45,7 +45,7 @@ Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, a
 | **WTI**     | West Texas Intermediate Crude Oil |
 | **DXY**     | U.S. Dollar Index                 |
 
-Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP). Canonical internal identifiers may differ from provider symbols; see [schema](MoneyBallDB_schema.md) and sources documentation.
+Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP). Canonical internal identifiers may differ from provider symbols; see [schema](StockBallDB_schema.md) and sources documentation.
 
 ## Future Expansion
 

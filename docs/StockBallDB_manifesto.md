@@ -1,19 +1,19 @@
-# MoneyBallDB — Manifesto
+# StockBallDB — Manifesto
 
 **Version 0.01**  
 **Date:** 2026-08-23
 
-> Companion docs: [index](MoneyBallDB_index.md) · [universe](MoneyBallDB_universe.md) · [schema](MoneyBallDB_schema.md)
+> Companion docs: [index](StockBallDB_index.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md)
 
-## 1. What MoneyBallDB Is
+## 1. What StockBallDB Is
 
-MoneyBallDB is a **historical financial and market-context database**.
+StockBallDB is a **historical financial and market-context database**.
 
 > **Collect, organize, derive, validate, and preserve useful historical data in one reliable and reproducible database.**
 
 It is not a trading system, strategy, or prediction engine. It does not need to know which patterns will eventually prove useful. Its job is the foundation.
 
-**MoneyBallDB** is the data foundation. **MoneyBallApp** is the future research and discovery environment that may use it. The database must not be designed around experiments that do not yet exist.
+**StockBallDB** is the data foundation. **MoneyBallApp** is the future research and discovery environment that may use it. The database must not be designed around experiments that do not yet exist.
 
 Priority: **data first** — a dependable historical foundation before pattern recognition, strategies, backtests, dashboards, or applications.
 
@@ -38,7 +38,7 @@ The repository is the recipe. The database is the result.
 
 **Local PostgreSQL** is the current environment; **PostgreSQL** is the architecture. Schema, migrations, pipelines, and config must stay portable (e.g. to hosted PostgreSQL / Supabase).
 
-Providers supply facts; they do not define MoneyBallDB. Provider-specific formats stop at fetch/normalize. The schema remains ours and must survive provider replacement.
+Providers supply facts; they do not define StockBallDB. Provider-specific formats stop at fetch/normalize. The schema remains ours and must survive provider replacement.
 
 **Free → Reliable → Automated → Historically sufficient → Reproducible**, then pay only when a paid source adds clear value a free alternative cannot.
 
@@ -53,14 +53,14 @@ Not every dataset starts on the same date. Do not invent unavailable history. A 
 The trading-day spine is intentionally longer than the initial asset histories. That does **not** mean all datasets must start in 1957.
 
 1. **Future assets may predate SPY** (1993) — avoid rebuilding the calendar later.  
-2. **Earlier history adds Saturday trading** — complexity MoneyBallDB does not need yet.  
+2. **Earlier history adds Saturday trading** — complexity StockBallDB does not need yet.  
 3. **Modern S&P 500 began in 1957** — a sensible modern-era anchor.
 
 > Make inexpensive foundational infrastructure comprehensive enough that reasonable future expansion does not require rebuilding the foundation.
 
 ## 7. Scope and Evolution
 
-Collect what could reasonably describe historical market conditions — not everything an API offers. Current asset scope: [universe](MoneyBallDB_universe.md). Current tables: [schema](MoneyBallDB_schema.md).
+Collect what could reasonably describe historical market conditions — not everything an API offers. Current asset scope: [universe](StockBallDB_universe.md). Current tables: [schema](StockBallDB_schema.md).
 
 The Version 1 schema will change as real data exposes weaknesses. Changes must be deliberate, documented, version-controlled, and reproducible.
 
@@ -70,11 +70,11 @@ Future-proof cheap foundations (e.g. the 1957 calendar). Do not build for imagin
 
 ## 8. Success
 
-MoneyBallDB succeeds when it is trusted: reproducible, updatable, validated, provenance-clear, provider-replaceable. Discovery belongs to MoneyBallApp.
+StockBallDB succeeds when it is trusted: reproducible, updatable, validated, provenance-clear, provider-replaceable. Discovery belongs to MoneyBallApp.
 
 ---
 
-# The MoneyBallDB Rules
+# The StockBallDB Rules
 
 **Data before experiments.**  
 **Facts before interpretations.**  
