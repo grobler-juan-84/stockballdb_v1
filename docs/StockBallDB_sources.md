@@ -1,8 +1,8 @@
 # StockBallDB — Sources
 
-**Version:** 0.01
+**Version:** 0.02
 **Status:** Initial Source Plan
-**Last Updated:** 2026-08-23
+**Last Updated:** 2026-08-24
 
 > Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md)
 
@@ -58,13 +58,15 @@ For observed data, StockBallDB should be able to determine where the value origi
 
 Where appropriate, document:
 
-* provider,
-* provider series / ticker,
-* retrieval method,
-* historical coverage,
-* frequency,
-* known limitations,
-* and point-in-time considerations.
+* provider;
+* provider series / ticker;
+* retrieval method;
+* historical coverage;
+* frequency;
+* known limitations;
+* adjustment methodology;
+* revision behavior;
+* point-in-time considerations.
 
 ### 4. Historical integrity takes priority
 
@@ -72,28 +74,40 @@ The newest known historical value is not always the value that was known at the 
 
 For datasets subject to revisions, StockBallDB should use vintage or point-in-time data when historical reconstruction requires it.
 
+For market data, raw and adjusted observations must remain distinguishable.
+
 ### 5. Derived data belongs to StockBallDB
 
 If a value can be deterministically calculated from reliable underlying observations, prefer storing the underlying facts and deriving the value ourselves.
 
 Examples include returns, moving averages, drawdowns, volatility, regimes, forward outcomes, and calendar flags.
 
+Provider-supplied adjusted market observations are an exception to this general principle because adjustment methodology incorporates corporate-action information and is useful as an independently supplied historical representation.
+
+StockBallDB therefore preserves both raw and adjusted market observations where available.
+
+### 6. Fetch related observations together when practical
+
+When a provider supplies multiple required observations through the same acquisition request, StockBallDB should collect them together rather than deliberately discarding fields and retrieving them through separate workflow stages later.
+
+This reduces unnecessary API calls and keeps acquisition workflows simpler and more reproducible.
+
 ---
 
 # Provider Overview
 
-| Provider / Source            | Primary Use                   | Access                 | Authentication    | Tier                             | Status                |
-| ---------------------------- | ----------------------------- | ---------------------- | ----------------- | -------------------------------- | --------------------- |
-| **Tiingo**                   | ETF OHLCV / adjustments       | REST API               | API token         | Free tier available              | Primary               |
-| **FRED**                     | Macro / monetary data         | REST API               | API key           | Free                             | Primary               |
-| **ALFRED**                   | Historical macro vintages     | FRED API               | API key           | Free                             | Primary when required |
-| **NYSE / exchange calendar** | Trading calendar verification | Public data / calendar | Usually none      | Free                             | Primary verification  |
-| **Federal Reserve**          | FOMC / Fed events             | Public data / APIs     | Dataset dependent | Free                             | Authoritative         |
-| **EIA**                      | WTI / energy data             | REST API               | API key           | Free                             | Candidate             |
-| **Cboe**                     | VIX                           | Historical data        | Dataset dependent | Public historical data available | Future                |
-| **Gold source**              | XAU/USD                       | TBD                    | TBD               | TBD                              | Research required     |
-| **DXY source**               | U.S. Dollar Index             | TBD                    | TBD               | TBD                              | Research required     |
-| **StockBallDB**              | Derived fields                | Internal calculation   | —                 | Free                             | Internal              |
+| Provider / Source            | Primary Use                                                          | Access                 | Authentication    | Tier                             | Status                |
+| ---------------------------- | -------------------------------------------------------------------- | ---------------------- | ----------------- | -------------------------------- | --------------------- |
+| **Tiingo**                   | ETF raw/adjusted daily market data and corporate-action observations | REST API               | API token         | Free tier available              | Primary               |
+| **FRED**                     | Macro / monetary data                                                | REST API               | API key           | Free                             | Primary               |
+| **ALFRED**                   | Historical macro vintages                                            | FRED API               | API key           | Free                             | Primary when required |
+| **NYSE / exchange calendar** | Trading calendar verification                                        | Public data / calendar | Usually none      | Free                             | Primary verification  |
+| **Federal Reserve**          | FOMC / Fed events                                                    | Public data / APIs     | Dataset dependent | Free                             | Authoritative         |
+| **EIA**                      | WTI / energy data                                                    | REST API               | API key           | Free                             | Candidate             |
+| **Cboe**                     | VIX                                                                  | Historical data        | Dataset dependent | Public historical data available | Future                |
+| **Gold source**              | XAU/USD                                                              | TBD                    | TBD               | TBD                              | Research required     |
+| **DXY source**               | U.S. Dollar Index                                                    | TBD                    | TBD               | TBD                              | Research required     |
+| **StockBallDB**              | Derived fields                                                       | Internal calculation   | —                 | Free                             | Internal              |
 
 Provider pricing, limits, and access policies can change. Values recorded here describe the provider at the time of the documented decision and should be rechecked before upgrades or licensing decisions.
 
@@ -101,7 +115,7 @@ Provider pricing, limits, and access policies can change. Values recorded here d
 
 # 1. Tiingo
 
-**Primary responsibility:** ETF daily market observations
+**Primary responsibility:** ETF daily market observations, adjusted observations, and corporate-action observations
 **Access:** REST API
 **Authentication:** API token
 **Tier:** Free tier available
@@ -119,7 +133,11 @@ XLI   XLK   XLP   XLU
 XLV   XLY   XLRE
 ```
 
-Expected observations include:
+## V1 Tiingo Observations
+
+StockBallDB V1 collects the complete set of currently required Tiingo daily observations during the same acquisition step.
+
+### Raw OHLCV
 
 ```text
 open
@@ -129,9 +147,125 @@ close
 volume
 ```
 
-Adjustment information may also be collected where required to correctly represent splits, dividends, and adjusted historical prices.
+OHLCV means:
 
-### Connection
+```text
+Open
+High
+Low
+Close
+Volume
+```
+
+These fields preserve the raw historical market observations.
+
+### Adjusted OHLCV
+
+```text
+adj_open
+adj_high
+adj_low
+adj_close
+adj_volume
+```
+
+These observations provide historical prices and volume adjusted according to Tiingo's applicable corporate-action methodology.
+
+Raw and adjusted observations are intentionally retained separately.
+
+### Corporate Actions
+
+```text
+dividend_cash
+split_factor
+```
+
+These fields preserve dividend and split information supplied alongside the daily market observations.
+
+They should not be reconstructed from adjusted prices when the underlying observations are already available directly from Tiingo.
+
+## Canonical Field Mapping
+
+Tiingo's provider-specific field names are normalized into StockBallDB's canonical naming convention.
+
+Conceptually:
+
+| Tiingo observation | StockBallDB field |
+| ------------------ | ----------------- |
+| `open`             | `open`            |
+| `high`             | `high`            |
+| `low`              | `low`             |
+| `close`            | `close`           |
+| `volume`           | `volume`          |
+| adjusted open      | `adj_open`        |
+| adjusted high      | `adj_high`        |
+| adjusted low       | `adj_low`         |
+| adjusted close     | `adj_close`       |
+| adjusted volume    | `adj_volume`      |
+| dividend cash      | `dividend_cash`   |
+| split factor       | `split_factor`    |
+
+The acquisition implementation should verify the exact Tiingo API field names before the mapping is locked into pipeline configuration.
+
+## Raw vs Adjusted
+
+Raw observations represent prices and volume as reported for the historical trading session.
+
+Adjusted observations normalize historical values according to Tiingo's corporate-action adjustment methodology.
+
+For example, a stock split may cause raw historical prices before and after the split to appear discontinuous even though the split itself did not represent an equivalent economic loss.
+
+StockBallDB therefore preserves:
+
+```text
+raw OHLCV
++
+adjusted OHLCV
++
+dividend information
++
+split information
+```
+
+This allows future calculations to explicitly choose the appropriate price basis rather than permanently discarding one representation.
+
+## Acquisition Rule
+
+The V1 Tiingo acquisition should retrieve all required daily observations together.
+
+Conceptually:
+
+```text
+Tiingo API
+    ↓
+Single ETF daily-data acquisition stage
+    ↓
+Raw OHLCV
+Adjusted OHLCV
+Dividend cash
+Split factor
+    ↓
+Normalize
+    ↓
+Validate
+    ↓
+daily_market_data
+```
+
+StockBallDB should not intentionally retrieve only raw OHLCV during one workflow stage and return to Tiingo later for adjusted observations that could have been acquired during the same stage.
+
+This rule simplifies:
+
+```text
+Build
+Update
+Validate
+Rebuild
+```
+
+and reduces unnecessary provider interaction.
+
+## Connection
 
 Create a Tiingo account and obtain an API token.
 
@@ -148,24 +282,51 @@ StockBallDB
     ↓
 Tiingo API
     ↓
-Raw market observations
+Raw provider response
     ↓
-Normalize → Validate → Store
+Normalize
+    ↓
+Validate
+    ↓
+Store
 ```
 
-### Tier
+## Tier
 
 The initial free tier is expected to be sufficient for StockBallDB's small Version 1 ETF universe.
 
-At the time of this source decision, Tiingo provides a free Starter tier with limits comfortably above the initial 14-ETF requirement.
+The active ETF universe currently contains 14 Tiingo-sourced ETFs, leaving substantial room relative to the free tier for future expansion.
 
-Paid tiers are available if future expansion exceeds those limits.
+Provider limits must nevertheless be treated as operational configuration rather than permanent assumptions.
 
-### Rule
+They should be checked before major universe expansion or full rebuild workflows.
+
+## Additional Tiingo Data
+
+Tiingo may provide additional datasets or metadata beyond the fields currently included in StockBallDB V1.
+
+Potential examples include:
+
+```text
+security metadata
+additional stocks and ETFs
+forex
+cryptocurrency
+intraday market data
+additional corporate-action information
+```
+
+Availability does not automatically justify inclusion.
+
+These should be evaluated during future schema reviews according to the StockBallDB source-selection criteria.
+
+V1 deliberately collects the inexpensive underlying daily observations already required for the current universe without expanding the database simply because additional Tiingo data exists.
+
+## Rule
 
 Tiingo is a provider, not the definition of market data.
 
-If Tiingo is replaced later, the canonical StockBallDB schema should remain unchanged.
+If Tiingo is replaced later, the canonical StockBallDB schema should remain unchanged wherever practical.
 
 ---
 
@@ -195,7 +356,7 @@ credit spreads
 
 Additional series may be introduced as StockBallDB expands.
 
-### Connection
+## Connection
 
 Create a FRED account and obtain an API key.
 
@@ -212,7 +373,13 @@ FRED API
     ↓
 Series observations
     ↓
-Normalize → Align → Validate → Store
+Normalize
+    ↓
+Align
+    ↓
+Validate
+    ↓
+Store
 ```
 
 Each StockBallDB macro field should eventually map to an explicitly approved FRED series ID.
@@ -228,7 +395,7 @@ treasury_10y_yield       → <series_id>
 
 Exact series IDs should be documented once individually reviewed.
 
-### Original-source verification
+## Original-source verification
 
 FRED aggregates information originating from institutions including:
 
@@ -275,7 +442,7 @@ GDP
 other revised economic indicators
 ```
 
-### Connection
+## Connection
 
 ALFRED data is available through the FRED API infrastructure.
 
@@ -326,9 +493,9 @@ Store in trading_days
 
 NYSE information should be used where authoritative verification is necessary, particularly for:
 
-* market holidays,
-* shortened trading sessions,
-* exceptional market closures,
+* market holidays;
+* shortened trading sessions;
+* exceptional market closures;
 * unusual historical calendar behavior.
 
 The trading-day spine remains independent from Tiingo or any other market-price provider.
@@ -356,9 +523,9 @@ Before locking the source, StockBallDB should define precisely which WTI observa
 
 Selection priorities:
 
-* long historical coverage,
-* consistent definition,
-* reliable daily observations,
+* long historical coverage;
+* consistent definition;
+* reliable daily observations;
 * reproducible automated acquisition.
 
 The FRED and EIA alternatives should be compared before the canonical series is selected.
@@ -381,10 +548,10 @@ Potential definitions include a recognized reference price or a consistent daily
 
 The selected source should provide:
 
-* long historical coverage,
-* clear price definition,
-* consistent methodology,
-* daily observations where possible,
+* long historical coverage;
+* clear price definition;
+* consistent methodology;
+* daily observations where possible;
 * reproducible acquisition.
 
 ETF proxies such as GLD should not replace spot gold merely because they are easier to acquire.
@@ -405,10 +572,10 @@ The official U.S. Dollar Index and alternative broad dollar indices are not auto
 
 Before implementation, StockBallDB must determine:
 
-* which dollar index is intended,
-* authoritative historical source,
-* available historical coverage,
-* licensing / access limitations,
+* which dollar index is intended;
+* authoritative historical source;
+* available historical coverage;
+* licensing / access limitations;
 * whether automated acquisition is practical.
 
 A substitute dollar index must not silently be labelled `DXY`.
@@ -526,6 +693,8 @@ calendar-derived flags
 
 Definitions and formulas belong in `StockBallDB_definitions.md`.
 
+Adjusted OHLCV is **not** treated as a StockBallDB-derived category. It is preserved as provider-supplied observed data alongside raw OHLCV and corporate-action observations.
+
 ---
 
 # Secrets and Configuration
@@ -594,6 +763,7 @@ Before adding a provider or series, evaluate:
 8. **Availability** — Is the source likely to remain accessible?
 9. **Cost** — Is a free source sufficient?
 10. **Replaceability** — Could another provider replace it without redesigning StockBallDB?
+11. **Workflow efficiency** — Can related required observations be acquired together without unnecessary repeat provider calls?
 
 ---
 
@@ -630,7 +800,10 @@ Moving from a free source or tier to a paid provider should ideally require only
 
 ## Locked
 
-* **Tiingo** — initial ETF OHLCV and adjustment provider.
+* **Tiingo** — initial ETF provider for raw OHLCV, adjusted OHLCV, dividend cash, and split factors.
+* **Tiingo acquisition** — required V1 daily ETF observations should be collected together during the same acquisition stage rather than split across separate workflow stages.
+* **Raw and adjusted market observations** — both are preserved.
+* **Corporate-action observations** — dividend cash and split factors are preserved separately from adjusted prices.
 * **FRED** — primary macroeconomic data provider.
 * **ALFRED** — point-in-time macro / vintage data where required.
 * **Trading calendar** — generated independently of ETF price history and verified against authoritative exchange information.
@@ -650,6 +823,8 @@ Moving from a free source or tier to a paid provider should ideally require only
 * Exact FRED / ALFRED series IDs for `macro_conditions`
 * Fallback provider for ETF market data
 * Exact source and acquisition method for each `scheduled_events` category
+* Exact canonical handling of Tiingo no-dividend and no-split observations
+* Exact raw-versus-adjusted price basis for StockBallDB derived market fields
 
 ---
 
@@ -658,6 +833,8 @@ Moving from a free source or tier to a paid provider should ideally require only
 This document is a source map, not a permanent provider contract.
 
 Sources may change when better data becomes available, providers alter access, historical weaknesses are discovered, or StockBallDB expands.
+
+The initial table-population phase should also be used to test these source decisions against real provider data. Findings may justify adding, removing, or changing fields before the V1 schema is considered mature.
 
 Provider changes must preserve the principles established in the manifesto:
 

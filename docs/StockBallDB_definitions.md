@@ -1,8 +1,8 @@
 # StockBallDB — Definitions
 
-**Version:** 0.01
+**Version:** 0.02
 **Status:** Initial Definitions
-**Last Updated:** 2026-08-23
+**Last Updated:** 2026-08-24
 
 > Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md)
 
@@ -29,15 +29,16 @@ Observed data is obtained from an external source and stored after normalization
 
 Examples:
 
-* open
-* high
-* low
-* close
-* volume
+* raw prices
+* raw volume
+* adjusted prices
+* adjusted volume
+* dividend cash
+* split factors
 * interest rates
 * economic releases
 
-Provider-specific formats are normalized before entering the canonical database.
+Provider-specific formats and field names are normalized before entering the canonical database.
 
 ## Derived Data
 
@@ -51,8 +52,26 @@ Examples:
 * volatility
 * trading-day counters
 * regime classifications
+* forward outcomes
 
 Every derived field must have a reproducible definition.
+
+## Raw vs Adjusted Market Data
+
+StockBallDB preserves both **raw** and **adjusted** market observations when they are available from the selected provider.
+
+**Raw prices** represent the prices reported for the security on the historical trading day.
+
+**Adjusted prices** represent historical prices normalized by the provider for applicable corporate actions such as stock splits and dividends.
+
+Raw and adjusted values are not interchangeable.
+
+StockBallDB retains both because they answer different questions:
+
+* raw data preserves the historical market observation;
+* adjusted data provides a consistent historical series for calculations affected by corporate actions.
+
+The exact adjustment methodology is provider-dependent and must be documented in `StockBallDB_sources.md`.
 
 ## Percentage Representation
 
@@ -183,33 +202,89 @@ Immediately following valid trading date.
 
 # 2. `daily_market_data`
 
-## Observed Fields
+## Observed — Raw Market Data
 
 ### `open`
 
-Opening price for the asset on `date`.
+Raw opening price reported for the asset on `date`.
 
 ### `high`
 
-Highest traded price during the session.
+Highest raw traded price reported during the session.
 
 ### `low`
 
-Lowest traded price during the session.
+Lowest raw traded price reported during the session.
 
 ### `close`
 
-Closing price for the session.
+Raw closing price reported for the session.
 
 ### `volume`
 
-Reported trading volume for the session.
+Raw reported trading volume for the session.
 
 Volume interpretation may vary by asset type and provider and must be documented in the source configuration.
 
 ---
 
-## Derived Fields
+## Observed — Adjusted Market Data
+
+### `adj_open`
+
+Adjusted opening price for the asset on `date`.
+
+Represents the historical opening price after applying the provider's applicable corporate-action adjustments.
+
+### `adj_high`
+
+Adjusted session high.
+
+### `adj_low`
+
+Adjusted session low.
+
+### `adj_close`
+
+Adjusted closing price.
+
+This provides a historically normalized closing-price series accounting for applicable corporate actions.
+
+### `adj_volume`
+
+Adjusted trading volume.
+
+Adjustment may be required to maintain historical comparability across corporate actions such as stock splits.
+
+The exact methodology used for all adjusted fields depends on the provider and must be documented in the source configuration.
+
+StockBallDB stores these values as **observations received from the provider** rather than deriving them independently.
+
+---
+
+## Observed — Corporate Actions
+
+### `dividend_cash`
+
+Cash dividend associated with the security observation when applicable.
+
+For Tiingo-sourced market data, this corresponds to the dividend information supplied with the daily observation.
+
+When no dividend occurs, the normalized representation must follow the canonical ingestion rule established by the pipeline.
+
+Exact zero-versus-`NULL` convention: **TBD**.
+
+### `split_factor`
+
+Stock split or reverse-split factor associated with the observation when applicable.
+
+The field preserves the provider-supplied corporate-action observation separately from adjusted historical prices.
+
+Exact interpretation of factor direction and the canonical no-split value must match the selected provider's documented methodology and be explicitly confirmed in `StockBallDB_sources.md`.
+
+---
+
+## Derived — Daily Price Behavior
 
 ### `return_1d`
 
@@ -220,6 +295,10 @@ return_1d =
 (close_t / close_t-1) - 1
 ```
 
+Price basis — raw versus adjusted close: **TBD**.
+
+The final convention should avoid corporate actions creating artificial economic returns.
+
 ### `gap_pct`
 
 Difference between the current session open and previous session close.
@@ -228,6 +307,8 @@ Difference between the current session open and previous session close.
 gap_pct =
 (open_t / close_t-1) - 1
 ```
+
+Price basis — raw versus adjusted: **TBD**.
 
 ### `intraday_return`
 
@@ -238,6 +319,8 @@ intraday_return =
 (close_t / open_t) - 1
 ```
 
+Price basis — raw versus adjusted: **TBD**.
+
 ### `range_pct`
 
 Size of the session's high-low range relative to the opening price.
@@ -246,6 +329,8 @@ Size of the session's high-low range relative to the opening price.
 range_pct =
 (high_t - low_t) / open_t
 ```
+
+Price basis — raw versus adjusted: **TBD**.
 
 ### `drawdown_from_high`
 
@@ -259,7 +344,7 @@ drawdown_from_high =
 (close_t / historical_high_t) - 1
 ```
 
-Exact price basis for the historical high remains subject to final confirmation.
+Exact raw/adjusted price basis for the historical high remains **TBD**.
 
 ---
 
@@ -304,6 +389,8 @@ These values were not known on `date` and must never be treated as information a
 All offsets refer to subsequent valid trading observations for that symbol.
 
 Exact entry-price convention may be revised if StockBallDB later standardizes outcomes around next-session open rather than current close.
+
+Raw-versus-adjusted price basis: **TBD**.
 
 ## `max_up_5d`
 
@@ -379,11 +466,15 @@ Trailing 60-trading-day return.
 (close_t / close_t-60) - 1
 ```
 
+Raw-versus-adjusted price basis for historical returns: **TBD**.
+
 ---
 
 ## Moving Averages
 
 Simple moving averages are calculated using closing prices.
+
+Raw-versus-adjusted closing-price basis: **TBD**.
 
 ### `above_20dma`
 
@@ -429,13 +520,13 @@ Equality is classified as `false`.
 
 Historical volatility calculated from the previous 20 daily returns.
 
-Exact statistical convention and annualization rule: **TBD**.
+Exact statistical convention, annualization rule, and raw-versus-adjusted price basis: **TBD**.
 
 ## `drawdown_pct`
 
 Current decline from the asset's historical peak.
 
-Exact peak-price basis: **TBD**.
+Exact peak-price basis and raw-versus-adjusted convention: **TBD**.
 
 ---
 
@@ -661,6 +752,8 @@ Exact rule: **TBD**.
 
 # Missing Data and Insufficient History
 
+Observed data that is unavailable from the selected provider must not be fabricated.
+
 Derived values must not be fabricated when insufficient historical data exists.
 
 Example:
@@ -686,11 +779,65 @@ Missing information remains missing rather than being estimated unless an explic
 
 ---
 
+# Corporate Actions and Historical Continuity
+
+Corporate actions can create discontinuities between raw historical observations that do not represent equivalent economic price movements.
+
+StockBallDB therefore preserves:
+
+```text
+raw OHLCV
+adjusted OHLCV
+dividend_cash
+split_factor
+```
+
+rather than retaining only one representation of market history.
+
+Raw observations preserve what was reported for the historical trading session.
+
+Adjusted observations provide a normalized historical series based on the provider's adjustment methodology.
+
+Dividend and split fields preserve the underlying corporate-action information separately.
+
+Derived calculations must explicitly define whether they use raw or adjusted observations. This convention must not be left implicit in pipeline code.
+
+---
+
+# Provider Normalization
+
+Provider field names do not define StockBallDB field names.
+
+Provider observations are mapped into canonical StockBallDB fields during normalization.
+
+For Tiingo-sourced ETF observations, the normalized daily dataset includes:
+
+```text
+open
+high
+low
+close
+volume
+
+adj_open
+adj_high
+adj_low
+adj_close
+adj_volume
+
+dividend_cash
+split_factor
+```
+
+The precise mapping between Tiingo API fields and these canonical names belongs in `StockBallDB_sources.md` and/or pipeline configuration.
+
+---
+
 # Definition Changes
 
 Definitions are part of StockBallDB's reproducibility contract.
 
-Changing a formula or classification rule can change historical values even when the underlying observed data has not changed.
+Changing a formula, price basis, adjustment convention, or classification rule can change historical values even when the underlying observed data has not changed.
 
 Therefore, material definition changes must be:
 
@@ -699,5 +846,7 @@ Therefore, material definition changes must be:
 3. version controlled;
 4. reflected in the relevant pipeline;
 5. reproducible during a full database rebuild.
+
+During the initial schema-population phase, definitions marked **TBD** should be resolved using actual source data and documented decisions rather than silently assumed.
 
 > **A field name tells us what a value is called. This document tells us exactly what that value means.**
