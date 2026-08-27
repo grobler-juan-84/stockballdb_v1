@@ -72,8 +72,8 @@ def test_weekend_not_holiday_adjacency() -> None:
     )
     fri = frame.loc[frame["date"] == dates[0]].iloc[0]
     mon = frame.loc[frame["date"] == dates[1]].iloc[0]
-    assert fri["is_day_before_holiday"] is False
-    assert mon["is_day_after_holiday"] is False
+    assert fri["is_day_before_holiday"] == False
+    assert mon["is_day_after_holiday"] == False
     assert fri["holiday_name"] is None
 
 
@@ -94,8 +94,8 @@ def test_good_friday_adjacency() -> None:
     )
     thu = frame.loc[frame["date"] == dt.date(2024, 3, 28)].iloc[0]
     mon = frame.loc[frame["date"] == dt.date(2024, 4, 1)].iloc[0]
-    assert thu["is_day_before_holiday"] is True
-    assert mon["is_day_after_holiday"] is True
+    assert thu["is_day_before_holiday"] == True
+    assert mon["is_day_after_holiday"] == True
     assert thu["holiday_type"] == "regular"
     assert "Good Friday" in (thu["holiday_name"] or "")
     assert mon["holiday_type"] == "regular"
@@ -116,8 +116,8 @@ def test_exceptional_911_closure() -> None:
     )
     d10 = frame.loc[frame["date"] == dt.date(2001, 9, 10)].iloc[0]
     d17 = frame.loc[frame["date"] == dt.date(2001, 9, 17)].iloc[0]
-    assert d10["is_day_before_holiday"] is True
-    assert d17["is_day_after_holiday"] is True
+    assert d10["is_day_before_holiday"] == True
+    assert d17["is_day_after_holiday"] == True
     assert d10["holiday_type"] == "exceptional"
     assert d17["holiday_type"] == "exceptional"
     assert d10["holiday_name"] is not None
