@@ -107,3 +107,7 @@ Bumped package/project version to `1.0.0` (`pyproject.toml`, `stockballdb.__vers
 ## Step 27 — Confirm V1.0.0 verification run
 
 Post-stamp `pip install -e .` reported package `1.0.0`; pytest **84/84 PASS**. Git tag `v1.0.0` still pending commit of full V1 codebase.
+
+## Step 28 — Finalize V1.0.0 Git snapshot
+
+Staged accepted V1 tree (secrets audit PASS; `.env`/`build_reports/` excluded); commit `700424c` `release: StockBallDB v1.0.0`; annotated tag `v1.0.0` created locally; nothing pushed.
