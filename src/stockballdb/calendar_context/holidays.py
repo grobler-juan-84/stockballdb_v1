@@ -77,8 +77,7 @@ class HolidayCatalog:
         """
         if d in self.adhoc:
             name = self.regular_names.get(d, "Exceptional Closure")
-            # Adhoc wins type even if a regular name also maps
-            return name if d in self.regular_names else "Exceptional Closure", "exceptional"
+            return name, "exceptional"
         if d in self.regular_names:
             return self.regular_names[d], "regular"
         return "Market Closure", "regular"
