@@ -103,27 +103,6 @@ def validate_db(engine: Engine, expected_count: int) -> None:
 
         # Event flags match scheduled_events on trading days
         for etype, flag in FLAG_COLUMNS.items():
-            mismatch = conn.execute(
-                text(
-                    f"""
-                    SELECT COUNT(*) FROM calendar_context c
-                    FULL OUTER JOIN (
-                      SELECT DISTINCT event_date AS date
-                      FROM scheduled_events
-                      WHERE event_type = :etype
-                        AND event_date IN (SELECT date FROM trading_days)
-                    ) e ON e.date = c.date
-                    WHERE (c.{flag} IS TRUE AND e.date IS NULL)
-                       OR (COALESCE(c.{flag}, FALSE) IS FALSE AND e.date IS NOT NULL
-                           AND c.date IS NOT NULL)
-                    """
-                ),
-                {"etype": etype},
-            ).scalar_one()
-            # Simpler check:
-            pass
-
-        for etype, flag in FLAG_COLUMNS.items():
             db_true = conn.execute(
                 text(f"SELECT COUNT(*) FROM calendar_context WHERE {flag} IS TRUE")
             ).scalar_one()
