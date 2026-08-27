@@ -186,34 +186,33 @@ They should not be reconstructed from adjusted prices when the underlying observ
 
 ## Canonical Field Mapping
 
-Tiingo's provider-specific field names are normalized into StockBallDB's canonical naming convention.
+Verified against live Tiingo EOD JSON (`GET /tiingo/daily/{ticker}/prices`) on 2026-08-27:
 
-Conceptually:
+| Tiingo field   | StockBallDB field |
+| -------------- | ----------------- |
+| `date`         | `date`            |
+| `open`         | `open`            |
+| `high`         | `high`            |
+| `low`          | `low`             |
+| `close`        | `close`           |
+| `volume`       | `volume`          |
+| `adjOpen`      | `adj_open`        |
+| `adjHigh`      | `adj_high`        |
+| `adjLow`       | `adj_low`         |
+| `adjClose`     | `adj_close`       |
+| `adjVolume`    | `adj_volume`      |
+| `divCash`      | `dividend_cash`   |
+| `splitFactor`  | `split_factor`    |
 
-| Tiingo observation | StockBallDB field |
-| ------------------ | ----------------- |
-| `open`             | `open`            |
-| `high`             | `high`            |
-| `low`              | `low`             |
-| `close`            | `close`           |
-| `volume`           | `volume`          |
-| adjusted open      | `adj_open`        |
-| adjusted high      | `adj_high`        |
-| adjusted low       | `adj_low`         |
-| adjusted close     | `adj_close`       |
-| adjusted volume    | `adj_volume`      |
-| dividend cash      | `dividend_cash`   |
-| split factor       | `split_factor`    |
+**Request note:** omitting `startDate` returns only the latest bar. Phase 2A requests `startDate=1957-01-01` so each ETF returns its full available history (actual first observation is ETF-dependent).
 
-The acquisition implementation should verify the exact Tiingo API field names before the mapping is locked into pipeline configuration.
+**Auth:** `Authorization: Token <TIINGO_API_KEY>`.
 
 ## Raw vs Adjusted
 
-Raw observations represent prices and volume as reported for the historical trading session.
+Raw observations represent prices and volume as reported for the historical trading session (quoted prints).
 
-Adjusted observations normalize historical values according to Tiingo's corporate-action adjustment methodology.
-
-For example, a stock split may cause raw historical prices before and after the split to appear discontinuous even though the split itself did not represent an equivalent economic loss.
+Adjusted observations normalize historical values according to Tiingo's corporate-action adjustment methodology. Tiingo’s `adj_*` series is **restated**: corporate actions after historical date *t* can change the adjusted values stored for *t*.
 
 StockBallDB therefore preserves:
 
@@ -227,7 +226,22 @@ dividend information
 split information
 ```
 
-This allows future calculations to explicitly choose the appropriate price basis rather than permanently discarding one representation.
+**Integrity distinction (locked):**
+
+* raw OHLCV = historical quoted market observations;
+* Tiingo adjusted OHLCV = retrospectively normalized historical representation;
+* derived fields that use adjusted prices = retrospectively normalized economic history;
+* those derived fields must **not** be described as values that were necessarily available in that adjusted form on the historical date.
+
+### Corporate-action stored values (locked)
+
+```text
+dividend_cash = 0.0  → no cash dividend reported for the bar
+split_factor  = 1.0  → no split reported for the bar
+NULL                 → missing / unknown / not supplied
+```
+
+Storage mirrors the provider; StockBallDB does not rewrite `0.0`/`1.0` to `NULL`.
 
 ## Acquisition Rule
 
@@ -387,13 +401,20 @@ Each StockBallDB macro field should eventually map to an explicitly approved FRE
 ```text
 StockBallDB field        → FRED series
 
-inflation_rate           → <series_id>
-unemployment_rate        → <series_id>
-fed_funds_rate           → <series_id>
-treasury_10y_yield       → <series_id>
+inflation_rate           → CPIAUCSL (PIT index → YoY %)
+core_inflation_rate      → CPILFESL (PIT index → YoY %)
+unemployment_rate        → UNRATE (ALFRED PIT)
+jobless_claims           → ICSA (ALFRED PIT; sparse vintages before ~2009)
+fed_funds_rate           → DFF
+treasury_2y_yield        → DGS2
+treasury_10y_yield       → DGS10
+fed_balance_sheet        → WALCL
+credit_spread            → BAA10Y
 ```
 
-Exact series IDs should be documented once individually reviewed.
+`pmi` deferred from V1 (ISM series removed from FRED; not freely reproducible).
+
+`yield_curve_10y_2y` is derived in StockBallDB as `treasury_10y_yield - treasury_2y_yield`.
 
 ## Original-source verification
 
@@ -468,35 +489,30 @@ ALFRED should be preferred whenever using today's revised history would introduc
 # 4. Trading Calendar
 
 **Primary responsibility:** `trading_days`
-**Access:** Exchange calendar logic + authoritative exchange verification
-**Authentication:** None for normal local generation
-**Tier:** Free
-**Status:** Primary
+**Access:** Local generation via pinned `pandas_market_calendars` (`NYSE`)
+**Authentication:** None
+**Tier:** Free (Python package)
+**Status:** Primary / Locked for Phase 1
 
 The StockBallDB trading calendar must not depend on the existence of a particular ETF such as SPY.
 
 The calendar begins in **1957** according to the scope established in the manifesto.
 
-Initial approach:
+**Calendar authority:** `pandas_market_calendars==5.4.0` (pin upgrades deliberately; treat version changes as reviewed events).
 
 ```text
-Exchange calendar logic
+pandas_market_calendars NYSE
         ↓
-Generate trading-day spine
+Generate trading-day spine (1957 → last session ≤ today America/New_York)
         ↓
-Verify holidays / exceptional closures
+Derive columns (ISO week, ordinals, prev/next, period-end flags)
         ↓
-Validate
+Upsert into trading_days (idempotent)
         ↓
-Store in trading_days
+Validate (spot closures/sessions + structural checks)
 ```
 
-NYSE information should be used where authoritative verification is necessary, particularly for:
-
-* market holidays;
-* shortened trading sessions;
-* exceptional market closures;
-* unusual historical calendar behavior.
+NYSE holiday rules, historical rule changes, exceptional full closures, and early-close sessions are taken from the pinned library. Shortened sessions remain valid `trading_days` rows; early-close and holiday-adjacency flags live in `calendar_context` (Phase 2G). Same authority — no second calendar source.
 
 The trading-day spine remains independent from Tiingo or any other market-price provider.
 
@@ -584,65 +600,48 @@ A substitute dollar index must not silently be labelled `DXY`.
 
 # 8. Federal Reserve Events
 
-**Primary responsibility:** FOMC and Federal Reserve events
+**Primary responsibility:** Scheduled FOMC meeting decision/statement days for `scheduled_events`
 **Primary source:** Federal Reserve
-**Access:** Public Federal Reserve data / APIs where available
+**Access:** Public HTML historical materials / calendars
 **Tier:** Free
-**Status:** Authoritative
+**Status:** Locked (Phase 2F)
 
-Potential events include:
+Acquisition:
 
-```text
-FOMC meetings
-interest-rate decisions
-scheduled Federal Reserve announcements
-```
+* Years **1957–2020:** `https://www.federalreserve.gov/monetarypolicy/fomchistorical{YYYY}.htm`
+* Years **2021+:** `https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm`
 
-These records may populate `scheduled_events`.
+Include only headings/rows that are regularly scheduled **Meetings**. Exclude **unscheduled**, **conference call**, **notation vote**, and **cancelled**.
 
-The Federal Reserve should be treated as the source of truth for its own events.
+Multi-day meetings → one event on the **final** day.
 
-FRED may supplement the original source where useful, but StockBallDB should avoid unnecessary scraping when a stable structured source exists.
+`event_time_et = 14:00` / `during_session` only from **2013-03-20** onward (Fed Board release 2013-03-13). Earlier FOMC timing remains `unknown`.
 
-The acquisition method may differ by dataset and should be documented when implemented.
+Unscheduled/emergency Fed actions are **deferred** (not V1 `scheduled_events`).
 
 ---
 
 # 9. Economic Releases
 
-**Preferred source:** Original publishing agency / FRED
-**Access:** Dataset dependent
-**Tier:** Primarily free
-**Status:** Provisional
+**Preferred source:** BLS via ALFRED first-print dates (FRED API)
+**Access:** `FRED_API_KEY`
+**Tier:** Free
+**Status:** Locked (Phase 2F) for CPI and Employment Situation occurrence dates
 
-Potential releases include:
+| Event type | Series for first-print dates | FRED release id (context) | Notes |
+| --- | --- | --- | --- |
+| `cpi` | CPIAUCSL | 10 | First `realtime_start` per reference month; revisions are not new events |
+| `employment_situation` | UNRATE | 50 | Same Employment Situation release; not ICSA |
 
-```text
-CPI
-PPI
-employment report
-jobless claims
-GDP
-PMI
-retail sales
-other major scheduled economic releases
-```
+Store occurrence facts only. Macro **values** remain in `macro_conditions`.
 
-The institution responsible for the release is the preferred authority where practical.
+Consensus expectations and surprise values are **deferred** (no free reproducible market-consensus history approved for V1).
 
-FRED release metadata may provide a reproducible acquisition path where sufficiently reliable.
+BLS `08:30` ET / `pre_open`: applied from **1990-01-01**; earlier releases keep `pre_open` with `event_time_et = NULL`.
 
-StockBallDB must distinguish:
+**Elections:** statutory federal Election Day (2 U.S.C. §7 / USA.gov / FEC) — presidential (`year % 4 == 0`) and midterm (`year % 4 == 2`) only. `release_session = unknown`, `event_time_et = NULL`.
 
-```text
-reference period
-release date
-release time
-data availability
-later revisions
-```
-
-These concepts must not be treated as interchangeable.
+**Earnings:** deferred from V1 (ETF universe; no approved scheduled-date + consensus pipeline).
 
 ---
 
@@ -806,25 +805,27 @@ Moving from a free source or tier to a paid provider should ideally require only
 * **Corporate-action observations** — dividend cash and split factors are preserved separately from adjusted prices.
 * **FRED** — primary macroeconomic data provider.
 * **ALFRED** — point-in-time macro / vintage data where required.
-* **Trading calendar** — generated independently of ETF price history and verified against authoritative exchange information.
+* **Trading calendar** — generated with pinned `pandas_market_calendars` (`NYSE`), independently of ETF price history; spot-validated against known NYSE closures/sessions.
 * **Federal Reserve** — preferred authority for Federal Reserve events.
 * **StockBallDB** — calculates deterministic derived fields internally.
 * **API credentials** — environment configuration only; never committed to Git.
+* **`scheduled_events` V1** — occurrence calendar for `fomc`, `cpi`, `employment_situation`, `election` only (Phase 2F). Earnings, unscheduled Fed actions, consensus/surprise deferred. No `event_date` FK to `trading_days`.
 
 ## Provisional
 
 * **WTI** — FRED / EIA.
-* **Economic release calendar** — original agencies supplemented by FRED where appropriate.
 
 ## Requires Research
 
 * **XAU/USD / Spot Gold**
 * **DXY / U.S. Dollar Index**
-* Exact FRED / ALFRED series IDs for `macro_conditions`
+* Exact FRED / ALFRED series IDs for `macro_conditions` — **locked** (Phase 2E; `pmi` deferred)
 * Fallback provider for ETF market data
-* Exact source and acquisition method for each `scheduled_events` category
-* Exact canonical handling of Tiingo no-dividend and no-split observations
-* Exact raw-versus-adjusted price basis for StockBallDB derived market fields
+* Exact source and acquisition method for each `scheduled_events` category — **locked** (Phase 2F)
+* Exact canonical handling of Tiingo no-dividend and no-split observations — **locked** (0.0 / 1.0 interpretation; storage unchanged)
+* Exact raw-versus-adjusted price basis for StockBallDB derived market fields — **locked** (Phase 2B definitions)
+* Forward `market_outcomes` use retrospectively adjusted OHLC by design (Phase 2C) — not point-in-time available on `date`
+* `asset_regimes` derived only from `daily_market_data` through date `t` (Phase 2D); `asset_type` from StockBallDB universe map
 
 ---
 

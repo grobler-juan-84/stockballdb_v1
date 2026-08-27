@@ -31,12 +31,12 @@ Seven tables organized around a trading-day spine. Each owns a distinct category
 | `market_outcomes`   | date × symbol | Forward market outcomes                                                              |
 | `asset_regimes`     | date × symbol | Historical asset state and regime measurements                                       |
 | `macro_conditions`  | trading day   | Macroeconomic and monetary context                                                   |
-| `scheduled_events`  | event         | Scheduled market-relevant events                                                     |
-| `calendar_context`  | trading day   | Calendar, holiday, seasonal, and transition context                                  |
+| `scheduled_events`  | event         | Scheduled-event occurrence calendar (intrinsic event facts)                          |
+| `calendar_context`  | trading day   | Deterministic holiday/session/transition + retrospective event context               |
 
 ## Core Relationships
 
-All date foreign keys reference `trading_days.date`.
+Date foreign keys to `trading_days.date` apply to trading-day-grained tables. `scheduled_events.event_date` is a calendar occurrence date and is **not** an FK to `trading_days`.
 
 ```text
 trading_days.date
@@ -44,8 +44,9 @@ trading_days.date
 ├── market_outcomes.date
 ├── asset_regimes.date
 ├── macro_conditions.date
-├── scheduled_events.event_date
 └── calendar_context.date
+
+scheduled_events.event_date   (calendar date; no trading_days FK)
 ```
 
 ---
@@ -55,14 +56,26 @@ trading_days.date
 **Grain:** One row per valid market trading day
 **Primary key:** `date`
 
-Valid trading dates against which other datasets align. Calendar begins **1957** (rationale: [manifesto §6](StockBallDB_manifesto.md#6-why-trading_days-begins-in-1957)); other datasets need not.
+Valid trading dates against which other datasets align. Calendar begins **1957** (rationale: [manifesto §8](StockBallDB_manifesto.md#8-why-trading_days-begins-in-1957)); other datasets need not.
+
+Authority: pinned `pandas_market_calendars` NYSE calendar (see sources). Early-close sessions remain rows here; shortened-session flags belong in `calendar_context`.
 
 ```text
-date
-weekday, month, quarter, year, day_of_month, week_of_year
-trading_day_of_month, trading_day_of_year, days_to_month_end
-is_month_end, is_quarter_end, is_year_end
-prev_trading_date, next_trading_date
+date                      DATE PRIMARY KEY
+weekday                   SMALLINT  -- ISO: Mon=1 … Fri=5
+month                     SMALLINT  -- 1–12
+quarter                   SMALLINT  -- 1–4
+year                      SMALLINT
+day_of_month              SMALLINT  -- 1–31
+week_of_year              SMALLINT  -- ISO 8601 week number
+trading_day_of_month      SMALLINT
+trading_day_of_year       SMALLINT
+days_to_month_end         SMALLINT  -- 0 on month-end trading day
+is_month_end              BOOLEAN NOT NULL
+is_quarter_end            BOOLEAN NOT NULL
+is_year_end               BOOLEAN NOT NULL
+prev_trading_date         DATE NULL  -- NULL on first row; no self-FK
+next_trading_date         DATE NULL  -- NULL on last row; no self-FK
 ```
 
 ---
@@ -77,211 +90,196 @@ Stores the core daily market observations for each asset.
 
 For Tiingo-sourced ETFs, raw prices, adjusted prices, volume, adjusted volume, dividends, and split information are collected together during the same acquisition step.
 
+Phase 2A loads the 14 Tiingo ETFs only. Dates must exist in `trading_days`. Pre-inception history is simply absent (no fabricated rows).
+
 ### Observed — Raw Market Data
 
 ```text
-open
-high
-low
-close
-volume
+open, high, low, close     NUMERIC NOT NULL
+volume                     BIGINT NOT NULL
 ```
-
-These represent the raw market observations reported for the trading session.
 
 ### Observed — Adjusted Market Data
 
 ```text
-adj_open
-adj_high
-adj_low
-adj_close
-adj_volume
+adj_open, adj_high, adj_low, adj_close   NUMERIC NOT NULL
+adj_volume                               BIGINT NOT NULL
 ```
-
-Adjusted observations normalize historical market data for applicable corporate actions such as stock splits and dividends.
-
-Raw and adjusted observations are intentionally preserved separately.
 
 ### Observed — Corporate Actions
 
 ```text
-dividend_cash
-split_factor
+dividend_cash   NUMERIC NOT NULL   -- Tiingo divCash stored as observed (often 0.0)
+split_factor    NUMERIC NOT NULL   -- Tiingo splitFactor stored as observed (often 1.0)
 ```
 
-`dividend_cash` records the cash dividend associated with the observation when applicable.
+Canonical interpretation (locked; storage unchanged):
 
-`split_factor` records the stock split or reverse-split factor associated with the observation when applicable.
+```text
+dividend_cash = 0.0  → provider reports no cash dividend
+split_factor  = 1.0  → provider reports no split
+NULL                 → missing / unknown / not supplied
+```
 
-These fields are retained as underlying observations rather than inferred from adjusted prices.
+Do not rewrite existing `0.0` / `1.0` observations to `NULL`.
 
 ### Derived — Daily Price Behavior
 
 ```text
-return_1d
-gap_pct
-intraday_return
-range_pct
-drawdown_from_high
+return_1d            NUMERIC NULL  -- ADJUSTED; NULL on first row per symbol
+gap_pct              NUMERIC NULL  -- ADJUSTED; NULL on first row per symbol
+intraday_return      NUMERIC NULL  -- RAW session
+range_pct            NUMERIC NULL  -- RAW session
+drawdown_from_high   NUMERIC NULL  -- ADJUSTED expanding max
 ```
 
-Derived values are calculated internally by StockBallDB according to `StockBallDB_definitions.md`.
+Formulas locked in `StockBallDB_definitions.md` (Phase 2B). Adjusted-based derived fields are retrospectively normalized economic history.
 
 ---
 
 ## 3. `market_outcomes`
 
-**Grain:** date × symbol
-**Primary key:** `(date, symbol)`
+**Grain:** date × symbol  
+**Primary key:** `(date, symbol)`  
 **FK:** `date → trading_days.date`
 
-Forward outcomes after a trading date.
+Forward outcomes after a trading date — **entirely retrospective labels**. Values were **NOT** information available on `date`.
 
-These fields are calculated retrospectively and represent information that was **not known on the associated trading date**.
-
-All fields are derived.
+Derived exclusively from canonical `daily_market_data` adjusted OHLC (close→future-close returns; high/low extrema for max up/down). Incomplete horizons → `NULL`.
 
 ```text
-return_1d
-return_3d
-return_5d
-return_10d
-return_20d
-
-max_up_5d
-max_down_5d
-max_up_20d
-max_down_20d
-
-positive_1d
-positive_5d
-positive_20d
+return_1d, return_3d, return_5d, return_10d, return_20d   NUMERIC NULL
+max_up_5d, max_down_5d, max_up_20d, max_down_20d           NUMERIC NULL  -- signed
+positive_1d, positive_5d, positive_20d                     BOOLEAN NULL
 ```
+
+Formulas locked in `StockBallDB_definitions.md` (Phase 2C).
 
 ---
 
 ## 4. `asset_regimes`
 
-**Grain:** date × symbol
-**Primary key:** `(date, symbol)`
+**Grain:** date × symbol  
+**Primary key:** `(date, symbol)`  
 **FK:** `date → trading_days.date`
 
-Asset state on a trading day. Mostly derived from historical market observations available through that date.
+Asset state on a trading day using only same-symbol observations with `date ≤ t`. Does **not** use `market_outcomes`.
+
+Derived exclusively from canonical `daily_market_data`. Adjusted-derived fields are retrospectively normalized economic history (Phase 2B nuance).
 
 ```text
-asset_type
+asset_type                                              TEXT NOT NULL  -- V1: "etf"
 
-return_5d
-return_20d
-return_60d
+return_5d, return_20d, return_60d                       NUMERIC NULL  -- ADJUSTED
+above_20dma, above_50dma, above_200dma                  BOOLEAN NULL
+distance_20dma_pct, distance_50dma_pct, distance_200dma_pct  NUMERIC NULL
+volatility_20d                                          NUMERIC NULL  -- annualized, ddof=1
+drawdown_pct                                            NUMERIC NULL  -- mirrors drawdown_from_high
 
-above_20dma
-above_50dma
-above_200dma
-
-distance_20dma_pct
-distance_50dma_pct
-distance_200dma_pct
-
-volatility_20d
-drawdown_pct
-
-trend_regime
-momentum_regime
-volatility_regime
+trend_regime                                            TEXT NULL  -- uptrend|downtrend|neutral
+momentum_regime                                         TEXT NULL  -- positive|negative|mixed
+volatility_regime                                       TEXT NULL  -- low|normal|high
 ```
+
+Formulas locked in `StockBallDB_definitions.md` (Phase 2D).
 
 ---
 
 ## 5. `macro_conditions`
 
-**Grain:** trading day
-**Primary key:** `date`
+**Grain:** trading day (1:1 with `trading_days`)  
+**Primary key:** `date`  
 **FK:** `date → trading_days.date`
 
-Macroeconomic and monetary context associated with each trading day.
+Macroeconomic and monetary context available through date `t`. Point-in-time reconstruction for revised BLS series; market rates use dated observations without forward-fill.
 
-Where point-in-time reconstruction is required, StockBallDB stores or reconstructs the information that was publicly available at that time rather than silently substituting later revisions.
+`pmi` is **deferred from V1** (no satisfactory freely reproducible source). Column omitted.
 
 ```text
-inflation_rate
-core_inflation_rate
-unemployment_rate
-jobless_claims
-
-fed_funds_rate
-treasury_2y_yield
-treasury_10y_yield
-yield_curve_10y_2y
-
-fed_balance_sheet
-credit_spread
-pmi
-
-inflation_regime
-rate_regime
+inflation_rate, core_inflation_rate     NUMERIC NULL  -- CPI YoY %, PIT
+unemployment_rate                       NUMERIC NULL  -- UNRATE %, PIT
+jobless_claims                          NUMERIC NULL  -- ICSA persons, PIT
+fed_funds_rate                          NUMERIC NULL  -- DFF %
+treasury_2y_yield, treasury_10y_yield   NUMERIC NULL  -- DGS2 / DGS10 %
+yield_curve_10y_2y                      NUMERIC NULL  -- derived 10Y-2Y
+fed_balance_sheet                       NUMERIC NULL  -- WALCL millions USD
+credit_spread                           NUMERIC NULL  -- BAA10Y %
+inflation_regime                        TEXT NULL     -- low|normal|high
+rate_regime                             TEXT NULL     -- easing|stable|tightening
 ```
+
+Formulas and series IDs locked in `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2E).
 
 ---
 
 ## 6. `scheduled_events`
 
-**Grain:** event
+**Grain:** event (one row per scheduled event occurrence)
 **Primary key:** `event_id`
-**FK:** `event_date → trading_days.date`
+**FK:** none (`event_date` is a calendar occurrence date — **not** FK to `trading_days`)
 
-Stores scheduled market-relevant events.
+Scheduled-event **occurrence calendar** of intrinsic event facts.
 
-Multiple events may occur on the same trading day.
-
-Examples include economic releases, central-bank events, and elections.
+Not a surprise/result warehouse, not macro state, not trading-day-relative features, and not a full reconstruction of when every future calendar date first became knowable.
 
 ```text
-event_id
-event_date
-
-event_type
-event_name
-event_category
-
-event_time
-release_session
-reference_period
-
-source
-country
+event_id             TEXT PK   -- {type}:{date}:{ref_or_NA}:{symbol_or_MARKET}
+event_type           TEXT      -- fomc | cpi | employment_situation | election
+event_date           DATE      -- calendar occurrence date
+symbol               TEXT NULL -- NULL = market-wide (all V1 rows)
+reference_period     TEXT NULL -- YYYY-MM | presidential | midterm | NULL (fomc)
+release_session      TEXT      -- pre_open | during_session | after_close | unknown
+event_time_et        TIME NULL
+source               TEXT
 ```
+
+**V1 scope:** scheduled FOMC decision days; BLS CPI & Employment Situation releases; U.S. presidential + midterm Election Days.  
+**Deferred:** earnings; unscheduled Fed actions; consensus/surprise; `event_window` (→ `calendar_context`).
+
+Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2F).
 
 ---
 
 ## 7. `calendar_context`
 
-**Grain:** trading day
+**Grain:** trading day (1:1 with `trading_days`)
 **Primary key:** `date`
 **FK:** `date → trading_days.date`
 
-Research-oriented calendar traits that are not part of the foundational definition of a valid trading day.
+Deterministic trading-day context: holiday/session geometry, ISO week counts, narrow month/quarter/year transitions, and retrospective event-distance context from `scheduled_events`.
+
+Not a research-window catalog. Forward `days_to_next_*`, tax/payday, election periods, and earnings windows are **out of V1**.
 
 ```text
-is_day_before_holiday
-is_day_after_holiday
-holiday_name
-holiday_type
+date                                         DATE PK FK → trading_days.date
 
-is_shortened_trading_day
-is_shortened_week
-trading_days_in_week
+is_day_before_holiday                        BOOLEAN NOT NULL
+is_day_after_holiday                         BOOLEAN NOT NULL
+holiday_name                                 TEXT NULL
+holiday_type                                 TEXT NULL  -- regular | exceptional
 
-is_turn_of_month
-days_to_tax_deadline
+is_shortened_trading_day                     BOOLEAN NOT NULL
+is_shortened_week                            BOOLEAN NOT NULL
+trading_days_in_week                         SMALLINT NOT NULL
 
-is_quarter_transition
-is_year_transition
+is_turn_of_month                             BOOLEAN NOT NULL
+is_quarter_transition                        BOOLEAN NOT NULL
+is_year_transition                           BOOLEAN NOT NULL
 
-is_election_period
-is_payday_period
+is_fomc_day                                  BOOLEAN NOT NULL
+days_since_last_fomc                         SMALLINT NULL
+
+is_cpi_release_day                           BOOLEAN NOT NULL
+days_since_last_cpi                          SMALLINT NULL
+
+is_employment_situation_day                  BOOLEAN NOT NULL
+days_since_last_employment_situation         SMALLINT NULL
+
+is_election_day                              BOOLEAN NOT NULL
+days_since_last_election                     SMALLINT NULL
 ```
+
+Definitions locked in `StockBallDB_definitions.md` (Phase 2G).
 
 ---
 

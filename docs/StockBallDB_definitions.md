@@ -109,10 +109,12 @@ One row exists for each recognized trading day in the StockBallDB trading calend
 
 ## `weekday`
 
-Day of the week for `date`.
+ISO weekday number for `date`.
 
 ```text
-Monday → Friday
+Monday = 1
+…
+Friday = 5
 ```
 
 ## `month`
@@ -145,9 +147,15 @@ Calendar day number within the month.
 
 ## `week_of_year`
 
-Calendar week number.
+ISO 8601 week number for `date`.
 
-Exact week-number convention: **TBD**.
+```text
+Weeks start on Monday.
+Week 1 is the week containing the year's first Thursday.
+```
+
+Python: `date.isocalendar().week`  
+PostgreSQL: `EXTRACT(WEEK FROM date)`
 
 ## `trading_day_of_month`
 
@@ -194,9 +202,13 @@ previous trading day = 1
 
 Immediately preceding valid trading date.
 
+`NULL` on the earliest row in `trading_days`.
+
 ## `next_trading_date`
 
 Immediately following valid trading date.
+
+`NULL` on the latest row in `trading_days`.
 
 ---
 
@@ -268,265 +280,264 @@ StockBallDB stores these values as **observations received from the provider** r
 
 Cash dividend associated with the security observation when applicable.
 
-For Tiingo-sourced market data, this corresponds to the dividend information supplied with the daily observation.
+For Tiingo-sourced market data, this corresponds to Tiingo's `divCash` field on the daily EOD bar.
 
-When no dividend occurs, the normalized representation must follow the canonical ingestion rule established by the pipeline.
+**Locked interpretation (storage unchanged):**
 
-Exact zero-versus-`NULL` convention: **TBD**.
+```text
+0.0  → provider explicitly reports no cash dividend for the observation
+NULL → value missing / unknown / not supplied
+```
+
+StockBallDB stores provider values as observed. Quiet Tiingo days use `0.0`, not `NULL`. Do not rewrite existing `0.0` observations to `NULL`.
 
 ### `split_factor`
 
 Stock split or reverse-split factor associated with the observation when applicable.
 
-The field preserves the provider-supplied corporate-action observation separately from adjusted historical prices.
+For Tiingo-sourced market data, this corresponds to Tiingo's `splitFactor` field.
 
-Exact interpretation of factor direction and the canonical no-split value must match the selected provider's documented methodology and be explicitly confirmed in `StockBallDB_sources.md`.
+**Locked interpretation (storage unchanged):**
+
+```text
+1.0  → provider explicitly reports no split for the observation
+NULL → value missing / unknown / not supplied
+```
+
+Quiet Tiingo days use `1.0`, not `NULL`. Do not rewrite existing `1.0` observations to `NULL`.
 
 ---
 
 ## Derived — Daily Price Behavior
 
+Derived from **canonical StockBallDB observations** (not from live provider responses).
+
+**Previous observation** = the previous available row for the **same symbol** ordered by `date` (trading-day sequence), not calendar-day arithmetic.
+
+**Integrity:** Raw OHLCV preserves historical quoted prints. Tiingo adjusted OHLCV is a **retrospectively normalized** representation (corporate actions after date *t* can restate `adj_*` on *t*). Derived fields that use adjusted prices are therefore **retrospectively normalized economic history** — they must not be described as values that were necessarily available in that adjusted form on the historical date.
+
 ### `return_1d`
 
-Close-to-close return from the previous available trading observation.
+Economically continuous close-to-close return (adjusted basis).
 
 ```text
 return_1d =
-(close_t / close_t-1) - 1
+(adj_close_t / adj_close_{t-1}) - 1
 ```
 
-Price basis — raw versus adjusted close: **TBD**.
-
-The final convention should avoid corporate actions creating artificial economic returns.
+`NULL` on the first available observation for each symbol.
 
 ### `gap_pct`
 
-Difference between the current session open and previous session close.
+Economically continuous overnight / open-vs-prior-close gap (adjusted basis).
 
 ```text
 gap_pct =
-(open_t / close_t-1) - 1
+(adj_open_t / adj_close_{t-1}) - 1
 ```
 
-Price basis — raw versus adjusted: **TBD**.
+`NULL` on the first available observation for each symbol.
+
+Raw quoted gap remains computable from observed `open` / `close` if needed; this field is the continuous economic gap.
 
 ### `intraday_return`
 
-Return from the current session open to close.
+Session open-to-close return from **raw** quoted prices (point-in-time session tape).
 
 ```text
 intraday_return =
 (close_t / open_t) - 1
 ```
 
-Price basis — raw versus adjusted: **TBD**.
+Populated whenever the current row has usable `open` and `close` (including the symbol’s first row).
 
 ### `range_pct`
 
-Size of the session's high-low range relative to the opening price.
+Session high–low range relative to the **raw** open.
 
 ```text
 range_pct =
 (high_t - low_t) / open_t
 ```
 
-Price basis — raw versus adjusted: **TBD**.
+Populated whenever the current row has usable `open`, `high`, and `low` (including the symbol’s first row).
 
 ### `drawdown_from_high`
 
-Percentage decline of the current close from the historical high available through `date`.
+Drawdown of the current adjusted close from the expanding historical adjusted high for that symbol.
 
 ```text
 historical_high_t =
-MAX(close through t)
+MAX(adj_close through t)   -- same symbol, dates ≤ t
 
 drawdown_from_high =
-(close_t / historical_high_t) - 1
+(adj_close_t / historical_high_t) - 1
 ```
 
-Exact raw/adjusted price basis for the historical high remains **TBD**.
+Uses retrospectively normalized `adj_close`. Populated on every row with usable `adj_close` (including the first row, where the value is `0`).
 
 ---
 
 # 3. `market_outcomes`
 
-`market_outcomes` contains **forward-looking labels calculated retrospectively**.
+`market_outcomes` contains **entirely retrospective future labels**.
 
-These values were not known on `date` and must never be treated as information available at that time.
+These values were **NOT information available on `date`**. They may be joined to historical dates for research/labeling, but must never be treated as contemporaneous inputs.
+
+Calculations use retrospectively normalized adjusted OHLC from canonical `daily_market_data` (same Phase 2B integrity distinction).
+
+**Grain:** `date × symbol`  
+**Horizon indexing:** `t+N` = the Nth subsequent `daily_market_data` row for the **same symbol**, ordered by `date` ascending — not calendar arithmetic and not a bare `trading_days` offset when a bar is missing.
 
 ## Forward Returns
 
-### `return_1d`
+All use adjusted close → future adjusted close:
 
 ```text
-(close_t+1 / close_t) - 1
+return_1d  = (adj_close_{t+1}  / adj_close_t) - 1
+return_3d  = (adj_close_{t+3}  / adj_close_t) - 1
+return_5d  = (adj_close_{t+5}  / adj_close_t) - 1
+return_10d = (adj_close_{t+10} / adj_close_t) - 1
+return_20d = (adj_close_{t+20} / adj_close_t) - 1
 ```
 
-### `return_3d`
+Each field is `NULL` unless the complete required future horizon of N same-symbol observations exists. Never compute a partial horizon and keep the `*_Nd` label.
+
+Consistency with `daily_market_data` (within float tolerance):
 
 ```text
-(close_t+3 / close_t) - 1
+market_outcomes.return_1d(t) ≈ daily_market_data.return_1d(t+1)
 ```
 
-### `return_5d`
+## Maximum Favorable / Adverse Movement
+
+Baseline: `adj_close_t`  
+Window: `t+1` through `t+N` inclusive (`date t` excluded)  
+Store as **signed returns** (`max_down_*` may be negative, zero, or positive).
 
 ```text
-(close_t+5 / close_t) - 1
+max_up_5d   = MAX(adj_high_{t+1..t+5})  / adj_close_t - 1
+max_down_5d = MIN(adj_low_{t+1..t+5})   / adj_close_t - 1
+max_up_20d  = MAX(adj_high_{t+1..t+20}) / adj_close_t - 1
+max_down_20d= MIN(adj_low_{t+1..t+20})  / adj_close_t - 1
 ```
 
-### `return_10d`
+Require the complete N-observation future window; otherwise `NULL`.
+
+## Positive Flags
 
 ```text
-(close_t+10 / close_t) - 1
+positive_1d  = return_1d > 0
+positive_5d  = return_5d > 0
+positive_20d = return_20d > 0
 ```
-
-### `return_20d`
 
 ```text
-(close_t+20 / close_t) - 1
+return > 0   → true
+return <= 0  → false   (exactly zero is false)
+return NULL  → NULL
 ```
 
-All offsets refer to subsequent valid trading observations for that symbol.
-
-Exact entry-price convention may be revised if StockBallDB later standardizes outcomes around next-session open rather than current close.
-
-Raw-versus-adjusted price basis: **TBD**.
-
-## `max_up_5d`
-
-Maximum favorable price movement occurring during the following 5 trading sessions.
-
-Exact calculation and price basis: **TBD**.
-
-## `max_down_5d`
-
-Maximum adverse price movement occurring during the following 5 trading sessions.
-
-Exact calculation and price basis: **TBD**.
-
-## `max_up_20d`
-
-Maximum favorable price movement occurring during the following 20 trading sessions.
-
-Exact calculation and price basis: **TBD**.
-
-## `max_down_20d`
-
-Maximum adverse price movement occurring during the following 20 trading sessions.
-
-Exact calculation and price basis: **TBD**.
-
-## `positive_1d`
-
-```text
-return_1d > 0
-```
-
-## `positive_5d`
-
-```text
-return_5d > 0
-```
-
-## `positive_20d`
-
-```text
-return_20d > 0
-```
-
-A return of exactly zero is **not positive**.
+PostgreSQL `BOOLEAN` (nullable).
 
 ---
 
 # 4. `asset_regimes`
 
+`asset_regimes` describes **historical asset state using only information available through date `t`** (same-symbol `daily_market_data` rows with `date ≤ t`).
+
+It must **not** use `market_outcomes` or any future observations.
+
+Adjusted OHLC is retrospectively normalized economic history under Tiingo's current adjustment methodology. Adjusted-derived regime measures are historically continuous economic series, not necessarily values published in that adjusted form on date `t` (same Phase 2B distinction).
+
+**Grain:** `date × symbol`  
+**Indexing:** `t-N` = Nth previous same-symbol observation by `date` ascending.
+
+## `asset_type`
+
+Canonical lowercase vocabulary from StockBallDB universe/configuration mapping (not provider metadata).
+
+For the current V1 ETF universe:
+
+```text
+asset_type = "etf"
+```
+
+Never `NULL` for supported symbols.
+
 ## Historical Returns
 
-### `return_5d`
-
-Trailing 5-trading-day return.
+All use adjusted close:
 
 ```text
-(close_t / close_t-5) - 1
+return_5d  = (adj_close_t / adj_close_{t-5})  - 1
+return_20d = (adj_close_t / adj_close_{t-20}) - 1
+return_60d = (adj_close_t / adj_close_{t-60}) - 1
 ```
-
-### `return_20d`
-
-Trailing 20-trading-day return.
 
 ```text
-(close_t / close_t-20) - 1
+return_5d  → first 5 rows/symbol NULL
+return_20d → first 20 rows/symbol NULL
+return_60d → first 60 rows/symbol NULL
 ```
 
-### `return_60d`
-
-Trailing 60-trading-day return.
-
-```text
-(close_t / close_t-60) - 1
-```
-
-Raw-versus-adjusted price basis for historical returns: **TBD**.
+No partial-history returns.
 
 ---
 
 ## Moving Averages
 
-Simple moving averages are calculated using closing prices.
-
-Raw-versus-adjusted closing-price basis: **TBD**.
-
-### `above_20dma`
-
 ```text
-close_t > SMA20_t
+SMA20_t  = mean(adj_close over t and previous 19 observations)
+SMA50_t  = mean(adj_close over t and previous 49 observations)
+SMA200_t = mean(adj_close over t and previous 199 observations)
 ```
 
-### `above_50dma`
+Complete windows only:
 
 ```text
-close_t > SMA50_t
+SMA20-based fields  → first 19 rows NULL
+SMA50-based fields  → first 49 rows NULL
+SMA200-based fields → first 199 rows NULL
 ```
 
-### `above_200dma`
-
 ```text
-close_t > SMA200_t
+above_20dma  = adj_close_t > SMA20_t
+above_50dma  = adj_close_t > SMA50_t
+above_200dma = adj_close_t > SMA200_t
 ```
 
-Equality is classified as `false`.
-
-### `distance_20dma_pct`
+Equality → `false`. Insufficient history → `NULL`.
 
 ```text
-(close_t / SMA20_t) - 1
-```
-
-### `distance_50dma_pct`
-
-```text
-(close_t / SMA50_t) - 1
-```
-
-### `distance_200dma_pct`
-
-```text
-(close_t / SMA200_t) - 1
+distance_20dma_pct  = (adj_close_t / SMA20_t)  - 1
+distance_50dma_pct  = (adj_close_t / SMA50_t)  - 1
+distance_200dma_pct = (adj_close_t / SMA200_t) - 1
 ```
 
 ---
 
 ## `volatility_20d`
 
-Historical volatility calculated from the previous 20 daily returns.
+Annualized realized historical volatility from a 20-trading-day return window:
 
-Exact statistical convention, annualization rule, and raw-versus-adjusted price basis: **TBD**.
+```text
+volatility_20d =
+STDDEV_SAMPLE(return_1d for t-19 through t) × sqrt(252)
+```
+
+Uses canonical `daily_market_data.return_1d`. Explicit `ddof = 1`. First `return_1d` is NULL, so first valid `volatility_20d` needs 21 price observations → **first 20 rows/symbol NULL**.
 
 ## `drawdown_pct`
 
-Current decline from the asset's historical peak.
+Identical to Phase 2B `daily_market_data.drawdown_from_high`:
 
-Exact peak-price basis and raw-versus-adjusted convention: **TBD**.
+```text
+historical_high_t = MAX(adj_close through t)
+drawdown_pct = (adj_close_t / historical_high_t) - 1
+```
+
+Implementation copies/reuses `drawdown_from_high` so `asset_regimes` remains query-complete. Deliberate duplication; not a second concept.
 
 ---
 
@@ -534,219 +545,240 @@ Exact peak-price basis and raw-versus-adjusted convention: **TBD**.
 
 ### `trend_regime`
 
-Categorical description of the asset's prevailing trend.
-
-Exact classification rules: **TBD**.
-
-Potential states may eventually include:
+Lowercase: `uptrend` | `downtrend` | `neutral`
 
 ```text
-uptrend
-downtrend
-neutral
+if SMA50_t IS NULL or SMA200_t IS NULL:
+    NULL
+elif adj_close_t > SMA200_t and SMA50_t > SMA200_t:
+    "uptrend"
+elif adj_close_t < SMA200_t and SMA50_t < SMA200_t:
+    "downtrend"
+else:
+    "neutral"
 ```
 
-These labels are illustrative only until formally defined.
+Equality falls into `neutral`. Semantic historical-state classification — not tuned against future returns.
 
 ### `momentum_regime`
 
-Categorical description of recent price momentum.
+Lowercase: `positive` | `negative` | `mixed`
 
-Exact classification rules: **TBD**.
+```text
+if return_20d IS NULL or return_60d IS NULL:
+    NULL
+elif return_20d > 0 and return_60d > 0:
+    "positive"
+elif return_20d < 0 and return_60d < 0:
+    "negative"
+else:
+    "mixed"
+```
+
+Zero belongs to `mixed`. No magnitude thresholds.
 
 ### `volatility_regime`
 
-Categorical description of the current volatility environment.
+Lowercase: `low` | `normal` | `high`
 
-Exact classification rules: **TBD**.
+Expanding same-symbol empirical distribution of `volatility_20d` with `date ≤ t` (**current included**). Require `|H_t| ≥ 252`, else `NULL`.
+
+```text
+p_t = count(h in H_t where h <= volatility_20d_t) / |H_t|
+
+p_t <= 1/3           → "low"
+1/3 < p_t <= 2/3     → "normal"
+p_t > 2/3            → "high"
+```
+
+Semantic equal-frequency categories. Never use future volatility, full-sample ranks, or `market_outcomes`.
 
 ---
 
 # 5. `macro_conditions`
 
-Macro fields represent the economic information associated with a trading date.
+One row per `trading_days.date`. Values on date `t` use only information publicly available by `t`.
 
-Historical integrity is especially important here because economic data may be revised after its original publication.
+**PMI:** deferred from V1 — omitted (ISM Manufacturing PMI not freely reproducible via FRED after 2016 removal).
 
-Where practical, StockBallDB should distinguish between:
+## Series map (locked)
 
-* the value known at the time;
-* later revised values;
-* the reference period;
-* the release date.
+| Field | Series | Notes |
+| --- | --- | --- |
+| `inflation_rate` | CPIAUCSL | Headline CPI YoY % from PIT index levels |
+| `core_inflation_rate` | CPILFESL | Core CPI YoY % from PIT index levels |
+| `unemployment_rate` | UNRATE | SA percent; ALFRED PIT |
+| `jobless_claims` | ICSA | Initial claims, SA, persons; ALFRED PIT (sparse vintages before ~2009) |
+| `fed_funds_rate` | DFF | Effective federal funds rate, % |
+| `treasury_2y_yield` | DGS2 | %; no history before 1976-06-01 |
+| `treasury_10y_yield` | DGS10 | % |
+| `fed_balance_sheet` | WALCL | Total Fed assets, millions USD |
+| `credit_spread` | BAA10Y | Baa − 10Y Treasury, % |
 
-## Observed Macro Fields
+## Availability & forward-fill
 
-Definitions and source-specific timing rules remain to be finalized for:
-
-```text
-inflation_rate
-core_inflation_rate
-unemployment_rate
-jobless_claims
-fed_funds_rate
-treasury_2y_yield
-treasury_10y_yield
-fed_balance_sheet
-credit_spread
-pmi
-```
+- Reference period ≠ availability. No pre-release leakage.
+- Pre-open releases (CPI/employment/claims): first trading day on/after release calendar date.
+- After-close (H.4.1 / WALCL): Wednesday level → Thursday release calendar → first trading day **strictly after** that Thursday.
+- Ambiguous timing → next trading day (conservative).
+- Forward-fill after availability: inflation, core, unemployment, claims, balance sheet.
+- **No** forward-fill: fed funds, Treasuries, credit spread.
 
 ## `yield_curve_10y_2y`
 
-Difference between the 10-year and 2-year U.S. Treasury yields.
-
 ```text
-yield_curve_10y_2y =
 treasury_10y_yield - treasury_2y_yield
 ```
 
+Percentage points (`1.00` = 100 bp). NULL if either leg NULL. Derived in StockBallDB (not `T10Y2Y`).
+
 ## `inflation_regime`
 
-Categorical interpretation of the inflation environment.
+`low` | `normal` | `high`
 
-Definition: **TBD**.
+`H_t` = distinct PIT headline CPI YoY **releases** with availability ≤ `t` (each monthly release once — not daily forward-filled duplicates). Require `|H_t| ≥ 36`. Then empirical terciles of current `inflation_rate` vs `H_t`. Regime carries with the inflation observation until the next release.
 
 ## `rate_regime`
 
-Categorical interpretation of the interest-rate environment.
+`easing` | `stable` | `tightening`
 
-Definition: **TBD**.
+```text
+delta = fed_funds_rate_t - fed_funds_rate_{t-63}
+```
+
+where `t-63` is the 63rd previous **non-NULL** `fed_funds_rate` observation.  
+`delta ≤ -0.25` → easing; `≥ +0.25` → tightening; else stable. Effective-rate stance proxy (not FOMC target).
 
 ---
 
 # 6. `scheduled_events`
 
+**Responsibility:** scheduled-event **occurrence calendar** of intrinsic event facts.
+
+A row records a trustworthy scheduled event occurrence reconstructed from authoritative historical sources.
+
+Historical **occurrence** is generally reconstructible. Complete historical reconstruction of when every future event date first became known to market participants is **outside V1**.
+
+Not a surprise/result warehouse, not `macro_conditions` state, not trading-day features (`calendar_context`), and not an unscheduled-catalyst table.
+
 ## `event_id`
 
-Unique identifier for an event.
+Deterministic, provider-independent, stable across rebuilds:
+
+```text
+{event_type}:{event_date}:{reference_period_or_NA}:{symbol_or_MARKET}
+```
+
+Examples: `fomc:2020-04-29:NA:MARKET`, `cpi:2020-03-11:2020-02:MARKET`,
+`employment_situation:2020-03-06:2020-02:MARKET`,
+`election:2020-11-03:presidential:MARKET`.
+
+## `event_type` (V1 vocabulary)
+
+| Type | Meaning |
+| --- | --- |
+| `fomc` | Regularly scheduled FOMC meeting **policy-decision / statement day** (final day of multi-day meeting). Unscheduled/emergency, conference calls, notation votes, cancelled meetings **excluded**. |
+| `cpi` | BLS CPI **news-release occurrence** for a reference month (first-print date). Values live in `macro_conditions`, not here. |
+| `employment_situation` | BLS Employment Situation **news-release occurrence** (not ICSA/jobless claims). |
+| `election` | U.S. presidential or midterm **general Election Day** only. |
+
+**Deferred:** `earnings`; unscheduled Fed actions; consensus expectations; surprise values.
+
+Do not use ambiguous `jobs`.
 
 ## `event_date`
 
-Trading date associated with the event.
+Calendar date of the occurrence. **Not** required to be a `trading_days` date. No FK to `trading_days`.
 
-## `event_type`
+## `symbol`
 
-Standardized type of event.
-
-Classification vocabulary: **TBD**.
-
-## `event_name`
-
-Human-readable event name.
-
-## `event_category`
-
-Broader standardized grouping of related event types.
-
-Classification vocabulary: **TBD**.
-
-## `event_time`
-
-Scheduled or known event time when available.
-
-Timezone convention: **TBD**.
-
-## `release_session`
-
-Relationship between the event time and the normal trading session.
-
-Potential classifications may include:
-
-```text
-pre_market
-market_hours
-post_market
-unknown
-```
-
-Final vocabulary: **TBD**.
+V1: always `NULL` (market-wide). Never fan out one macro/Fed/election event across ETFs. Nullable for future symbol-specific types.
 
 ## `reference_period`
 
-Economic or reporting period to which the event relates, when applicable.
+- CPI / Employment Situation: `YYYY-MM` (reference month)
+- Election: `presidential` | `midterm`
+- FOMC: `NULL` (encoded as `NA` in `event_id`)
 
-## `source`
+## `release_session` / `event_time_et`
 
-Origin of the event information.
+| Type | Session | Time |
+| --- | --- | --- |
+| CPI / Employment Situation from 1990-01-01 | `pre_open` | `08:30` ET when convention is treated as justified; else time `NULL` |
+| CPI / Employment Situation before 1990-01-01 | `pre_open` | `NULL` |
+| FOMC from 2013-03-20 | `during_session` | `14:00` ET (Fed 2013-03-13 standardization) |
+| FOMC before 2013-03-20 | `unknown` | `NULL` (do not infer modern convention) |
+| Election | `unknown` | `NULL` (all-day statutory event) |
 
-## `country`
+## Coverage semantics
 
-Country primarily associated with the event.
+No “no-event” rows. Within validated coverage for a type, absence ⇒ no qualifying scheduled event. Outside coverage ⇒ unknown/incomplete — not “no event.”
+
+## Relationship boundaries
+
+- `macro_conditions`: PIT macro **state** on trading days (levels/regimes).
+- `calendar_context`: trading-day-relative holiday/session/transition context and retrospective `days_since_last_*` (forward `days_to_next_*` deferred).
 
 ---
 
 # 7. `calendar_context`
 
-## `is_day_before_holiday`
+One row per `trading_days.date` (exact 1:1). Deterministic trading-day context derived from `trading_days`, pinned NYSE calendar metadata, and `scheduled_events`.
 
-`true` when the next scheduled trading session is separated from the current session by a recognized market holiday.
+**Not in V1:** `days_to_next_*`, `days_to_tax_deadline`, `is_payday_period`, `is_election_period`, earnings windows, broad pre/post event windows.
 
-Exact holiday handling: **TBD**.
+## Holiday / session
 
-## `is_day_after_holiday`
+**Holiday/full closure:** Mon–Fri calendar date with no `trading_days` row. Weekends alone are not holidays.
 
-`true` when the previous scheduled trading session was separated from the current session by a recognized market holiday.
+**`is_day_before_holiday`:** true iff ∃ weekday closed date strictly between `date` and `next_trading_date`.
 
-## `holiday_name`
+**`is_day_after_holiday`:** symmetric using `prev_trading_date`.
 
-Name of the relevant holiday.
+**`holiday_name`:** adjacent weekday closure label(s) from NYSE rules / adhoc; multiple distinct labels joined with `|` in chronological order; `NULL` when neither before nor after.
 
-## `holiday_type`
+**`holiday_type`:** `regular` | `exceptional` | `NULL`. Any exceptional closure in the adjacent gap → `exceptional`.
 
-Classification of the holiday.
+**`is_shortened_trading_day`:** membership in `nyse.early_closes(schedule)` (pinned `pandas_market_calendars` NYSE). Full closures are not shortened sessions.
 
-Definition: **TBD**.
+## Week
 
-## `is_shortened_trading_day`
+ISO 8601 identity: `(iso_year, iso_week) = date.isocalendar()[:2]` — **not** `(trading_days.year, week_of_year)`.
 
-`true` when the scheduled regular trading session is shorter than a normal session.
+`trading_days_in_week` = count of trading sessions in that ISO week (1–5). Half-sessions count as one day.  
+`is_shortened_week` = `trading_days_in_week < 5`.
 
-## `is_shortened_week`
+## Narrow transitions
 
-`true` when the trading week contains fewer normal trading sessions than a standard five-session week.
+```text
+is_turn_of_month =
+  is_month_end OR trading_day_of_month = 1
 
-Exact treatment of shortened sessions: **TBD**.
+is_quarter_transition =
+  is_quarter_end OR first trading session of calendar quarter
 
-## `trading_days_in_week`
+is_year_transition =
+  is_year_end OR first trading session of calendar year
+```
 
-Number of valid trading sessions belonging to the relevant trading week.
+## Event context (retrospective)
 
-## `is_turn_of_month`
+**`is_*_day`:** true iff `scheduled_events` has matching `event_type` with `event_date = date`. Occurrence on this trading date only — off-calendar events do not set flags.
 
-Identifies dates surrounding the transition between calendar months.
+**`days_since_last_*`:** trading-session distance from the event’s **effective session** to `date`.
 
-Exact window: **TBD**.
+```text
+if event_date is a trading day:
+  effective_session = event_date
+else:
+  effective_session = first trading day strictly after event_date
 
-## `days_to_tax_deadline`
+days_since = index(date) - index(effective_session)   # 0 on effective session
+```
 
-Number of days until the relevant tax deadline.
+`NULL` before the first known event of that type. No future events. No `release_session` remapping.
 
-Calendar-day versus trading-day convention and applicable tax deadline: **TBD**.
-
-## `is_quarter_transition`
-
-Identifies dates surrounding the transition between calendar quarters.
-
-Exact window: **TBD**.
-
-## `is_year_transition`
-
-Identifies dates surrounding the transition between calendar years.
-
-Exact window: **TBD**.
-
-## `is_election_period`
-
-Identifies dates falling within a defined election-related period.
-
-Exact election types and window: **TBD**.
-
-## `is_payday_period`
-
-Identifies dates associated with defined common payroll periods.
-
-Exact rule: **TBD**.
+Forward `days_to_next_*` deferred: Phase 2F is an occurrence calendar, not complete advance-schedule PIT knowledge.
 
 ---
 
