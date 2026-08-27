@@ -262,6 +262,17 @@ def derive_calendar_context_frame(
     return pd.DataFrame(records, columns=list(CONTEXT_COLUMNS))
 
 
+def _nan_to_none(value):
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return value
+
+
 def upsert_calendar_context(
     engine: Engine,
     frame: pd.DataFrame,
@@ -271,6 +282,9 @@ def upsert_calendar_context(
     if frame.empty:
         return 0
     records = frame.to_dict(orient="records")
+    for rec in records:
+        for col in CONTEXT_COLUMNS:
+            rec[col] = _nan_to_none(rec[col])
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM calendar_context"))
         for offset in range(0, len(records), batch_size):

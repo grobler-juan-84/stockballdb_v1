@@ -1,0 +1,2 @@
+# Migration scripts for StockBallDB.
+# Phase 0: no schema migrations yet. Phase 1 will add the canonical tables.

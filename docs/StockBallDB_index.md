@@ -1,7 +1,7 @@
 # StockBallDB — Documentation Index
 
-**Version 0.01**  
-**Date:** 2026-08-23
+**Version 0.02**  
+**Date:** 2026-08-27
 
 StockBallDB is a historical financial and market-context database. Philosophy, scope, and structure live in separate docs below. Start here when a workflow needs a reference.
 
@@ -22,6 +22,12 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 5. [StockBallDB_definitions.md](StockBallDB_definitions.md)  
    Meaning, calculation, and interpretation of fields so derived values stay unambiguous and reproducible across builds.
 
+6. [StockBallDB_Tech_stack.md](StockBallDB_Tech_stack.md)  
+   Locked technical stack for building, validating, and reproducing StockBallDB (PostgreSQL, Python, SQLAlchemy, Alembic, and related tools).
+
+7. [StockBallDB_workflow.md](StockBallDB_workflow.md)  
+   How StockBallDB is built, updated, derived, validated, and phased from project foundation through acquisition pipelines.
+
 ## Routing
 
 | Need | Open |
@@ -32,4 +38,6 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 | Table layout, keys, and fields | schema |
 | Data providers and acquisition choices | sources |
 | Field-level definitions and formulas | definitions |
-| Build / update / derive / validate steps | workflow *(planned)* |
+| Languages, libraries, and tooling | Tech stack |
+| Build / update / derive / validate steps | workflow |
+| Development phases (0 → N) | workflow |

@@ -138,8 +138,65 @@
 
 ## Phase 2G — calendar_context definition investigation
 
-**Status:** INVESTIGATION COMPLETE — awaiting definition lock (no table created)
+**Status:** COMPLETE — definitions locked and implemented in Phase 2G build
 
 - Inspected draft calendar_context fields against Phase 1 `trading_days` (ISO week, month/quarter/year ends) and Phase 2F `scheduled_events`.
 - Verified NYSE early closes (481), adhoc closures including 9/11 and Sandy, Good Friday/Thanksgiving gaps, week-length distribution, and off-calendar events (elections through 1980; some CPI/FOMC/employment).
 - Recommended compact V1 schema: holiday adjacency + shortened session/week + narrow turn/quarter/year transitions + event-day and days_since fields; DEFER forward `days_to_next_*`, tax/payday/earnings/period windows.
+
+## Phase 2G — calendar_context
+
+**Status:** COMPLETE
+
+- Locked schema (no forward distances / tax / payday / election-period); model + Alembic `f6d94c3e5b27`.
+- Derived **17,531** rows 1:1 with `trading_days` from spine + pinned NYSE early_closes/holidays + `scheduled_events`; CLI `build_calendar_context`.
+- Validated holiday geometry, ISO weeks, transitions, event flags, off-calendar `days_since` anchoring; idempotent rebuild; frozen tables preserved; pytest 71/71.
+
+### End-of-phase summary
+
+**Done:** Final original V1 canonical table `calendar_context` with holiday/session/week/transition geometry and retrospective event-day + `days_since_last_*` context.
+**Problems:** Pandas `None`→`nan` required explicit NULL coercion on upsert; CPI/employment event row counts exceed distinct on-calendar dates when ALFRED first-prints share dates.
+**Remember:** All seven V1 tables complete; do not invent forward schedule knowledge; ISO week uses `isocalendar()` year+week; stop — no post-V1 expansion in this phase.
+
+## Phase 3A — V1 Integration & Reproduction Investigation
+
+**Status:** COMPLETE — investigation approved; implemented in Phase 3B
+
+- Audited eight build/derive CLIs, `check_db`, Alembic chain through `f6d94c3e5b27`, upsert vs full-replace patterns, and credential requirements.
+- Verified dependency DAG (trading_days spine; market branch; macro/events branches; calendar_context last) and recommended `python -m stockballdb.build_v1` + separate `validate_v1`.
+- Defined empty-DB contract, fail-fast partial-build policy, structural vs current-source vs snapshot reproducibility, and V1 freeze/versioning recommendations.
+
+### End-of-phase summary
+
+**Done:** Approved integration design for `build_v1` / `validate_v1`, locked build order including `derive_daily_market_data`, empty-DB contract, fail-fast/PARTIAL policy, and reproducibility language.
+**Problems:** None material — design only.
+**Remember:** Do not stamp 1.0.0 until fresh-DB proof; never wipe the working database; orchestrate existing builders.
+
+## Phase 3B — V1 Integration & Reproduction
+
+**Status:** COMPLETE
+
+- Implemented `stockballdb/v1/{preflight,stages,report}.py`, `build_v1`, and `validate_v1` (fail-fast sequential orchestration; no schema/universe changes; version remains `0.0.1`).
+- Fresh-DB proof on `stockballdb_v1_rebuild`: Run1 + Run2 both `V1 READY`; identical grains/fingerprints; working `stockballdb` untouched.
+- Docs: workflow §12 reproduction + §18 reproducibility contract; concise README; `build_reports/` gitignored; pytest **84/84**.
+- Background Run1/Run2/`validate_v1` shell jobs confirmed success (no new work).
+
+### End-of-phase summary
+
+**Done:** End-to-end V1 reproduction command + whole-DB validator + acceptance proof on a separate empty PostgreSQL database; integration tests; documentation.
+**Problems:** Console stage lines can buffer when stdout is not a TTY (fixed with flush); live providers may advance calendar/max dates between distant rebuilds.
+**Remember:** Structural + current-source rebuild supported; exact snapshot NOT guaranteed; do not bump to 1.0.0 or tag without explicit user approval after this report.
+
+## StockBallDB V1.0.0 — V1 freeze milestone
+
+**Status:** STAMPED
+
+Accepted after all seven canonical tables completed; fresh empty-database reproduction on `stockballdb_v1_rebuild` succeeded; `validate_v1` passed; second full `build_v1` proved idempotency; pytest **84/84**; original working `stockballdb` remained untouched.
+
+**V1 reproducibility contract:**
+
+- Structural reproducibility: **YES**
+- Current-source rebuild: **YES**
+- Exact historical snapshot reproducibility: **NO** (not byte-for-byte)
+
+Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` pending commit of full V1 codebase (post-stamp pytest 84/84 reconfirmed).

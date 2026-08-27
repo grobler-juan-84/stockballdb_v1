@@ -45,11 +45,9 @@ def validate_frame(frame: pd.DataFrame, trading_days: list[dt.date]) -> None:
         raise CalendarContextValidationError("invalid holiday_type values")
 
     # holiday_name NULL iff neither before nor after
-    mismatch = (
-        (frame["holiday_name"].isna())
-        != (~frame["is_day_before_holiday"] & ~frame["is_day_after_holiday"])
-    )
-    if mismatch.any():
+    neither = ~frame["is_day_before_holiday"] & ~frame["is_day_after_holiday"]
+    name_null = frame["holiday_name"].isna() | (frame["holiday_name"].astype(str) == "nan")
+    if not (name_null == neither).all():
         raise CalendarContextValidationError("holiday_name consistency failed")
 
     if not ((frame["trading_days_in_week"] >= 1) & (frame["trading_days_in_week"] <= 5)).all():

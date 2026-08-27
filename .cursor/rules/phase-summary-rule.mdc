@@ -1,0 +1,51 @@
+---
+description: After every prompt, update phase_history.md with phase status; close phases with a short summary
+alwaysApply: true
+---
+
+# Update phase_history.md After Every Prompt
+
+At the **end of every user prompt** (before finishing your response), update [`phase_history.md`](phase_history.md) in the project root.
+
+## Required behavior
+
+1. Read `phase_history.md` and find the **current open phase** (latest `## Phase N` section that does **not** yet have an `### End-of-phase summary`).
+2. **During a phase:** update that phase’s **Status** and/or add a short progress bullet for what advanced in **this** prompt. Keep it cumulative and high-level — do not duplicate every `project_steps.md` line.
+3. **When a phase is complete** (agent reports COMPLETE / READY FOR next phase, or the user declares it done): set **Status:** `COMPLETE` and append an `### End-of-phase summary` with **Done**, **Problems**, and **Remember**.
+4. **Starting a new phase:** append a new `## Phase N — Title` section with **Status:** `IN PROGRESS` and room for later progress bullets and the end summary.
+5. Do not rewrite prior phases’ end summaries unless the user explicitly asks. Skip secrets, tokens, and `.env` contents.
+6. If the prompt had no phase implementation (pure Q&A), still add a one-line status note under the open phase for auditability.
+
+## Format
+
+```markdown
+## Phase N — Short title
+
+**Status:** IN PROGRESS | COMPLETE — optional one-line snapshot
+
+- Short progress note from a prompt
+- Another progress note
+
+### End-of-phase summary
+
+**Done:** What was delivered in this phase.
+**Problems:** Blockers or mistakes worth recalling.
+**Remember:** Lessons for future phases or projects.
+```
+
+## Example
+
+```markdown
+## Phase 0 — Project Foundation
+
+**Status:** COMPLETE
+
+- Scaffolded `src/stockballdb`, config, logging, and DB health check.
+- Verified SELECT 1 and pytest after `.env` was configured.
+
+### End-of-phase summary
+
+**Done:** Python package foundation, Alembic scaffold, pytest, README.
+**Problems:** Live DB checks blocked until `.env` existed; integration test needed dotenv.
+**Remember:** Load dotenv in DB integration tests; never commit secrets; schema migrations belong to Phase 1.
+```

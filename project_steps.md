@@ -83,3 +83,27 @@ Locked approved occurrence-calendar schema; added model + Alembic `e5c83b2d4a16`
 ## Step 21 — Phase 2G calendar_context investigation
 
 Investigated V1 `calendar_context` using live trading_days/scheduled_events and pandas_market_calendars early-close/adhoc evidence. Recommended schema CHANGE: keep holiday/session/week + narrow transitions; event-day + days_since only; DEFER forward event distances, tax/payday/earnings windows. No table or migration.
+
+## Step 22 — Implement Phase 2G calendar_context
+
+Locked approved schema; added model + Alembic `f6d94c3e5b27`; derived 17,531 rows 1:1 with trading_days from NYSE metadata + scheduled_events; pytest 71/71. All seven original V1 canonical tables complete.
+
+## Step 23 — Phase 3A V1 integration investigation
+
+Audited build CLIs, upsert semantics, credentials, and cross-table dependencies. Recommended `build_v1` orchestrator + `validate_v1`, empty-DB contract, fail-fast policy, and structural vs snapshot reproducibility distinction. No runner implemented.
+
+## Step 24 — Implement Phase 3B V1 integration & reproduction
+
+Implemented `build_v1` / `validate_v1` orchestration (`v1/preflight|stages|report`), whole-DB invariants, docs, and tests. Fresh proof on `stockballdb_v1_rebuild` (Run1+Run2 idempotent, validate PASS); working `stockballdb` untouched; pytest 84/84; version left at `0.0.1` (no tag).
+
+## Step 25 — Confirm background build/validate task results
+
+Acknowledged completed shell tasks: Run1 `build_v1`, Run2 idempotent rebuild, and `validate_v1` on `stockballdb_v1_rebuild` all succeeded (already covered in Step 24). No further code changes.
+
+## Step 26 — Stamp StockBallDB V1.0.0
+
+Bumped package/project version to `1.0.0` (`pyproject.toml`, `stockballdb.__version__`); updated README, `phase_history.md` V1 freeze milestone, workflow §12 title. pytest 84/84; Git tag `v1.0.0` not created (V1 codebase not yet committed to git).
+
+## Step 27 — Confirm V1.0.0 verification run
+
+Post-stamp `pip install -e .` reported package `1.0.0`; pytest **84/84 PASS**. Git tag `v1.0.0` still pending commit of full V1 codebase.

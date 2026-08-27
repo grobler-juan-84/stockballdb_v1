@@ -302,39 +302,77 @@ However, important canonical historical values should not become disconnected fr
 
 ---
 
-# 12. Initial Build Workflow
+# 12. Initial Build Workflow (StockBallDB V1.0.0 reproduction)
 
-A newly cloned StockBallDB repository should eventually be able to reproduce the database through an explicit sequence.
-
-Conceptually:
+Authoritative path from a new clone to a validated V1 database:
 
 ```text
-Clone repository
-      ↓
-Create environment
-      ↓
-Configure credentials
-      ↓
-Create PostgreSQL database
-      ↓
-Apply migrations
-      ↓
-Acquire required source data
-      ↓
-Normalize
-      ↓
-Build canonical historical data
-      ↓
-Calculate deterministic derived data
-      ↓
-Validate
-      ↓
-Report coverage and validation status
+new clone
+   → configure environment (.env)
+   → create empty PostgreSQL database
+   → python -m stockballdb.build_v1
+   → python -m stockballdb.validate_v1
+   → V1 ready
 ```
 
-The exact implementation will evolve as each phase is built.
+## 12.1 Prerequisites
 
-Reproduction should not require undocumented manual database manipulation.
+* Python >= 3.11
+* PostgreSQL server with an **empty** target database already created
+* Valid credentials in `.env` (`DATABASE_URL`, `TIINGO_API_KEY`, `FRED_API_KEY`)
+* Pinned calendar package: `pandas_market_calendars==5.4.0`
+
+StockBallDB does **not** install PostgreSQL, create roles, create the database itself, drop databases, or wipe populated databases automatically.
+
+For a fresh reproduction test, use a separate database (for example `stockballdb_v1_rebuild`). Never destroy a working StockBallDB.
+
+## 12.2 Canonical command
+
+```bash
+python -m stockballdb.build_v1
+```
+
+This orchestrator runs, fail-fast and sequentially:
+
+```text
+preflight
+    ↓
+alembic upgrade head
+    ↓
+build_trading_days
+    ↓
+build_daily_market_data
+    ↓
+derive_daily_market_data
+    ↓
+build_market_outcomes
+    ↓
+build_asset_regimes
+    ↓
+build_macro_conditions
+    ↓
+build_scheduled_events
+    ↓
+build_calendar_context
+    ↓
+validate_v1
+    ↓
+pytest / final verification
+```
+
+It calls existing builder/service functions; it does not reimplement the seven pipelines.
+
+Whole-database validation without rebuilding:
+
+```bash
+python -m stockballdb.validate_v1
+```
+
+## 12.3 Failure policy
+
+Fail fast. On any stage failure, later stages do not run. Already committed successful stages are preserved. Final status is `PARTIAL` / `FAILED`, never `V1 READY`.
+
+`build_v1` is an idempotent full ensure/build — not a destructive reset.
 
 ---
 
@@ -474,26 +512,36 @@ Logging exists to make the pipeline understandable, not to produce unnecessary n
 
 # 18. Reproducibility
 
-A core requirement of StockBallDB is that another environment should eventually be able to reproduce the database from:
+StockBallDB distinguishes three claims:
 
-```text
-Repository
-+
-Configuration
-+
-Approved external sources
-```
+## Structural reproducibility — SUPPORTED
 
-Reproduction should not depend on:
+Under locked V1 code/configuration, StockBallDB can reproduce:
 
-* undocumented manual steps;
-* one specific computer;
-* Cursor;
-* DBeaver;
-* an existing personal database;
-* hidden local files other than credentials/configuration.
+* schema;
+* definitions;
+* transformation rules;
+* source mappings;
+* PIT conventions;
+* universe;
+* build dependency order.
 
-The repository should contain the executable knowledge required to rebuild StockBallDB.
+## Current-source rebuild — SUPPORTED
+
+StockBallDB can rebuild the database using the **current** responses from its locked providers (`python -m stockballdb.build_v1`).
+
+## Exact historical snapshot reproduction — NOT GUARANTEED IN V1
+
+StockBallDB cannot currently guarantee that rebuilding months later will recreate identical historical rows/bytes because:
+
+* Tiingo adjusted history can restate;
+* some FRED/current-source values can revise;
+* Federal Reserve HTML is live;
+* no durable raw source archive exists for every upstream pull.
+
+Do **not** describe V1 as byte-for-byte reproducible.
+
+Reproduction should not depend on undocumented manual steps, one specific computer, Cursor, DBeaver, an existing personal database, or hidden local files other than credentials/configuration.
 
 ---
 
@@ -563,17 +611,14 @@ scheduled_events — occurrence calendar (fomc, cpi, employment_situation, elect
 Phase 2G
 calendar_context — holiday/session/week/transitions + retrospective event context
 
-Phase 3+
-Further Source Acquisition + Canonical Dataset Pipelines
+Phase 3A
+V1 integration investigation (approved)
+
+Phase 3B
+V1 reproduction — `build_v1` / `validate_v1` orchestrator (this document §12)
 
 Later
-Derived Data + Validation + Coverage
-
-Later
-Update / Rebuild Orchestration
-
-Later
-StockBallDB Inspector
+Incremental updates, experiments, Inspector (post-V1)
 ```
 
 Exact later-phase boundaries may change as implementation teaches us more.
