@@ -110,4 +110,4 @@ Post-stamp `pip install -e .` reported package `1.0.0`; pytest **84/84 PASS**. G
 
 ## Step 28 — Finalize V1.0.0 Git snapshot
 
-Staged accepted V1 tree (secrets audit PASS; `.env`/`build_reports/` excluded); commit `700424c` `release: StockBallDB v1.0.0`; annotated tag `v1.0.0` created locally; nothing pushed.
+Staged accepted V1 tree (secrets audit PASS; `.env`/`build_reports/` excluded); commit `700424c` `release: StockBallDB v1.0.0`; annotated tag `v1.0.0` on that commit; follow-up audit doc commit `aa85538`; nothing pushed.
