@@ -199,4 +199,4 @@ Accepted after all seven canonical tables completed; fresh empty-database reprod
 - Current-source rebuild: **YES**
 - Exact historical snapshot reproducibility: **NO** (not byte-for-byte)
 
-Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit `700424c` (local only; not pushed).
+Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit `700424c`; pushed to GitHub (`origin/main` + tag `v1.0.0`).
