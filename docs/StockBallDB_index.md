@@ -44,10 +44,10 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
    Phase 8A lock: whole-DB health definition, validation matrix, coverage/freshness/provenance contracts, and Phase 8B backlog.
 
 13. [StockBallDB_phase9a_snapshot_rebuild_contract.md](StockBallDB_phase9a_snapshot_rebuild_contract.md)  
-   Phase 9A lock: immutable source snapshot architecture, BUILD LATEST vs REBUILD EXACT semantics, fingerprint design, manifest 1.1 evolution, and Phase 9B backlog.
+   Phase 9A lock + Phase 9B/C certification record: immutable snapshots, BUILD LATEST vs REBUILD EXACT, manifest 1.1, fingerprints, and certified rebuild proof (**Phase 9 COMPLETE**).
 
 14. [StockBallDB_snapshots_and_rebuilds.md](StockBallDB_snapshots_and_rebuilds.md)  
-   Phase 9B operator reference: snapshot storage, BUILD LATEST, verify, fingerprint, REBUILD EXACT commands.
+   Phase 9B operator reference: snapshot storage, BUILD LATEST, verify, fingerprint, REBUILD EXACT commands (includes 2026-08-29 certification summary).
 
 ## Routing
 

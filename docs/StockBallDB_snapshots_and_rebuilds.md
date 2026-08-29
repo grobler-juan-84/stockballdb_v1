@@ -92,6 +92,24 @@ Compares rebuilt `database_fingerprint` to manifest target. Mismatch = hard fail
 
 **Safety:** Prefer `STOCKBALLDB_REBUILD_DATABASE_URL` or `--database-url` over production `DATABASE_URL`. Use `--force-same-database` only when intentional.
 
+**Empty rebuild database:** Run Alembic migrations on the rebuild target before the first `rebuild_exact` (e.g. temporarily point `DATABASE_URL` at `STOCKBALLDB_REBUILD_DATABASE_URL` and run `alembic upgrade head`, or rely on `rebuild_exact` migrate-before-truncate as of commit `dd5e7c5`).
+
+### Certification (2026-08-29)
+
+Live BUILD LATEST + offline REBUILD EXACT certified on manifest `manifest_20260829T033624-eebe4514.json` at git **`1700ce6`** (clean):
+
+| Result | Value |
+| --- | --- |
+| Snapshots | 91 (verify **PASS**, missing=0, corrupt=0) |
+| Provider/network calls during rebuild | **0** (network guard) |
+| validate_v1 (rebuild) | **PASS** |
+| health (rebuild) | **HEALTHY** |
+| Table fingerprints | **7/7 MATCH** |
+| Database fingerprint | **MATCH** `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138` |
+| Primary regression | validate_v1 **PASS**, health **HEALTHY**, pytest **120/120 PASS** |
+
+Certification fix commits: `7794fc0` (WTI stages), `1700ce6` (manifest snapshots), `dd5e7c5` (rebuild DB prep).
+
 ---
 
 ## Pre-Phase-9 manifests

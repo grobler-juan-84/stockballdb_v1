@@ -939,7 +939,34 @@ Phase 8 provenance (provider identity, Git, calendar pin) remains valid for all 
 | validate_v1 | **PASS** |
 | health | **HEALTHY** |
 | Fingerprint stability | **PASS** (double compute match) |
-| Live BUILD LATEST + REBUILD EXACT certification | **PENDING** — requires clean Git commit + `STOCKBALLDB_REBUILD_DATABASE_URL` + full `build_v1` run |
+| Live BUILD LATEST + REBUILD EXACT certification | **COMPLETE** (2026-08-29) |
+
+### Certification record (2026-08-29)
+
+| Check | Result |
+| --- | --- |
+| BUILD LATEST (`build_v1`) | **PASS** |
+| Manifest schema | **1.1** |
+| `exact_rebuild_capable` | **true** |
+| Manifest git commit | **1700ce6** (clean) |
+| Snapshots captured | **91** (Tiingo 14, FRED 6, ALFRED 6, federal_reserve 65) |
+| Snapshot verify | **PASS** (missing=0, corrupt=0) |
+| Sidecar secret audit | **PASS** (Tiingo, FRED, ALFRED, FOMC representative) |
+| REBUILD EXACT (offline) | **PASS** — zero provider calls (network guard) |
+| validate_v1 (rebuild) | **PASS** |
+| health (rebuild) | **HEALTHY** |
+| Table fingerprints | **7/7 MATCH** |
+| Database fingerprint | **MATCH** `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138` |
+| Primary DB regression | validate_v1 **PASS**, health **HEALTHY**, pytest **120/120 PASS** |
+| Certified manifest | `build_reports/manifest_20260829T033624-eebe4514.json` |
+
+Post-certification fix commits (required for certification):
+
+| Commit | Fix |
+| --- | --- |
+| `7794fc0` | WTI-coexistent `build_v1` stage validation + `wti_context` stage |
+| `1700ce6` | Preserve snapshot references in `build_v1` manifest (**certified BUILD commit**) |
+| `dd5e7c5` | `rebuild_exact` empty-DB migrate-before-truncate + dotenv load |
 
 ### Certification steps (operator)
 

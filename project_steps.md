@@ -183,3 +183,19 @@ Audited all active acquisition paths (Tiingo, FRED/ALFRED, Fed FOMC HTML, electi
 ## Step 46 — Phase 9B immutable snapshot implementation
 
 Implemented snapshot store (`src/stockballdb/snapshots/`), provider fetch→bytes→snapshot→parse boundary, manifest schema 1.1, database/table fingerprints, `python -m stockballdb.snapshots verify`, `python -m stockballdb.rebuild_exact`, `build_v1`/`build_wti` snapshot integration. Added `docs/StockBallDB_snapshots_and_rebuilds.md`, gitignored `snapshots/`. pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**. Live BUILD LATEST + REBUILD EXACT certification pending clean Git + rebuild test DB.
+
+## Step 47 — Phase 9B certification attempt (blocked)
+
+Git safety audit passed; committed `26a3acc` implementation. **BLOCKED:** `STOCKBALLDB_REBUILD_DATABASE_URL` not in `.env`; BUILD LATEST not executed.
+
+## Step 48 — Phase 9B certification resume (Part F)
+
+Confirmed stray `=` file absent; stashed doc edits for clean tree; added `STOCKBALLDB_REBUILD_DATABASE_URL` to `.env` (database `stockballdb_rebuild_cert`); verified distinct from primary. Provider preflight **PASS**. BUILD LATEST failed at `daily_market_data` row-count validation when WTI coexists (99633 vs 89432).
+
+## Step 49 — Phase 9B certification complete
+
+Fixed WTI-coexistent stage validation + `wti_context` build stage (`7794fc0`); fixed manifest snapshot reference drop (`1700ce6`); BUILD LATEST **PASS** (manifest `manifest_20260829T033624-eebe4514.json`, 91 snapshots, git **1700ce6**); snapshot verify **PASS** (missing=0, corrupt=0); REBUILD EXACT **PASS** (provider/network calls **0**, 7/7 table fingerprints, database fingerprint `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138`); validate_v1 **PASS**; health **HEALTHY**; pytest **120/120 PASS**. Post-cert: `rebuild_exact` dotenv + empty-DB migrate (`dd5e7c5`). **PHASE 9B = COMPLETE; PHASE 9 = COMPLETE.**
+
+## Step 50 — Phase 9 documentation closeout
+
+Reviewed and finalized Phase 9 certification docs (`phase_history.md`, `project_steps.md`, phase 9 contract, operator guide, index). Secret/staging audit **PASS**. Committed **`90c433b`** `docs: certify StockBallDB phase 9`. **PHASE 9 = COMPLETE**; **NEXT = Phase 10 — Operational Workflow**.

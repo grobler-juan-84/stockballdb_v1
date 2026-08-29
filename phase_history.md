@@ -370,17 +370,26 @@ Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit 
 
 ## Phase 9B — Immutable Snapshot Implementation
 
-**Status:** IMPLEMENTED — certification pending
+**Status:** COMPLETE
 
 - Snapshot store: content-addressed `snapshots/sha256/`, gzip payloads, SHA-256(uncompressed), sidecar metadata, deduplication, atomic writes.
-- Provider refactor: Tiingo, FRED, ALFRED, FOMC HTML via `acquire_bytes`; WTI in `build_wti`; elections/calendar excluded (deterministic).
+- Provider refactor: Tiingo, FRED, ALFRED, FOMC HTML via `acquire_bytes`; WTI integrated into `build_v1` `wti_context` stage; elections/calendar excluded (deterministic).
 - Manifest 1.1: `snapshots[]`, `database_fingerprint`, `exact_rebuild_capable`, environment provenance.
 - CLI: `python -m stockballdb.snapshots verify`, `python -m stockballdb.rebuild_exact`, `python -m stockballdb.fingerprint`.
-- `build_v1` captures snapshots during LIVE build context; fingerprint on success.
-- pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**.
+- **Certification (2026-08-29):** BUILD LATEST + REBUILD EXACT on dedicated rebuild DB; manifest `manifest_20260829T033624-eebe4514.json`; certified BUILD commit **1700ce6**; 91 snapshots (verify **PASS**); provider/network calls **0** during rebuild; 7/7 table + database fingerprint match (`sha256:9e474ed…a65138`); validate_v1 **PASS**; health **HEALTHY**; pytest **120/120 PASS**. Fix commits: `7794fc0`, `1700ce6`, `dd5e7c5`.
 
 ### End-of-phase summary
 
-**Done:** Full Phase 9B implementation per 9A contract; 17 new snapshot/fingerprint tests; operator guide.
-**Problems:** Live BUILD LATEST + offline REBUILD EXACT end-to-end certification not run (Git dirty; requires dedicated rebuild DB + clean commit).
-**Remember:** Run certification on clean Git with `STOCKBALLDB_REBUILD_DATABASE_URL`; pre-1.1 manifests cannot exact-rebuild; snapshot capture only inside `live_build_context`.
+**Done:** Full Phase 9B implementation and live certification; operator guide; post-cert fixes for WTI-coexistent `build_v1` validation and empty rebuild DB prep.
+**Problems:** Initial certification blocked by missing `STOCKBALLDB_REBUILD_DATABASE_URL`, WTI row-count validation bug, manifest snapshot reference drop, empty rebuild DB needing Alembic.
+**Remember:** Certified manifest commit is **1700ce6**; configure distinct rebuild DB; first rebuild target needs schema; `build_v1` now includes `wti_context` stage for full V1 parity.
+
+## Phase 9 — Immutable Snapshots & Exact Rebuild (overall)
+
+**Status:** COMPLETE
+
+Phase 9A architecture contract + Phase 9B implementation and certification delivered.
+
+**Certified manifest:** `build_reports/manifest_20260829T033624-eebe4514.json`  
+**Certified BUILD commit:** `1700ce6`  
+**NEXT:** Phase 10 — Operational Workflow
