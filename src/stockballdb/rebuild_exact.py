@@ -175,6 +175,9 @@ def run_rebuild_exact(
         with snapshot_replay_context(manifest.get("snapshots") or []):
             reset_engine()
             engine = get_engine(settings)
+            from stockballdb.v1.stages import stage_migrate
+
+            stage_migrate(settings)
             if not skip_truncate:
                 truncate_canonical_tables(engine)
 
@@ -237,6 +240,9 @@ def _resolve_database_url(args: argparse.Namespace) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from dotenv import load_dotenv
+
+    load_dotenv()
     parser = argparse.ArgumentParser(description="StockBallDB exact rebuild from snapshots")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--database-url", type=str, default=None)
