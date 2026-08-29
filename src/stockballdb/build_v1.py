@@ -185,7 +185,6 @@ def run_build_v1(*, run_pytest: bool = True) -> int:
         for label, st, detail in stage_log
     ]
     db_fp = compute_database_fingerprint(engine)
-    snap_refs = snapshot_references()
     manifest_payload = manifest_from_health_report(
         health_report,
         command="python -m stockballdb.build_v1",
