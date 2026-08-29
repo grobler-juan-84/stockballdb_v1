@@ -115,3 +115,71 @@ Staged accepted V1 tree (secrets audit PASS; `.env`/`build_reports/` excluded); 
 ## Step 29 — Push V1.0.0 to GitHub
 
 Pushed `main` (`16580d4..865b549`) and annotated tag `v1.0.0` to `origin` (`https://github.com/grobler-juan-84/stockballdb_v1.git`).
+
+## Step 30 — Audit macro_conditions implementation
+
+Reviewed `src/stockballdb/macro/*`, model/migration, docs, and `tests/test_macro_conditions.py`. Produced structured audit of FRED series, PIT/alignment/fill rules, YoY derivation, regimes, and deferred PMI.
+
+## Step 31 — Phase 4A macro source & definition lock
+
+Locked Phase 4A contract in `docs/StockBallDB_phase4a_macro_contract.md`; updated definitions/sources/schema/index for units exception, credit_spread caveats, PMI UNRESOLVED, regimes out-of-scope. No ingestion or schema changes; pytest 84/84.
+
+## Step 32 — Confirm Phase 4A pytest run
+
+Background pytest after Phase 4A doc-only changes: **84/84 PASS**. Phase 4A complete; ready for Phase 4B contract-wise.
+
+## Step 33 — Phase 4B macro_conditions ingestion & validation
+
+Executed `build_macro_conditions` twice (17532 rows, idempotent); coverage/PIT/yield-curve audits via `scripts/phase4b_macro_audit.py`. pytest **84/84**; whole-DB `validate_v1` stale on `calendar_context` (17531 vs 17532 TD) — cross-table spine lag, not macro defect.
+
+## Step 34 — Phase 4B closeout: calendar_context resync
+
+Resynced `calendar_context` via `build_calendar_context` (17532 rows, idempotent ×2); spine aligned; `validate_v1` **PASS**; pytest **84/84**. Phase 4B formally closed.
+
+## Step 35 — Phase 5A market context source & definition lock
+
+Researched WTI/XAU/USD/DXY; locked Phase 5A contract in `docs/StockBallDB_phase5a_market_context_contract.md`. WTI **LOCKED** (FRED DCOILWTICO); XAU/USD and DXY **UNRESOLVED** (license/access). Schema: extend `daily_market_data` with nullable OHLC for close-only series. pytest 84/84.
+
+## Step 36 — Phase 5B WTI implementation
+
+Applied migration `a8f3c2d1b4e5` (nullable OHLC + row-shape CHECK). Built WTI via FRED `DCOILWTICO` (`build_wti` ×2, idempotent): **10,201** rows `1986-01-02`→`2026-08-25`; negative `-36.98` on 2020-04-20 preserved. Close-only derive/outcomes/regimes; `validate_v1` PASS; pytest **90/90**; audit script `scripts/phase5b_wti_audit.py`.
+
+## Step 37 — Phase 6A scheduled events source & PIT contract
+
+Audited implemented `scheduled_events` (schema, builders, validation, calendar_context linkage). Locked Phase 6A contract in `docs/StockBallDB_phase6a_scheduled_events_contract.md`: four-family V1 universe, PIT/timezone rules, rejected consensus/surprise/importance/actual columns, Phase 6B readiness matrix. Doc-only; no ingestion. pytest **90/90**.
+
+## Step 38 — Confirm Phase 6A pytest baseline
+
+Re-ran full suite after Phase 6A doc updates: **90/90 PASS** (~31s). No code or schema changes.
+
+## Step 39 — Phase 6B scheduled events ingestion & validation
+
+Executed full Phase 6B pipeline: preflight audit, `build_scheduled_events` (**2,641** rows across four locked families), `calendar_context` resync (**17,532** rows), historical coverage audit, spot checks, non-trading-day verification, idempotency (events ×2, calendar ×2). Fixed FOMC `fomccalendars.htm` parser (`Apr/May`, asterisk dates, row isolation) in `src/stockballdb/events/fomc.py`; added `scripts/phase6b_scheduled_events_audit.py`. `validate_v1` **PASS**; pytest **90/90 PASS**. Phase 6B **COMPLETE**.
+
+## Step 40 — Phase 7A calendar context audit & definition lock
+
+Audited `calendar_context` implementation (19 columns, derive/validate/tests/validate_v1). Locked Phase 7A contract in `docs/StockBallDB_phase7a_calendar_context_contract.md`: trading_days boundary, effective-session rules, release-session non-use, PIT classification, `days_until_next_*` **REJECTED**, schema sufficient for 7B (no migration). Added regression tests for multi-family flags and CPI history-floor NULLs. Doc-only + tests; pytest **92/92 PASS**.
+
+## Step 41 — Phase 7B calendar context verification & closeout
+
+Rebuilt `calendar_context` (**17,532** rows, idempotent ×2). Created `scripts/phase7b_calendar_context_audit.py`; all 19 Phase 7A invariants PASS. Event coverage cross-check: 37 off-calendar events; 47 multi-family trading days. `validate_v1` **PASS**; pytest **92/92 PASS**. Phase 7 **COMPLETE**; §16 verification appended to Phase 7A contract.
+
+## Step 42 — Phase 8A whole-DB integrity & provenance audit
+
+Audited all seven canonical tables (live DB + code/models/validators). Locked Phase 8A contract in `docs/StockBallDB_phase8a_validation_provenance_contract.md`: health definition, validation matrix, coverage/freshness/provenance contracts, cross-table invariants, severity taxonomy, health-report design, Phase 8 vs 9 boundary, Phase 8B backlog. Live audit `scripts/phase8a_health_audit.py` → **HEALTHY** (INFO: ETF/WTI publication lag). `validate_v1` **PASS**; pytest **92/92 PASS**.
+
+## Step 43 — Phase 8B health engine, freshness, gaps & build manifest
+
+Implemented `src/stockballdb/health/` with `python -m stockballdb.health` (human + `--json` + `--strict`); reuses `validate_v1`; coverage/freshness/gap detection; JSON build manifests under `build_reports/`; `build_v1` integration (health summary + manifest on success). Live health **HEALTHY** (3 INFO: ETF lag, WTI lag, WTI provider gaps); `validate_v1` **PASS**; pytest **103/103 PASS**. Phase 8 **COMPLETE**; §22 appended to Phase 8A contract.
+
+## Step 44 — External data acquisition path audit
+
+Audited all live HTTP and generated data sources across `providers/`, `market_data/`, `macro/`, `events/`, `calendar/`, and `market_context/`. Documented per-source endpoints, parameters, normalization entry points, fetch mode (full vs incremental), raw-response preservation gaps, and `build_v1` orchestration vs standalone CLIs. No code changes.
+
+## Step 45 — Phase 9A snapshot & exact-rebuild architecture contract
+
+Audited all active acquisition paths (Tiingo, FRED/ALFRED, Fed FOMC HTML, elections, NYSE calendar, WTI). Locked Phase 9A contract in `docs/StockBallDB_phase9a_snapshot_rebuild_contract.md`: hybrid raw-byte snapshots, SHA-256 content identity, filesystem storage, manifest 1.1, BUILD LATEST / REBUILD EXACT / REPROCESS semantics, database fingerprint design, pre-Phase-9 limitation, and Phase 9B backlog. Updated `docs/StockBallDB_index.md`. pytest **103/103 PASS**; validate_v1 **PASS**; health **HEALTHY**.
+
+## Step 46 — Phase 9B immutable snapshot implementation
+
+Implemented snapshot store (`src/stockballdb/snapshots/`), provider fetch→bytes→snapshot→parse boundary, manifest schema 1.1, database/table fingerprints, `python -m stockballdb.snapshots verify`, `python -m stockballdb.rebuild_exact`, `build_v1`/`build_wti` snapshot integration. Added `docs/StockBallDB_snapshots_and_rebuilds.md`, gitignored `snapshots/`. pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**. Live BUILD LATEST + REBUILD EXACT certification pending clean Git + rebuild test DB.

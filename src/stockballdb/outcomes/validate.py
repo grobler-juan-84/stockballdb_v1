@@ -6,7 +6,11 @@ import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS
+from stockballdb.market_data.universe import (
+    PHASE_2A_ETF_SYMBOLS,
+    asset_type_for_symbol,
+    is_close_only_symbol,
+)
 from stockballdb.outcomes.derive import OUTCOME_COLUMNS, MarketOutcomesValidationError
 
 
@@ -41,11 +45,17 @@ def validate_market_outcomes_frame(frame: pd.DataFrame) -> None:
             (5, "max_up_5d", "max_down_5d"),
             (20, "max_up_20d", "max_down_20d"),
         ):
-            expected_nulls = min(horizon, n)
-            if int(g[up_col].isna().sum()) != expected_nulls:
-                errors.append(f"{symbol}: {up_col} null count mismatch")
-            if int(g[down_col].isna().sum()) != expected_nulls:
-                errors.append(f"{symbol}: {down_col} null count mismatch")
+            if is_close_only_symbol(str(symbol)):
+                if g[up_col].notna().any() or g[down_col].notna().any():
+                    errors.append(
+                        f"{symbol}: {up_col}/{down_col} must be NULL for close-only"
+                    )
+            else:
+                expected_nulls = min(horizon, n)
+                if int(g[up_col].isna().sum()) != expected_nulls:
+                    errors.append(f"{symbol}: {up_col} null count mismatch")
+                if int(g[down_col].isna().sum()) != expected_nulls:
+                    errors.append(f"{symbol}: {down_col} null count mismatch")
 
         for ret_col, pos_col in (
             ("return_1d", "positive_1d"),
@@ -74,15 +84,25 @@ def validate_market_outcomes_db(
     *,
     expected_count: int,
     required_symbols: tuple[str, ...] = PHASE_2A_ETF_SYMBOLS,
+    symbol_scope: str | None = None,
 ) -> None:
     """Validate persisted market_outcomes against daily_market_data."""
     errors: list[str] = []
     with engine.connect() as conn:
-        count = conn.execute(text("SELECT COUNT(*) FROM market_outcomes")).scalar_one()
+        if symbol_scope:
+            count = conn.execute(
+                text("SELECT COUNT(*) FROM market_outcomes WHERE symbol = :symbol"),
+                {"symbol": symbol_scope},
+            ).scalar_one()
+            dmd = conn.execute(
+                text("SELECT COUNT(*) FROM daily_market_data WHERE symbol = :symbol"),
+                {"symbol": symbol_scope},
+            ).scalar_one()
+        else:
+            count = conn.execute(text("SELECT COUNT(*) FROM market_outcomes")).scalar_one()
+            dmd = conn.execute(text("SELECT COUNT(*) FROM daily_market_data")).scalar_one()
         if count != expected_count:
             errors.append(f"row count {count} != expected {expected_count}")
-
-        dmd = conn.execute(text("SELECT COUNT(*) FROM daily_market_data")).scalar_one()
         if count != dmd:
             errors.append(
                 f"market_outcomes rows {count} != daily_market_data rows {dmd}"

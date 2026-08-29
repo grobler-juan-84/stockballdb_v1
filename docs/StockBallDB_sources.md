@@ -103,10 +103,10 @@ This reduces unnecessary API calls and keeps acquisition workflows simpler and m
 | **ALFRED**                   | Historical macro vintages                                            | FRED API               | API key           | Free                             | Primary when required |
 | **NYSE / exchange calendar** | Trading calendar verification                                        | Public data / calendar | Usually none      | Free                             | Primary verification  |
 | **Federal Reserve**          | FOMC / Fed events                                                    | Public data / APIs     | Dataset dependent | Free                             | Authoritative         |
-| **EIA**                      | WTI / energy data                                                    | REST API               | API key           | Free                             | Candidate             |
+| **EIA**                      | WTI fallback (`PET.RWTC.D`)                                          | REST API               | API key           | Free                             | WTI fallback          |
 | **Cboe**                     | VIX                                                                  | Historical data        | Dataset dependent | Public historical data available | Future                |
-| **Gold source**              | XAU/USD                                                              | TBD                    | TBD               | TBD                              | Research required     |
-| **DXY source**               | U.S. Dollar Index                                                    | TBD                    | TBD               | TBD                              | Research required     |
+| **ICE Data Indices**         | DXY (US Dollar Index)                                                | Commercial API         | License           | Paid                             | **Unresolved**        |
+| **IBA / LBMA**               | XAU/USD gold benchmark                                               | Licensed               | License           | Paid                             | **Unresolved**        |
 | **StockBallDB**              | Derived fields                                                       | Internal calculation   | —                 | Free                             | Internal              |
 
 Provider pricing, limits, and access policies can change. Values recorded here describe the provider at the time of the documented decision and should be rechecked before upgrades or licensing decisions.
@@ -409,10 +409,12 @@ fed_funds_rate           → DFF
 treasury_2y_yield        → DGS2
 treasury_10y_yield       → DGS10
 fed_balance_sheet        → WALCL
-credit_spread            → BAA10Y
+credit_spread            → BAA10Y (LOCKED Phase 4A; current FRED daily; see caveats)
 ```
 
-`pmi` deferred from V1 (ISM series removed from FRED; not freely reproducible).
+`pmi` — **UNRESOLVED** (no column in V1). ISM PMI removed from FRED; no alternative meets free reproducible automatable requirements. See `StockBallDB_phase4a_macro_contract.md` §6.
+
+**Phase 4A authoritative contract:** `StockBallDB_phase4a_macro_contract.md` — field matrix, PIT rules, alignment, units, unresolved items.
 
 `yield_curve_10y_2y` is derived in StockBallDB as `treasury_10y_yield - treasury_2y_yield`.
 
@@ -520,81 +522,48 @@ The trading-day spine remains independent from Tiingo or any other market-price 
 
 # 5. WTI Crude Oil
 
-**Identifier:** `WTI`
-**Preferred sources:** FRED / EIA
-**Access:** REST API
-**Authentication:** FRED or EIA API key
-**Tier:** Free
-**Status:** Provisional
+**Identifier:** `WTI`  
+**Phase 5A status:** **LOCKED**
 
-FRED and the U.S. Energy Information Administration are the preferred candidates.
+**Canonical definition:** Daily WTI **spot** crude at Cushing, Oklahoma (FOB cash/reference market) — not NYMEX CL futures, not USO.
 
-If EIA is selected:
+**Source:** FRED **DCOILWTICO** (U.S. EIA spot prices; dollars per barrel).  
+**Fallback (equivalent):** EIA API `PET.RWTC.D` via `EIA_API_KEY` if needed.
 
-```text
-EIA_API_KEY=<secret>
-```
+**Coverage:** from **1986-01-02**; pre-inception NULL on `trading_days` spine.  
+**Date semantics:** observation date; align to `trading_days` only when obs date is a trading day; no forward-fill.
 
-Before locking the source, StockBallDB should define precisely which WTI observation is represented and ensure sufficient consistency and historical coverage.
-
-Selection priorities:
-
-* long historical coverage;
-* consistent definition;
-* reliable daily observations;
-* reproducible automated acquisition.
-
-The FRED and EIA alternatives should be compared before the canonical series is selected.
+Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §4.
 
 ---
 
 # 6. Spot Gold
 
-**Identifier:** `XAU/USD`
-**Access:** TBD
-**Authentication:** TBD
-**Tier:** TBD
-**Status:** Research required
+**Identifier:** `XAU/USD`  
+**Phase 5A status:** **UNRESOLVED** (definition locked; source not locked)
 
-A canonical source has not yet been selected.
+**Canonical definition:** USD **spot gold** per troy ounce — institutional benchmark (target: **LBMA Gold Price PM fix**), not GLD/COMEX futures.
 
-StockBallDB must first define exactly what constitutes the daily gold observation.
+**Source:** No free reproducible FRED/API path remains after ICE removed LBMA series from FRED (2022). IBA/LBMA license required for authoritative automated history.
 
-Potential definitions include a recognized reference price or a consistent daily spot-market observation.
+ETF proxies (GLD) and futures substitutes are **not** acceptable as canonical XAU/USD.
 
-The selected source should provide:
-
-* long historical coverage;
-* clear price definition;
-* consistent methodology;
-* daily observations where possible;
-* reproducible acquisition.
-
-ETF proxies such as GLD should not replace spot gold merely because they are easier to acquire.
+Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §5.
 
 ---
 
 # 7. U.S. Dollar Index
 
-**Identifier:** `DXY`
-**Access:** TBD
-**Authentication:** TBD
-**Tier:** TBD
-**Status:** Research required
+**Identifier:** `DXY`  
+**Phase 5A status:** **UNRESOLVED**
 
-A canonical source has not yet been selected.
+**Canonical definition:** ICE **U.S. Dollar Index (USDX)** — not Fed trade-weighted indexes (**DTWEXBGS** / **DTWEXAFEGS**), not UUP ETF.
 
-The official U.S. Dollar Index and alternative broad dollar indices are not automatically interchangeable.
+**Source:** ICE Data Indices (commercial license). No acceptable free FRED substitute that equals DXY.
 
-Before implementation, StockBallDB must determine:
+Do not label DTWEX* series as `DXY`.
 
-* which dollar index is intended;
-* authoritative historical source;
-* available historical coverage;
-* licensing / access limitations;
-* whether automated acquisition is practical.
-
-A substitute dollar index must not silently be labelled `DXY`.
+Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §6.
 
 ---
 
@@ -642,6 +611,8 @@ BLS `08:30` ET / `pre_open`: applied from **1990-01-01**; earlier releases keep 
 **Elections:** statutory federal Election Day (2 U.S.C. §7 / USA.gov / FEC) — presidential (`year % 4 == 0`) and midterm (`year % 4 == 2`) only. `release_session = unknown`, `event_time_et = NULL`.
 
 **Earnings:** deferred from V1 (ETF universe; no approved scheduled-date + consensus pipeline).
+
+Phase 6A contract (`StockBallDB_phase6a_scheduled_events_contract.md`): **`actual`**, **`consensus`**, **`surprise`**, and **`importance`** are **rejected** — not in schema. Jobless claims **provisionally locked** for Phase 6B; GDP and other releases **deferred**.
 
 ---
 
@@ -810,16 +781,20 @@ Moving from a free source or tier to a paid provider should ideally require only
 * **StockBallDB** — calculates deterministic derived fields internally.
 * **API credentials** — environment configuration only; never committed to Git.
 * **`scheduled_events` V1** — occurrence calendar for `fomc`, `cpi`, `employment_situation`, `election` only (Phase 2F). Earnings, unscheduled Fed actions, consensus/surprise deferred. No `event_date` FK to `trading_days`.
+* **WTI** — FRED `DCOILWTICO` (EIA Cushing spot, USD/bbl, from 1986-01-02); Phase 5A — see `StockBallDB_phase5a_market_context_contract.md`
 
 ## Provisional
 
-* **WTI** — FRED / EIA.
+* *(none)*
 
-## Requires Research
+## Unresolved (Phase 5A)
 
-* **XAU/USD / Spot Gold**
-* **DXY / U.S. Dollar Index**
-* Exact FRED / ALFRED series IDs for `macro_conditions` — **locked** (Phase 2E; `pmi` deferred)
+* **XAU/USD** — definition locked (LBMA PM fix target); source UNRESOLVED (IBA license; FRED LBMA removed 2022)
+* **DXY** — definition locked (ICE USDX); source UNRESOLVED (commercial ICE Data; do not substitute DTWEXBGS)
+
+## Requires Research (other)
+
+* **`macro_conditions` Phase 4A contract** — locked; `pmi` **UNRESOLVED**
 * Fallback provider for ETF market data
 * Exact source and acquisition method for each `scheduled_events` category — **locked** (Phase 2F)
 * Exact canonical handling of Tiingo no-dividend and no-split observations — **locked** (0.0 / 1.0 interpretation; storage unchanged)

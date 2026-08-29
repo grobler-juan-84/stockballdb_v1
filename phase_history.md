@@ -200,3 +200,187 @@ Accepted after all seven canonical tables completed; fresh empty-database reprod
 - Exact historical snapshot reproducibility: **NO** (not byte-for-byte)
 
 Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit `700424c`; pushed to GitHub (`origin/main` + tag `v1.0.0`).
+
+- Audit-only prompt: documented macro_conditions implementation (series map, PIT, alignment, fills, regimes, PMI deferral).
+
+## Phase 4A — Macro Conditions Source & Definition Lock
+
+**Status:** COMPLETE
+
+- Audited V1 macro implementation (`macro/*`, model, tests) against manifesto/schema/sources/definitions.
+- Locked observed-input contract in `StockBallDB_phase4a_macro_contract.md` (9 fields + matrix, PIT/alignment, percentage-point units, reproducibility).
+- **LOCKED:** CPIAUCSL, CPILFESL, UNRATE, ICSA, DFF, DGS2, DGS10, WALCL, BAA10Y.
+- **UNRESOLVED:** `pmi` (no column); regime thresholds out of Phase 4A scope.
+- No population/ingestion changes; pytest **84/84** (reconfirmed post-doc update).
+
+### End-of-phase summary
+
+**Done:** Authoritative Phase 4A specification for Phase 4B; doc alignment on macro units vs market decimal returns; credit_spread caveats documented.
+**Problems:** Global definitions previously implied decimal % for all fields; macro uses FRED percentage points — clarified with explicit exception.
+**Remember:** Do not claim byte-for-byte macro snapshot reproducibility; ICSA pre-2009 PIT sparse; BAA10Y uses current FRED not ALFRED.
+
+## Phase 4B — Macro Conditions Ingestion & Validation
+
+**Status:** COMPLETE (formally closed)
+
+- Ran real FRED/ALFRED pipeline (`build_macro_conditions`) twice; **17,532** rows 1:1 `trading_days`; idempotent rerun PASS.
+- Coverage/PIT spot checks: CPI/UNRATE release-day behavior, WALCL after_close, daily series no forward-fill, yield curve identity PASS.
+- Added `scripts/phase4b_macro_audit.py` for reproducible verification; pytest **84/84**.
+- Isolated macro run left `calendar_context` one day behind (`17,531` vs `17,532`); resynced via `build_calendar_context` (idempotent ×2); **`validate_v1` PASS**.
+
+### End-of-phase summary
+
+**Done:** Live macro ingestion verified against Phase 4A contract; real coverage statistics; historical PIT evidence; idempotent rebuild; full-DB validation restored after calendar resync.
+**Problems:** ICSA ~24.8% coverage (ALFRED sparse pre-2009); core CPI from ~1996; BAA10Y from ~1986; isolated macro rebuild requires dependent spine tables (`calendar_context`) to catch up.
+**Remember:** Regimes populated by existing V1 logic — Phase 4C if deliberate re-lock needed; PMI remains absent.
+
+## Phase 5A — Additional Market Context Source & Definition Lock
+
+**Status:** COMPLETE
+
+- Locked WTI: FRED **DCOILWTICO** (EIA Cushing spot, USD/bbl, from 1986-01-02).
+- **UNRESOLVED:** XAU/USD (LBMA PM fix definition; FRED LBMA removed 2022; IBA license needed); DXY (ICE USDX; commercial ICE Data only — not DTWEXBGS).
+- Schema decision: extend `daily_market_data`; close-only storage with NULL OHLC/adj/corp-action (Phase 5B migration); no ingestion. pytest **84/84**.
+
+### End-of-phase summary
+
+**Done:** Phase 5A contract doc; sources/definitions/universe/schema/index updates; explicit rejection of ETF proxies and TWI-as-DXY.
+**Problems:** Gold and DXY lack free reproducible automatable sources under V1 principles; current schema NOT NULL blocks close-only rows until 5B migration.
+**Remember:** WTI only asset READY FOR PHASE 5B; do not splice incompatible gold/DXY substitutes.
+
+## Phase 5B — WTI Market Context Implementation
+
+**Status:** COMPLETE
+
+- Schema migration `a8f3c2d1b4e5`: nullable OHLC/adj + CHECK distinguishing full-OHLC ETF rows from close-only WTI rows.
+- WTI ingestion via `build_wti` / FRED `DCOILWTICO`; **10,201** canonical rows; idempotent ×2; negative April 2020 preserved.
+- Asset-aware validation/derivation for close-only semantics; outcomes range metrics NULL; regimes use `close` price series for WTI.
+- `validate_v1` PASS; pytest **90/90**; audit `scripts/phase5b_wti_audit.py`.
+
+### End-of-phase summary
+
+**Done:** WTI IMPLEMENTED per Phase 5A contract; ETF integrity unchanged (0 malformed ETF rows); whole-DB validation passes with 15 symbols.
+**Problems:** pandas NaN on nullable integer columns broke BIGINT upsert until sanitize helper added; WTI last date may lag ETF spine when provider has not published latest session.
+**Remember:** XAU/USD and DXY remain UNRESOLVED — close Phase 5 with those explicit unless licensed sources are approved later.
+
+## Phase 6A — Scheduled Events Source, Definition & PIT Contract
+
+**Status:** COMPLETE
+
+- Audited implemented `scheduled_events` schema/code vs legacy planning sketches; repo authoritative (no `actual`/`consensus`/`surprise`/`importance` columns).
+- Locked Phase 6A contract in `docs/StockBallDB_phase6a_scheduled_events_contract.md`: FOMC/CPI/Employment/Election **LOCKED**; jobless claims **PROVISIONALLY LOCKED**; GDP and others **DEFERRED**; PIT/timezone/trading-day rules. No ingestion. pytest **90/90** (reconfirmed post-doc update).
+
+### End-of-phase summary
+
+**Done:** Authoritative Phase 6A specification; doc alignment on rejected interpretation columns and ALFRED first-print vs announced-schedule limits.
+**Problems:** V1 already ingests four event families (Phase 2F) — Phase 6A formalizes contract for Phase 6B re-validation/expansion, not greenfield design.
+**Remember:** Do not store macro values or forecast/surprise fields in `scheduled_events`; GDP needs `event_subtype` before lock.
+
+## Phase 6B — Scheduled Events Ingestion & Validation
+
+**Status:** COMPLETE
+
+- Preflight audit confirmed Phase 6A contract vs existing `scheduled_events` implementation; no schema migration.
+- Built four locked families via `build_scheduled_events`: **2,641** rows (FOMC 711, CPI 954, Employment 942, Election 34); resynced `calendar_context` (**17,532** rows).
+- Fixed FOMC 2021+ calendar HTML parser under-count (`fomc.py`); spot checks PASS (1957 early, 2012 pre-2013 NULL time, 2020/2024 modern 14:00 ET); no emergency FOMC dates.
+- 37 off-calendar events preserved; effective-session mapping verified; idempotent rebuilds; `validate_v1` PASS; pytest **90/90**; audit `scripts/phase6b_scheduled_events_audit.py`.
+
+### End-of-phase summary
+
+**Done:** Four-family canonical pipeline verified end-to-end against Phase 6A contract; FOMC parser hardening; Phase 6B verification appended to contract §19.
+**Problems:** CPI ALFRED floor 1972 (not ~1957); Employment floor 1960; BLS pre-1990 clock times NULL by design; initial FOMC calendar parser missed `Apr/May` and asterisk rows.
+**Remember:** Jobless Claims/GDP/deferred families remain out of scope; Phase 6 can close with four verified families unless a narrow 6C is opened for jobless claims only.
+
+## Phase 7A — Calendar Context Audit & Definition Lock
+
+**Status:** COMPLETE
+
+- Audited all 19 `calendar_context` columns vs derive/validate/tests/validate_v1; repository authoritative.
+- Locked Phase 7A contract in `docs/StockBallDB_phase7a_calendar_context_contract.md`: trading_days vs calendar_context boundary, effective-session semantics, calendar-date (not session-availability) event context, history floors, ISO week definition, PIT classification.
+- `days_until_next_*` **REJECTED** for V1; no schema migration recommended for 7B. Two focused regression tests added. pytest **92/92 PASS**.
+
+### End-of-phase summary
+
+**Done:** Authoritative calendar_context specification; index/definitions/schema cross-refs; field classification table; Phase 7B validation contract.
+**Problems:** None blocking — existing implementation matches locked contract.
+**Remember:** Release-session-aware distance logic belongs outside calendar_context; forward event distances are PIT-unsafe; do not duplicate trading_days ordinals.
+
+## Phase 7B — Calendar Context Verification & Closeout
+
+**Status:** COMPLETE
+
+- Rebuilt `calendar_context` via `build_calendar_context` (**17,532** rows, 1:1 `trading_days`); idempotent ×2.
+- Formal audit `scripts/phase7b_calendar_context_audit.py`: all 19 Phase 7A invariants PASS (grain, holiday adjacency, early closes, ISO weeks, transitions, event flags/distances, history floors, 47 multi-family days, no forward columns).
+- Off-calendar scheduled events **37**; effective-session verified (1958-11-04 election → 1958-11-05). `validate_v1` PASS; pytest **92/92 PASS**. No schema migration.
+
+### End-of-phase summary
+
+**Done:** Phase 7 closed; §16 verification appended to Phase 7A contract; audit script for repeatable invariant checks.
+**Problems:** None — existing implementation matches locked contract.
+**Remember:** Phase 8 next (validation/provenance hardening); do not add `days_until_next_*` or seasonality fields to calendar_context.
+
+## Phase 8A — Whole-DB Integrity & Provenance Audit / Contract
+
+**Status:** COMPLETE
+
+- Audited all seven tables (models, builders, validators, live PostgreSQL); inventory + validation matrix + provider mapping.
+- Locked Phase 8A contract in `docs/StockBallDB_phase8a_validation_provenance_contract.md`: HEALTHY/HEALTHY WITH WARNINGS/UNHEALTHY states, freshness semantics, missingness taxonomy, provenance gaps, Phase 8 vs 9 boundary, Phase 8B backlog (MUST: `health` CLI, build manifest, freshness/gap audits).
+- Live audit `scripts/phase8a_health_audit.py`: **HEALTHY**; `validate_v1` PASS; pytest **92/92 PASS**.
+
+### End-of-phase summary
+
+**Done:** Authoritative whole-DB health contract; live coverage/freshness evidence; no schema/code behavior changes.
+**Problems:** Provenance mostly in code/docs/logs — only `scheduled_events.source` in DB; no retrieval timestamps persisted.
+**Remember:** Phase 8B implements health CLI + manifest; Phase 9 owns raw snapshots; ETF 2-session and WTI 1-day lag are INFO not defects.
+
+## Phase 8B — Health Engine, Freshness, Gap Detection & Build Provenance
+
+**Status:** COMPLETE
+
+- Implemented `stockballdb.health` package: finding model, coverage, freshness, gap detection, integrity (wraps `validate_v1`), provenance/manifest, human + JSON render.
+- CLI: `python -m stockballdb.health` / `--json` / `--strict`; live run **HEALTHY** (~2.4s, 3 INFO findings).
+- Build manifest JSON in `build_reports/manifest_*.json`; integrated into successful `build_v1`.
+- pytest **103/103 PASS**; `validate_v1` PASS; canonical row counts unchanged.
+
+### End-of-phase summary
+
+**Done:** Phase 8 closed; production health layer + build provenance manifests per Phase 8A MUST list.
+**Problems:** Provider retrieval timestamps not captured per-API-call — manifest uses build boundary timestamps.
+**Remember:** Phase 9 for raw snapshots; INFO lag findings must not be fatal; `--strict` for CI warning promotion.
+
+### Phase 8 — Validation & Provenance Hardening
+
+**Status:** COMPLETE (Phases 8A + 8B)
+
+- Full external data acquisition audit: Tiingo, FRED/ALFRED, Fed FOMC HTML, statutory elections, NYSE via pinned `pandas_market_calendars`, WTI (`build_wti` separate from `build_v1`); no raw snapshot archive (Phase 9).
+
+## Phase 9A — Immutable Source Snapshots & Exact-Rebuild Architecture Contract
+
+**Status:** COMPLETE
+
+- Audited all live acquisition paths in code (`providers/`, builders, `build_v1`, `build_wti`); confirmed full-history refetch, no raw preservation today.
+- Locked Phase 9A contract: hybrid raw-byte snapshots (SHA-256 identity), content-addressed `snapshots/` storage, manifest schema 1.1, BUILD LATEST / REBUILD EXACT / REPROCESS distinction, offline exact rebuild, database fingerprint design, pre-Phase-9 builds NOT exact-rebuild-capable.
+- pytest **103/103 PASS**; validate_v1 **PASS**; health **HEALTHY**; no canonical data changes.
+
+### End-of-phase summary
+
+**Done:** Authoritative snapshot/rebuild architecture contract; acquisition audit table; decision table; prioritized Phase 9B backlog.
+**Problems:** None — architecture-only phase; no implementation yet.
+**Remember:** Pre-Phase-9 manifests are provenance-only; never retroactively fabricate snapshots; REBUILD EXACT must be provider-offline; hash uncompressed bytes; elections/calendar need code pin not payload snapshots.
+
+## Phase 9B — Immutable Snapshot Implementation
+
+**Status:** IMPLEMENTED — certification pending
+
+- Snapshot store: content-addressed `snapshots/sha256/`, gzip payloads, SHA-256(uncompressed), sidecar metadata, deduplication, atomic writes.
+- Provider refactor: Tiingo, FRED, ALFRED, FOMC HTML via `acquire_bytes`; WTI in `build_wti`; elections/calendar excluded (deterministic).
+- Manifest 1.1: `snapshots[]`, `database_fingerprint`, `exact_rebuild_capable`, environment provenance.
+- CLI: `python -m stockballdb.snapshots verify`, `python -m stockballdb.rebuild_exact`, `python -m stockballdb.fingerprint`.
+- `build_v1` captures snapshots during LIVE build context; fingerprint on success.
+- pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**.
+
+### End-of-phase summary
+
+**Done:** Full Phase 9B implementation per 9A contract; 17 new snapshot/fingerprint tests; operator guide.
+**Problems:** Live BUILD LATEST + offline REBUILD EXACT end-to-end certification not run (Git dirty; requires dedicated rebuild DB + clean commit).
+**Remember:** Run certification on clean Git with `STOCKBALLDB_REBUILD_DATABASE_URL`; pre-1.1 manifests cannot exact-rebuild; snapshot capture only inside `live_build_context`.

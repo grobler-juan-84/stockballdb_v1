@@ -24,6 +24,9 @@ htmlcov/
 # Generated V1 build reports
 build_reports/
 
+# Immutable source snapshot payloads (Phase 9) — not the Python package
+/snapshots/
+
 # Editors / OS
 .idea/
 .vscode/

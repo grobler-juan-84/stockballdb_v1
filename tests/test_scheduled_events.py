@@ -106,7 +106,11 @@ def test_fomc_calendars_parser() -> None:
     </div>
     <div class="row fomc-meeting">
       <div class="fomc-meeting__month col-xs-5"><strong>March</strong></div>
-      <div class="fomc-meeting__date col-xs-4">19-20</div>
+      <div class="fomc-meeting__date col-xs-4">19-20*</div>
+    </div>
+    <div class="row fomc-meeting">
+      <div class="fomc-meeting__month col-xs-5"><strong>Apr/May</strong></div>
+      <div class="fomc-meeting__date col-xs-4">30-1</div>
     </div>
     <a>2025 FOMC Meetings</a></h4>
     <div class="row fomc-meeting">
@@ -117,6 +121,7 @@ def test_fomc_calendars_parser() -> None:
     assert parse_calendars_html(html, years={2024}) == [
         dt.date(2024, 1, 31),
         dt.date(2024, 3, 20),
+        dt.date(2024, 5, 1),
     ]
     assert parse_calendars_html(html, years={2025}) == [dt.date(2025, 1, 29)]
 

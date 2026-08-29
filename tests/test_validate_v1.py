@@ -213,7 +213,9 @@ def test_validator_success_path(monkeypatch: pytest.MonkeyPatch) -> None:
         1,
         0,  # null_dd
         0,  # first_null_r1
-        14,  # symbols
+        15,  # symbols
+        0,  # malformed_etf
+        0,  # malformed_close
     ]
     engine = _engine_with_conn(_scripted_conn(responses))
     diagnostics = validate_v1_database(engine)

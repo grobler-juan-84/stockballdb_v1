@@ -303,3 +303,45 @@ def test_cpi_employment_election_modern_flags() -> None:
     assert by.loc[dt.date(2020, 3, 6), "is_employment_situation_day"]
     assert by.loc[dt.date(2020, 3, 11), "is_cpi_release_day"]
     assert by.loc[dt.date(2020, 11, 3), "is_election_day"]
+
+
+def test_multi_family_flags_are_independent() -> None:
+    dates = [dt.date(2020, 4, 28), dt.date(2020, 4, 29), dt.date(2020, 4, 30)]
+    events = {
+        "fomc": [dt.date(2020, 4, 29)],
+        "cpi": [dt.date(2020, 4, 29)],
+        "employment_situation": [],
+        "election": [],
+    }
+    frame = derive_calendar_context_frame(
+        _trading_frame(dates),
+        events,
+        early_closes=set(),
+        catalog=HolidayCatalog(start=dates[0], end=dates[-1]),
+    )
+    row = frame.loc[frame["date"] == dt.date(2020, 4, 29)].iloc[0]
+    assert row["is_fomc_day"]
+    assert row["is_cpi_release_day"]
+    assert row["days_since_last_fomc"] == 0
+    assert row["days_since_last_cpi"] == 0
+
+
+def test_days_since_null_before_history_floor() -> None:
+    dates = [dt.date(1970, 1, 2), dt.date(1972, 7, 21), dt.date(1972, 7, 22)]
+    events = {
+        "fomc": [],
+        "cpi": [dt.date(1972, 7, 21)],
+        "employment_situation": [],
+        "election": [],
+    }
+    frame = derive_calendar_context_frame(
+        _trading_frame(dates),
+        events,
+        early_closes=set(),
+        catalog=HolidayCatalog(start=dates[0], end=dates[-1]),
+    )
+    by = frame.set_index("date")
+    assert pd.isna(by.loc[dt.date(1970, 1, 2), "days_since_last_cpi"])
+    assert not by.loc[dt.date(1970, 1, 2), "is_cpi_release_day"]
+    assert by.loc[dt.date(1972, 7, 21), "days_since_last_cpi"] == 0
+    assert by.loc[dt.date(1972, 7, 22), "days_since_last_cpi"] == 1

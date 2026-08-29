@@ -6,7 +6,10 @@ import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS
+from stockballdb.market_data.universe import (
+    PHASE_2A_ETF_SYMBOLS,
+    asset_type_for_symbol,
+)
 from stockballdb.regimes.derive import (
     REGIME_COLUMNS,
     VOL_ANNUALIZATION,
@@ -31,8 +34,11 @@ def validate_asset_regimes_frame(frame: pd.DataFrame) -> None:
     for symbol, group in frame.groupby("symbol"):
         g = group.sort_values("date").reset_index(drop=True)
         n = len(g)
-        if (g["asset_type"] != "etf").any():
-            errors.append(f"{symbol}: asset_type must be 'etf' for V1 universe")
+        expected_type = asset_type_for_symbol(str(symbol))
+        if (g["asset_type"] != expected_type).any():
+            errors.append(
+                f"{symbol}: asset_type must be {expected_type!r} for universe symbol"
+            )
 
         checks = (
             ("return_5d", 5),
@@ -105,15 +111,25 @@ def validate_asset_regimes_db(
     *,
     expected_count: int,
     required_symbols: tuple[str, ...] = PHASE_2A_ETF_SYMBOLS,
+    symbol_scope: str | None = None,
 ) -> None:
     """Validate persisted asset_regimes against daily_market_data."""
     errors: list[str] = []
     with engine.connect() as conn:
-        count = conn.execute(text("SELECT COUNT(*) FROM asset_regimes")).scalar_one()
+        if symbol_scope:
+            count = conn.execute(
+                text("SELECT COUNT(*) FROM asset_regimes WHERE symbol = :symbol"),
+                {"symbol": symbol_scope},
+            ).scalar_one()
+            dmd = conn.execute(
+                text("SELECT COUNT(*) FROM daily_market_data WHERE symbol = :symbol"),
+                {"symbol": symbol_scope},
+            ).scalar_one()
+        else:
+            count = conn.execute(text("SELECT COUNT(*) FROM asset_regimes")).scalar_one()
+            dmd = conn.execute(text("SELECT COUNT(*) FROM daily_market_data")).scalar_one()
         if count != expected_count:
             errors.append(f"row count {count} != expected {expected_count}")
-
-        dmd = conn.execute(text("SELECT COUNT(*) FROM daily_market_data")).scalar_one()
         if count != dmd:
             errors.append(f"asset_regimes rows {count} != daily_market_data rows {dmd}")
 
@@ -151,11 +167,21 @@ def validate_asset_regimes_db(
         if dd_bad:
             errors.append(f"drawdown identity failures: {dd_bad}")
 
-        non_etf = conn.execute(
-            text("SELECT COUNT(*) FROM asset_regimes WHERE asset_type <> 'etf'")
+        bad_types = conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM asset_regimes a
+                WHERE a.asset_type <> (
+                  CASE a.symbol
+                    WHEN 'WTI' THEN 'commodity'
+                    ELSE 'etf'
+                  END
+                )
+                """
+            )
         ).scalar_one()
-        if non_etf:
-            errors.append(f"non-etf asset_type rows: {non_etf}")
+        if bad_types:
+            errors.append(f"asset_type mismatches vs universe mapping: {bad_types}")
 
     if errors:
         raise AssetRegimesValidationError("; ".join(errors))

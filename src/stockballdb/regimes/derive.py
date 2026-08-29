@@ -13,6 +13,7 @@ from sqlalchemy.engine import Engine
 from stockballdb.market_data.universe import (
     PHASE_2A_ETF_SYMBOLS,
     asset_type_for_symbol,
+    is_close_only_symbol,
 )
 from stockballdb.models.asset_regimes import AssetRegime
 
@@ -139,10 +140,14 @@ def derive_asset_regimes(frame: pd.DataFrame) -> pd.DataFrame:
 
     for symbol, group in ordered.groupby("symbol", sort=False):
         g = group.copy().reset_index(drop=True)
-        adj = pd.to_numeric(g["adj_close"], errors="coerce")
+        sym = str(symbol)
+        if is_close_only_symbol(sym):
+            adj = pd.to_numeric(g["close"], errors="coerce")
+        else:
+            adj = pd.to_numeric(g["adj_close"], errors="coerce")
         r1 = pd.to_numeric(g["return_1d"], errors="coerce")
 
-        g["asset_type"] = asset_type_for_symbol(str(symbol))
+        g["asset_type"] = asset_type_for_symbol(sym)
 
         for n in (5, 20, 60):
             prior = adj.shift(n)
@@ -185,7 +190,7 @@ def load_daily_market_for_regimes(
     placeholders = ", ".join(f":s{i}" for i in range(len(symbols)))
     params = {f"s{i}": s for i, s in enumerate(symbols)}
     sql = (
-        "SELECT date, symbol, adj_close, return_1d, drawdown_from_high "
+        "SELECT date, symbol, close, adj_close, return_1d, drawdown_from_high "
         "FROM daily_market_data "
         f"WHERE symbol IN ({placeholders}) ORDER BY symbol, date"
     )
@@ -196,8 +201,8 @@ def load_daily_market_for_regimes(
             "daily_market_data has no rows for regime derivation"
         )
     frame = pd.DataFrame(rows)
-    for col in ("adj_close", "return_1d", "drawdown_from_high"):
-        frame[col] = pd.to_numeric(frame[col])
+    for col in ("close", "adj_close", "return_1d", "drawdown_from_high"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
     return frame
 
 

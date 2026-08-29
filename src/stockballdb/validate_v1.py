@@ -14,6 +14,7 @@ from stockballdb.logging_config import configure_logging, get_logger
 from stockballdb.v1.preflight import REQUIRED_CALENDAR_VERSION, V1_ALEMBIC_HEAD
 from stockballdb.v1.report import _pad
 from stockballdb.v1.stages import collect_diagnostics
+from stockballdb.market_data.universe import CLOSE_ONLY_SYMBOLS, V1_MARKET_SYMBOL_COUNT
 
 
 class ValidateV1Error(Exception):
@@ -214,8 +215,51 @@ def validate_v1_database(engine: Engine) -> list[str]:
         symbols = conn.execute(
             text("SELECT COUNT(DISTINCT symbol) FROM daily_market_data")
         ).scalar_one()
-        if symbols != 14:
-            raise ValidateV1Error(f"expected 14 symbols; found {symbols}")
+        if symbols != V1_MARKET_SYMBOL_COUNT:
+            raise ValidateV1Error(
+                f"expected {V1_MARKET_SYMBOL_COUNT} symbols; found {symbols}"
+            )
+
+        malformed_etf = conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM daily_market_data
+                WHERE symbol <> ALL(:close_only)
+                  AND (
+                    open IS NULL OR high IS NULL OR low IS NULL OR volume IS NULL
+                    OR adj_open IS NULL OR adj_high IS NULL OR adj_low IS NULL
+                    OR adj_close IS NULL OR adj_volume IS NULL
+                    OR dividend_cash IS NULL OR split_factor IS NULL
+                  )
+                """
+            ),
+            {"close_only": list(CLOSE_ONLY_SYMBOLS)},
+        ).scalar_one()
+        if malformed_etf:
+            raise ValidateV1Error(
+                f"ETF rows missing required OHLC fields: {malformed_etf}"
+            )
+
+        malformed_close = conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM daily_market_data
+                WHERE symbol = ANY(:close_only)
+                  AND (
+                    open IS NOT NULL OR high IS NOT NULL OR low IS NOT NULL
+                    OR volume IS NOT NULL OR adj_open IS NOT NULL OR adj_high IS NOT NULL
+                    OR adj_low IS NOT NULL OR adj_close IS NOT NULL OR adj_volume IS NOT NULL
+                    OR dividend_cash IS NOT NULL OR split_factor IS NOT NULL
+                    OR close IS NULL
+                  )
+                """
+            ),
+            {"close_only": list(CLOSE_ONLY_SYMBOLS)},
+        ).scalar_one()
+        if malformed_close:
+            raise ValidateV1Error(
+                f"close-only rows with invalid populated fields: {malformed_close}"
+            )
 
         diag = collect_diagnostics(engine)
         for k, v in diag.items():

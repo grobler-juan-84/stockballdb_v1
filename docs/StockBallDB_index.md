@@ -28,6 +28,27 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 7. [StockBallDB_workflow.md](StockBallDB_workflow.md)  
    How StockBallDB is built, updated, derived, validated, and phased from project foundation through acquisition pipelines.
 
+8. [StockBallDB_phase4a_macro_contract.md](StockBallDB_phase4a_macro_contract.md)  
+   Phase 4A lock: `macro_conditions` source map, point-in-time rules, trading-day alignment, units, and unresolved fields.
+
+9. [StockBallDB_phase5a_market_context_contract.md](StockBallDB_phase5a_market_context_contract.md)  
+   Phase 5A lock: WTI / XAU/USD / DXY definitions, source evaluation, schema fit, and Phase 5B readiness.
+
+10. [StockBallDB_phase6a_scheduled_events_contract.md](StockBallDB_phase6a_scheduled_events_contract.md)  
+   Phase 6A lock: `scheduled_events` definition, PIT semantics, V1 event universe, schema fit, and Phase 6B readiness.
+
+11. [StockBallDB_phase7a_calendar_context_contract.md](StockBallDB_phase7a_calendar_context_contract.md)  
+   Phase 7A lock: `calendar_context` audit, trading_days boundary, derivation semantics, PIT classification, and Phase 7B validation requirements.
+
+12. [StockBallDB_phase8a_validation_provenance_contract.md](StockBallDB_phase8a_validation_provenance_contract.md)  
+   Phase 8A lock: whole-DB health definition, validation matrix, coverage/freshness/provenance contracts, and Phase 8B backlog.
+
+13. [StockBallDB_phase9a_snapshot_rebuild_contract.md](StockBallDB_phase9a_snapshot_rebuild_contract.md)  
+   Phase 9A lock: immutable source snapshot architecture, BUILD LATEST vs REBUILD EXACT semantics, fingerprint design, manifest 1.1 evolution, and Phase 9B backlog.
+
+14. [StockBallDB_snapshots_and_rebuilds.md](StockBallDB_snapshots_and_rebuilds.md)  
+   Phase 9B operator reference: snapshot storage, BUILD LATEST, verify, fingerprint, REBUILD EXACT commands.
+
 ## Routing
 
 | Need | Open |
@@ -38,6 +59,13 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 | Table layout, keys, and fields | schema |
 | Data providers and acquisition choices | sources |
 | Field-level definitions and formulas | definitions |
+| Macro source/PIT contract (Phase 4A) | phase4a_macro_contract |
+| Market context contract (Phase 5A) | phase5a_market_context |
+| Scheduled events contract (Phase 6A) | phase6a_scheduled_events |
+| Calendar context contract (Phase 7A) | phase7a_calendar_context |
+| Validation & provenance contract (Phase 8A) | phase8a_validation_provenance |
+| Snapshot & exact-rebuild contract (Phase 9A) | phase9a_snapshot_rebuild |
+| Snapshots & rebuild operator guide (Phase 9B) | snapshots_and_rebuilds |
 | Languages, libraries, and tooling | Tech stack |
 | Build / update / derive / validate steps | workflow |
 | Development phases (0 → N) | workflow |

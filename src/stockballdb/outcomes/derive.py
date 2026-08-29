@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 
-from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS
+from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS, is_close_only_symbol
 from stockballdb.models.market_outcomes import MarketOutcome
 
 OUTCOME_COLUMNS = (
@@ -45,7 +45,7 @@ def derive_market_outcomes(frame: pd.DataFrame) -> pd.DataFrame:
     """
     Compute market_outcomes fields from observed daily_market_data columns.
 
-    Requires columns: date, symbol, adj_close, adj_high, adj_low.
+    Requires columns: date, symbol, close, adj_close, adj_high, adj_low.
     Per-symbol, ordered by date. Incomplete horizons → NULL.
     """
     required = {"date", "symbol", "adj_close", "adj_high", "adj_low"}
@@ -61,29 +61,41 @@ def derive_market_outcomes(frame: pd.DataFrame) -> pd.DataFrame:
         return out
 
     ordered = frame.sort_values(["symbol", "date"]).copy()
+    if "close" not in ordered.columns:
+        ordered = ordered.copy()
+        ordered["close"] = ordered["adj_close"]
     parts: list[pd.DataFrame] = []
 
-    for _symbol, group in ordered.groupby("symbol", sort=False):
+    for symbol, group in ordered.groupby("symbol", sort=False):
         g = group.copy().reset_index(drop=True)
-        base = g["adj_close"]
+        close_only = is_close_only_symbol(str(symbol))
+        if close_only:
+            base = g["close"]
+        else:
+            base = g["adj_close"]
 
         for n in RETURN_HORIZONS:
             future = base.shift(-n)
             complete = future.notna()
             g[f"return_{n}d"] = (future / base - 1.0).where(complete)
 
-        for n in MAX_HORIZONS:
-            highs = pd.concat(
-                [g["adj_high"].shift(-i) for i in range(1, n + 1)],
-                axis=1,
-            )
-            lows = pd.concat(
-                [g["adj_low"].shift(-i) for i in range(1, n + 1)],
-                axis=1,
-            )
-            complete = highs.notna().all(axis=1) & lows.notna().all(axis=1)
-            g[f"max_up_{n}d"] = (highs.max(axis=1) / base - 1.0).where(complete)
-            g[f"max_down_{n}d"] = (lows.min(axis=1) / base - 1.0).where(complete)
+        if close_only:
+            for n in MAX_HORIZONS:
+                g[f"max_up_{n}d"] = pd.NA
+                g[f"max_down_{n}d"] = pd.NA
+        else:
+            for n in MAX_HORIZONS:
+                highs = pd.concat(
+                    [g["adj_high"].shift(-i) for i in range(1, n + 1)],
+                    axis=1,
+                )
+                lows = pd.concat(
+                    [g["adj_low"].shift(-i) for i in range(1, n + 1)],
+                    axis=1,
+                )
+                complete = highs.notna().all(axis=1) & lows.notna().all(axis=1)
+                g[f"max_up_{n}d"] = (highs.max(axis=1) / base - 1.0).where(complete)
+                g[f"max_down_{n}d"] = (lows.min(axis=1) / base - 1.0).where(complete)
 
         for n in (1, 5, 20):
             ret = g[f"return_{n}d"]
@@ -109,7 +121,7 @@ def load_daily_market_for_outcomes(
     placeholders = ", ".join(f":s{i}" for i in range(len(symbols)))
     params = {f"s{i}": s for i, s in enumerate(symbols)}
     sql = (
-        "SELECT date, symbol, adj_close, adj_high, adj_low "
+        "SELECT date, symbol, close, adj_close, adj_high, adj_low "
         "FROM daily_market_data "
         f"WHERE symbol IN ({placeholders}) ORDER BY symbol, date"
     )
@@ -120,8 +132,8 @@ def load_daily_market_for_outcomes(
             "daily_market_data has no rows for outcome derivation"
         )
     frame = pd.DataFrame(rows)
-    for col in ("adj_close", "adj_high", "adj_low"):
-        frame[col] = pd.to_numeric(frame[col])
+    for col in ("close", "adj_close", "adj_high", "adj_low"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
     return frame
 
 

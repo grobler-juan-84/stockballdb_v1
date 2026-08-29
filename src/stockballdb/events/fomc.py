@@ -56,10 +56,19 @@ CAL_PANEL_RE = re.compile(
 
 CAL_MEETING_RE = re.compile(
     r'class="[^"]*fomc-meeting__month[^"]*"[^>]*>\s*<strong>\s*'
-    r"(?P<month>[A-Za-z]+)\s*</strong>.*?"
+    r"(?P<month>[A-Za-z/]+)\s*</strong>.*?"
     r'class="[^"]*fomc-meeting__date[^"]*"[^>]*>\s*'
-    r"(?P<dates>\d{1,2}(?:\s*-\s*\d{1,2})?)\s*<",
+    r"(?P<dates>[\d\s\-]+(?:\*)?)\s*<",
     re.IGNORECASE | re.DOTALL,
+)
+
+CAL_MONTH_RE = re.compile(
+    r"fomc-meeting__month[^>]*>\s*<strong>\s*(?P<month>[A-Za-z/]+)\s*</strong>",
+    re.IGNORECASE,
+)
+CAL_DATE_RE = re.compile(
+    r"fomc-meeting__date[^>]*>\s*(?P<dates>[\d\s\-]+(?:\*)?)",
+    re.IGNORECASE,
 )
 
 
@@ -68,12 +77,23 @@ def _strip_html(fragment: str) -> str:
     return unescape(re.sub(r"\s+", " ", text)).strip()
 
 
+def _month_number(name: str) -> int:
+    key = name.strip().lower()
+    if key in MONTHS:
+        return MONTHS[key]
+    prefix = key[:3]
+    for full, num in MONTHS.items():
+        if full.startswith(prefix):
+            return num
+    raise KeyError(name)
+
+
 def _parse_final_day(
     months_raw: str, d1: int, d2: int | None, year: int
 ) -> dt.date:
-    parts = [p.strip().lower() for p in months_raw.split("/")]
-    start_month = MONTHS[parts[0]]
-    end_month = MONTHS[parts[1]] if len(parts) > 1 else start_month
+    parts = [p.strip() for p in months_raw.split("/")]
+    start_month = _month_number(parts[0])
+    end_month = _month_number(parts[1]) if len(parts) > 1 else start_month
     if d2 is None:
         return dt.date(year, start_month, d1)
     # Cross-month range: April/May 30-1 -> May 1
@@ -118,9 +138,27 @@ def parse_historical_html(html: str) -> list[dt.date]:
     return out
 
 
+def _parse_calendar_row(row_html: str, year: int) -> dt.date | None:
+    mm = CAL_MONTH_RE.search(row_html)
+    md = CAL_DATE_RE.search(row_html)
+    if not mm or not md:
+        return None
+    dates = re.sub(r"[^\d\-]", "", md.group("dates"))
+    if not dates:
+        return None
+    if "-" in dates:
+        d1_s, d2_s = dates.split("-", 1)
+        d1, d2 = int(d1_s), int(d2_s)
+    else:
+        d1, d2 = int(dates), None
+    try:
+        return _parse_final_day(mm.group("month"), d1, d2, year)
+    except (KeyError, ValueError):
+        return None
+
+
 def parse_calendars_html(html: str, *, years: set[int]) -> list[dt.date]:
     """Extract scheduled FOMC decision days from fomccalendars.htm panels."""
-    # Split by year panel markers
     markers: list[tuple[int, int]] = []
     for m in re.finditer(
         r"(?P<year>20\d{2})\s+FOMC\s+Meetings", html, re.IGNORECASE
@@ -128,25 +166,18 @@ def parse_calendars_html(html: str, *, years: set[int]) -> list[dt.date]:
         markers.append((int(m.group("year")), m.start()))
     markers.sort(key=lambda x: x[1])
     out: list[dt.date] = []
+    row_starts = re.compile(r'<div class="[^"]*\bfomc-meeting\b', re.IGNORECASE)
     for i, (year, start) in enumerate(markers):
         if year not in years:
             continue
         end = markers[i + 1][1] if i + 1 < len(markers) else len(html)
         block = html[start:end]
-        for mm in CAL_MEETING_RE.finditer(block):
-            month_name = mm.group("month").lower()
-            if month_name not in MONTHS:
-                continue
-            dates = re.sub(r"\s+", "", mm.group("dates"))
-            if "-" in dates:
-                _d1, d2 = dates.split("-", 1)
-                day_n = int(d2)
-            else:
-                day_n = int(dates)
-            try:
-                out.append(dt.date(year, MONTHS[month_name], day_n))
-            except ValueError:
-                continue
+        starts = [m.start() for m in row_starts.finditer(block)]
+        for j, row_start in enumerate(starts):
+            row_end = starts[j + 1] if j + 1 < len(starts) else len(block)
+            day = _parse_calendar_row(block[row_start:row_end], year)
+            if day is not None:
+                out.append(day)
     return out
 
 

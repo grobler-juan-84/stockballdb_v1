@@ -20,6 +20,21 @@ from stockballdb.models.trading_days import TradingDay
 from stockballdb.providers.tiingo import TiingoError, fetch_daily_prices
 
 UPSERT_COLUMNS = tuple(c for c in OBSERVED_COLUMNS if c not in ("date", "symbol"))
+INTEGER_OBSERVED_COLUMNS = ("volume", "adj_volume")
+
+
+def _sanitize_market_record(rec: dict) -> None:
+    """Convert pandas NA/NaN to SQL NULL for upsert payloads."""
+    for col in OBSERVED_COLUMNS:
+        if col in ("date", "symbol"):
+            continue
+        val = rec.get(col)
+        if val is None or pd.isna(val):
+            rec[col] = None
+        elif col in INTEGER_OBSERVED_COLUMNS:
+            rec[col] = int(val)
+        else:
+            rec[col] = float(val)
 
 
 def load_trading_day_dates(engine: Engine) -> set[dt.date]:
@@ -44,6 +59,8 @@ def upsert_daily_market_data(
         return 0
 
     records = frame[list(OBSERVED_COLUMNS)].to_dict(orient="records")
+    for rec in records:
+        _sanitize_market_record(rec)
     with engine.begin() as conn:
         for offset in range(0, len(records), batch_size):
             batch = records[offset : offset + batch_size]

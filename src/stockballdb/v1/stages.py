@@ -27,8 +27,9 @@ from stockballdb.calendar_context.validate import (
     validate_db as validate_calendar_db,
     validate_frame as validate_calendar_frame,
 )
-from stockballdb.config import Settings
+from stockballdb.config import ConfigError, Settings
 from stockballdb.db import get_engine, reset_engine
+from stockballdb.snapshots.context import is_snapshot_mode
 from stockballdb.events.build import sync_scheduled_events
 from stockballdb.events.validate import (
     ScheduledEventsValidationError,
@@ -118,7 +119,8 @@ def stage_trading_days(settings: Settings) -> str:
 def stage_daily_market_data(settings: Settings) -> str:
     reset_engine()
     engine = get_engine(settings)
-    assert settings.tiingo_api_key
+    if not is_snapshot_mode():
+        assert settings.tiingo_api_key
     try:
         frame = sync_daily_market_data(engine, settings.tiingo_api_key)
         validate_daily_market_data_db(engine, expected_count=len(frame))
@@ -173,7 +175,8 @@ def stage_asset_regimes(settings: Settings) -> str:
 def stage_macro_conditions(settings: Settings) -> str:
     reset_engine()
     engine = get_engine(settings)
-    assert settings.fred_api_key
+    if not is_snapshot_mode():
+        assert settings.fred_api_key
     try:
         assert_alignment_helpers()
         with engine.connect() as conn:
@@ -192,7 +195,8 @@ def stage_macro_conditions(settings: Settings) -> str:
 def stage_scheduled_events(settings: Settings) -> str:
     reset_engine()
     engine = get_engine(settings)
-    assert settings.fred_api_key
+    if not is_snapshot_mode():
+        assert settings.fred_api_key
     try:
         events = sync_scheduled_events(engine, settings.fred_api_key)
         validate_events(events)

@@ -41,11 +41,13 @@ Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, a
 
 | Identifier  | Asset / Indicator                 |
 | ----------- | --------------------------------- |
-| **XAU/USD** | Spot Gold                         |
-| **WTI**     | West Texas Intermediate Crude Oil |
-| **DXY**     | U.S. Dollar Index                 |
+| **WTI**     | West Texas Intermediate Crude Oil | **LOCKED** — FRED DCOILWTICO (spot Cushing) |
+| **XAU/USD** | Spot Gold (LBMA PM fix target)    | **UNRESOLVED** — source/licensing |
+| **DXY**     | U.S. Dollar Index (ICE USDX)      | **UNRESOLVED** — source requires ICE license |
 
-Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP). Canonical internal identifiers may differ from provider symbols; see [schema](StockBallDB_schema.md) and sources documentation.
+Phase 5A authoritative contract: [StockBallDB_phase5a_market_context_contract.md](StockBallDB_phase5a_market_context_contract.md).
+
+Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP). **Do not substitute** DTWEXBGS for DXY.
 
 ## Future Expansion
 

@@ -14,7 +14,7 @@ from stockballdb.providers.fred import FredError, fetch_observations
 from stockballdb.providers.tiingo import TiingoError, fetch_daily_prices
 
 REQUIRED_CALENDAR_VERSION = "5.4.0"
-V1_ALEMBIC_HEAD = "f6d94c3e5b27"
+V1_ALEMBIC_HEAD = "a8f3c2d1b4e5"
 EXPECTED_ETF_COUNT = 14
 
 

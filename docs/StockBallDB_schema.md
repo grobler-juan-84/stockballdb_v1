@@ -90,7 +90,7 @@ Stores the core daily market observations for each asset.
 
 For Tiingo-sourced ETFs, raw prices, adjusted prices, volume, adjusted volume, dividends, and split information are collected together during the same acquisition step.
 
-Phase 2A loads the 14 Tiingo ETFs only. Dates must exist in `trading_days`. Pre-inception history is simply absent (no fabricated rows).
+Phase 2A loads the 14 Tiingo ETFs. Phase 5B added **WTI** (`DCOILWTICO`) as a close-only row: `close` holds the spot level; `open`/`high`/`low`/`volume`/all `adj_*`/corp-action columns are **NULL** (never copied from `close`). Migration `a8f3c2d1b4e5` relaxes NOT NULL and adds a row-shape CHECK enforcing full-OHLC ETF rows vs close-only context rows. Dates must exist in `trading_days`. Pre-inception history is simply absent (no fabricated rows).
 
 ### Observed — Raw Market Data
 
@@ -208,7 +208,7 @@ inflation_regime                        TEXT NULL     -- low|normal|high
 rate_regime                             TEXT NULL     -- easing|stable|tightening
 ```
 
-Formulas and series IDs locked in `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2E).
+Formulas and series IDs locked in `StockBallDB_definitions.md` / `StockBallDB_sources.md` / `StockBallDB_phase4a_macro_contract.md` (Phase 4A).
 
 ---
 
@@ -236,7 +236,7 @@ source               TEXT
 **V1 scope:** scheduled FOMC decision days; BLS CPI & Employment Situation releases; U.S. presidential + midterm Election Days.  
 **Deferred:** earnings; unscheduled Fed actions; consensus/surprise; `event_window` (→ `calendar_context`).
 
-Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2F).
+Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2F). Phase 6A PIT contract: `StockBallDB_phase6a_scheduled_events_contract.md`.
 
 ---
 
@@ -248,7 +248,7 @@ Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md`
 
 Deterministic trading-day context: holiday/session geometry, ISO week counts, narrow month/quarter/year transitions, and retrospective event-distance context from `scheduled_events`.
 
-Not a research-window catalog. Forward `days_to_next_*`, tax/payday, election periods, and earnings windows are **out of V1**.
+Phase 7A PIT/boundary contract: `StockBallDB_phase7a_calendar_context_contract.md`. Not a research-window catalog. Forward `days_to_next_*`, tax/payday, election periods, and earnings windows are **out of V1**.
 
 ```text
 date                                         DATE PK FK → trading_days.date

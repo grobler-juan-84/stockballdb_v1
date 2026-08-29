@@ -99,3 +99,65 @@ def normalize_tiingo_bars(
     frame = frame.sort_values(["symbol", "date"]).reset_index(drop=True)
     frame.attrs["tiingo_dates_outside_trading_days"] = outside
     return frame
+
+
+def _parse_fred_value(raw: object) -> float | None:
+    if raw is None or raw == "." or raw == "":
+        return None
+    try:
+        number = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
+
+
+def normalize_fred_close_only_observations(
+    symbol: str,
+    observations: list[dict],
+    *,
+    trading_days: set[dt.date],
+) -> pd.DataFrame:
+    """
+    Map FRED daily level observations to close-only canonical rows.
+
+    Stores the observed level in ``close`` only; all other observed columns
+    remain NULL. Drops observations whose native date is not a trading day.
+    """
+    symbol = symbol.upper()
+    records: list[dict] = []
+    outside: list[dt.date] = []
+
+    for row in observations:
+        value = _parse_fred_value(row.get("value"))
+        if value is None:
+            continue
+        session_date = _parse_date(row["date"])
+        if session_date not in trading_days:
+            outside.append(session_date)
+            continue
+        records.append(
+            {
+                "date": session_date,
+                "symbol": symbol,
+                "open": None,
+                "high": None,
+                "low": None,
+                "close": value,
+                "volume": None,
+                "adj_open": None,
+                "adj_high": None,
+                "adj_low": None,
+                "adj_close": None,
+                "adj_volume": None,
+                "dividend_cash": None,
+                "split_factor": None,
+            }
+        )
+
+    frame = pd.DataFrame.from_records(records, columns=list(OBSERVED_COLUMNS))
+    if not frame.empty:
+        frame = frame.sort_values(["symbol", "date"]).reset_index(drop=True)
+    frame.attrs["fred_dates_outside_trading_days"] = outside
+    return frame

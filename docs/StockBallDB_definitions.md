@@ -84,6 +84,8 @@ Example:
 -0.05 = -5%
 ```
 
+**Exception — `macro_conditions` rate fields:** FRED-native **percentage points** (`3.0` = 3%, not `0.03`). See `StockBallDB_definitions.md` §5 and `StockBallDB_phase4a_macro_contract.md` (Phase 4A lock).
+
 ## Trading-Day Windows
 
 Unless explicitly stated otherwise, periods such as:
@@ -378,6 +380,24 @@ Uses retrospectively normalized `adj_close`. Populated on every row with usable 
 
 ---
 
+## Phase 5 — Additional market context (`WTI`, `XAU/USD`, `DXY`)
+
+**Phase 5A contract:** `StockBallDB_phase5a_market_context_contract.md`
+
+These symbols share `daily_market_data` grain but often provide **one daily level**, not full OHLCV.
+
+**Storage (Phase 5B):** canonical level in **`close`** (native units); `open`/`high`/`low`/`volume`/`adj_*`/`dividend_cash`/`split_factor` = **NULL**. Do not duplicate the level across OHLC fields.
+
+| Symbol | Definition | Units | Status |
+| --- | --- | --- | --- |
+| `WTI` | EIA Cushing WTI **spot** (FRED DCOILWTICO) | USD/barrel | **LOCKED** |
+| `XAU/USD` | USD gold per troy oz (LBMA PM fix target) | USD/troy oz | **UNRESOLVED** source |
+| `DXY` | ICE U.S. Dollar Index | index points | **UNRESOLVED** source |
+
+**Derived fields (close-only path, Phase 5B):** `return_1d` and `drawdown_from_high` from `close`; `gap_pct`/`intraday_return`/`range_pct` NULL when OHLC absent.
+
+---
+
 # 3. `market_outcomes`
 
 `market_outcomes` contains **entirely retrospective future labels**.
@@ -599,7 +619,13 @@ Semantic equal-frequency categories. Never use future volatility, full-sample ra
 
 One row per `trading_days.date`. Values on date `t` use only information publicly available by `t`.
 
-**PMI:** deferred from V1 — omitted (ISM Manufacturing PMI not freely reproducible via FRED after 2016 removal).
+**Phase 4A contract:** `StockBallDB_phase4a_macro_contract.md` (authoritative source/PIT/alignment lock).
+
+**PMI:** **UNRESOLVED** — deferred from V1; column omitted (no satisfactory freely reproducible source).
+
+## Units (Phase 4A lock)
+
+Macro **rate/spread/YoY** fields use **percentage points** (`3.0` = 3%), not decimal `0.03`. Jobless claims = persons; WALCL = millions USD.
 
 ## Series map (locked)
 
@@ -613,7 +639,7 @@ One row per `trading_days.date`. Values on date `t` use only information publicl
 | `treasury_2y_yield` | DGS2 | %; no history before 1976-06-01 |
 | `treasury_10y_yield` | DGS10 | % |
 | `fed_balance_sheet` | WALCL | Total Fed assets, millions USD |
-| `credit_spread` | BAA10Y | Baa − 10Y Treasury, % |
+| `credit_spread` | BAA10Y | Baa − 10Y Treasury, %; current FRED only (see Phase 4A caveats) |
 
 ## Availability & forward-fill
 
@@ -632,13 +658,17 @@ treasury_10y_yield - treasury_2y_yield
 
 Percentage points (`1.00` = 100 bp). NULL if either leg NULL. Derived in StockBallDB (not `T10Y2Y`).
 
-## `inflation_regime`
+## `inflation_regime` / `rate_regime`
+
+**Phase 4A scope:** observed inputs only — regime definitions are **not re-locked** in Phase 4A. Below documents existing V1 behavior for reference; deliberate redesign is a future phase.
+
+### `inflation_regime`
 
 `low` | `normal` | `high`
 
 `H_t` = distinct PIT headline CPI YoY **releases** with availability ≤ `t` (each monthly release once — not daily forward-filled duplicates). Require `|H_t| ≥ 36`. Then empirical terciles of current `inflation_rate` vs `H_t`. Regime carries with the inflation observation until the next release.
 
-## `rate_regime`
+### `rate_regime`
 
 `easing` | `stable` | `tightening`
 
@@ -682,7 +712,9 @@ Examples: `fomc:2020-04-29:NA:MARKET`, `cpi:2020-03-11:2020-02:MARKET`,
 | `employment_situation` | BLS Employment Situation **news-release occurrence** (not ICSA/jobless claims). |
 | `election` | U.S. presidential or midterm **general Election Day** only. |
 
-**Deferred:** `earnings`; unscheduled Fed actions; consensus expectations; surprise values.
+**Deferred:** `earnings`; unscheduled Fed actions; consensus expectations; surprise values; `importance` ratings.
+
+Phase 6A PIT contract: `StockBallDB_phase6a_scheduled_events_contract.md` — occurrence vs reference period, timezone rules, schedule-revision limits, Phase 6B readiness.
 
 Do not use ambiguous `jobs`.
 
@@ -724,6 +756,8 @@ No “no-event” rows. Within validated coverage for a type, absence ⇒ no qua
 # 7. `calendar_context`
 
 One row per `trading_days.date` (exact 1:1). Deterministic trading-day context derived from `trading_days`, pinned NYSE calendar metadata, and `scheduled_events`.
+
+**Phase 7A contract:** `StockBallDB_phase7a_calendar_context_contract.md` — authoritative audit, boundary, effective-session rules, PIT classification.
 
 **Not in V1:** `days_to_next_*`, `days_to_tax_deadline`, `is_payday_period`, `is_election_period`, earnings windows, broad pre/post event windows.
 

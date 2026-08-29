@@ -7,8 +7,12 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 
+from stockballdb.market_data.build import _sanitize_market_record
 from stockballdb.market_data.normalize import OBSERVED_COLUMNS
-from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS
+from stockballdb.market_data.universe import (
+    PHASE_2A_ETF_SYMBOLS,
+    is_close_only_symbol,
+)
 from stockballdb.market_data.validate import DailyMarketDataValidationError
 from stockballdb.models.daily_market_data import DailyMarketData
 
@@ -19,6 +23,28 @@ DERIVED_COLUMNS = (
     "range_pct",
     "drawdown_from_high",
 )
+
+
+def _derive_full_ohlc_group(g: pd.DataFrame) -> pd.DataFrame:
+    prev_adj_close = g["adj_close"].shift(1)
+    g["return_1d"] = g["adj_close"] / prev_adj_close - 1.0
+    g["gap_pct"] = g["adj_open"] / prev_adj_close - 1.0
+    g["intraday_return"] = g["close"] / g["open"] - 1.0
+    g["range_pct"] = (g["high"] - g["low"]) / g["open"]
+    hist_high = g["adj_close"].cummax()
+    g["drawdown_from_high"] = g["adj_close"] / hist_high - 1.0
+    return g
+
+
+def _derive_close_only_group(g: pd.DataFrame) -> pd.DataFrame:
+    prev_close = g["close"].shift(1)
+    g["return_1d"] = g["close"] / prev_close - 1.0
+    g["gap_pct"] = pd.NA
+    g["intraday_return"] = pd.NA
+    g["range_pct"] = pd.NA
+    hist_high = g["close"].cummax()
+    g["drawdown_from_high"] = g["close"] / hist_high - 1.0
+    return g
 
 
 def derive_daily_market_fields(frame: pd.DataFrame) -> pd.DataFrame:
@@ -41,16 +67,12 @@ def derive_daily_market_fields(frame: pd.DataFrame) -> pd.DataFrame:
 
     out = frame.sort_values(["symbol", "date"]).copy()
     parts: list[pd.DataFrame] = []
-    for _symbol, group in out.groupby("symbol", sort=False):
+    for symbol, group in out.groupby("symbol", sort=False):
         g = group.copy()
-        prev_adj_close = g["adj_close"].shift(1)
-        g["return_1d"] = g["adj_close"] / prev_adj_close - 1.0
-        g["gap_pct"] = g["adj_open"] / prev_adj_close - 1.0
-        g["intraday_return"] = g["close"] / g["open"] - 1.0
-        g["range_pct"] = (g["high"] - g["low"]) / g["open"]
-        hist_high = g["adj_close"].cummax()
-        g["drawdown_from_high"] = g["adj_close"] / hist_high - 1.0
-        parts.append(g)
+        if is_close_only_symbol(str(symbol)):
+            parts.append(_derive_close_only_group(g))
+        else:
+            parts.append(_derive_full_ohlc_group(g))
 
     return pd.concat(parts, ignore_index=True)
 
@@ -76,7 +98,7 @@ def load_observed_market_data(
     frame = pd.DataFrame(rows)
     numeric_cols = [c for c in OBSERVED_COLUMNS if c not in ("date", "symbol")]
     for col in numeric_cols:
-        frame[col] = pd.to_numeric(frame[col], errors="raise")
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
     return frame
 
 
@@ -97,6 +119,7 @@ def upsert_derived_market_data(
     cols = list(OBSERVED_COLUMNS) + list(DERIVED_COLUMNS)
     records = frame[cols].to_dict(orient="records")
     for rec in records:
+        _sanitize_market_record(rec)
         for col in DERIVED_COLUMNS:
             val = rec[col]
             if val is None or (isinstance(val, float) and pd.isna(val)):
