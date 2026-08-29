@@ -49,6 +49,9 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 14. [StockBallDB_snapshots_and_rebuilds.md](StockBallDB_snapshots_and_rebuilds.md)  
    Phase 9B operator reference: snapshot storage, BUILD LATEST, verify, fingerprint, REBUILD EXACT commands (includes 2026-08-29 certification summary).
 
+15. [StockBallDB_phase10a_operational_workflow_contract.md](StockBallDB_phase10a_operational_workflow_contract.md)  
+   Phase 10A lock: operational workflow audit, dependency graph, source classification, `update` stage model, failure/recovery/concurrency contract, and 10B/10C backlog.
+
 ## Routing
 
 | Need | Open |
@@ -66,6 +69,7 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 | Validation & provenance contract (Phase 8A) | phase8a_validation_provenance |
 | Snapshot & exact-rebuild contract (Phase 9A) | phase9a_snapshot_rebuild |
 | Snapshots & rebuild operator guide (Phase 9B) | snapshots_and_rebuilds |
+| Operational workflow contract (Phase 10A) | phase10a_operational_workflow |
 | Languages, libraries, and tooling | Tech stack |
 | Build / update / derive / validate steps | workflow |
 | Development phases (0 → N) | workflow |

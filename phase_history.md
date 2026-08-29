@@ -392,4 +392,26 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 **Certified manifest:** `build_reports/manifest_20260829T033624-eebe4514.json`  
 **Certified BUILD commit:** `1700ce6`  
+**Remote:** `main` pushed to GitHub (`f35d23f`, 2026-08-29)  
 **NEXT:** Phase 10 — Operational Workflow
+
+## Phase 10A — Operational Workflow Audit & Contract
+
+**Status:** COMPLETE
+
+- Audited all operational CLI entry points, `build_v1` stage DAG, provider incrementality, derived recompute semantics, transactions/failures, health/validation gates, snapshots/manifests.
+- Locked Phase 10A contract in `docs/StockBallDB_phase10a_operational_workflow_contract.md`: unified `update` stage model, `run_as_of` boundary, FULL-REFETCH-BY-DESIGN for all mutable sources, fingerprint change detection, advisory-lock concurrency, recovery-by-rerun, 10B backlog.
+- pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**; no runtime or schema changes.
+
+### End-of-phase summary
+
+**Done:** Authoritative operational workflow contract; dependency graph; source classification; 10C certification matrix planned.
+**Problems:** None — audit-only phase.
+**Remember:** Phase 10 orchestrates existing code; no incremental fetch in 10B; UPDATE allows dirty Git; REBUILD EXACT remains separate; `build_v1` must not be blindly renamed.
+
+## Phase 10 — Operational Workflow
+
+**Status:** IN PROGRESS
+
+- Catalogued all operational CLI entry points (`build_v1`, per-stage builders, `validate_v1`, `health`, `fingerprint`, `snapshots verify`, `rebuild_exact`, `check_db`, `scripts/` audits) with network/DB/idempotency/failure semantics for operator documentation.
+- Audited derived-table recompute semantics (market_outcomes horizons, asset_regimes rolling/vol regime, derive_daily_market_data, calendar_context), PostgreSQL transaction/upsert patterns, health severity/exit codes, manifest/provenance flow, and build_v1 partial-failure behavior.

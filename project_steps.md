@@ -198,4 +198,20 @@ Fixed WTI-coexistent stage validation + `wti_context` build stage (`7794fc0`); f
 
 ## Step 50 — Phase 9 documentation closeout
 
-Reviewed and finalized Phase 9 certification docs (`phase_history.md`, `project_steps.md`, phase 9 contract, operator guide, index). Secret/staging audit **PASS**. Committed **`90c433b`** `docs: certify StockBallDB phase 9`. **PHASE 9 = COMPLETE**; **NEXT = Phase 10 — Operational Workflow**.
+Reviewed and finalized Phase 9 certification docs (`phase_history.md`, `project_steps.md`, phase 9 contract, operator guide, index). Secret/staging audit **PASS**. Committed **`f35d23f`** `docs: certify StockBallDB phase 9`. **PHASE 9 = COMPLETE**; **NEXT = Phase 10 — Operational Workflow**.
+
+## Step 51 — Push Phase 9 to GitHub
+
+Pushed `main` to `origin` (`fec8a60..f35d23f`): implementation `26a3acc`, certification fixes `7794fc0`/`1700ce6`/`dd5e7c5`, docs closeout `f35d23f`. Remote `https://github.com/grobler-juan-84/stockballdb_v1.git` up to date.
+
+## Step 52 — Phase 10A operational workflow audit & contract
+
+Audited all build/validate/health/fingerprint/rebuild entry points and `build_v1` stage semantics. Locked Phase 10A contract in `docs/StockBallDB_phase10a_operational_workflow_contract.md` (dependency graph, FULL-REFETCH-BY-DESIGN sources, `run_as_of`, preflight/failure/recovery, `update` stage model, 10B/10C backlog). Updated index, `phase_history.md`. pytest **120/120**, validate_v1 **PASS**, health **HEALTHY**. **PHASE 10A = COMPLETE**; **PHASE 10B = NOT STARTED**.
+
+## Step 52 — CLI entry point inventory
+
+Audited all `python -m stockballdb.*` modules with `main()` / `__main__`, `scripts/` audit utilities, and core sync functions in `v1/stages.py` and build modules. Documented network usage, DB tables, recompute scope, idempotency, validation, and failure behavior for operational entry points. No code changes.
+
+## Step 53 — Derived recompute semantics audit
+
+Explored `outcomes/derive.py`, `regimes/derive.py`, `market_data/derive.py`, `calendar_context/derive.py`, health engine/provenance, `v1/report.py`, and `build_v1.py`. Documented lookback/forward horizon requirements, upsert vs delete-reload patterns, transaction boundaries, health exit codes, manifest creation, and partial-state behavior on failure. No code changes.
