@@ -47,8 +47,10 @@ from stockballdb.macro.validate import (
     validate_macro_frame,
 )
 from stockballdb.macro.derive import MacroConditionsValidationError
+from stockballdb.market_context.wti import sync_wti_pipeline
 from stockballdb.market_data.build import sync_daily_market_data
 from stockballdb.market_data.derive import sync_derived_market_data
+from stockballdb.market_data.universe import PHASE_2A_ETF_SYMBOLS, WTI_SYMBOL
 from stockballdb.market_data.validate import (
     DailyMarketDataValidationError,
     validate_daily_market_data_db,
@@ -123,7 +125,11 @@ def stage_daily_market_data(settings: Settings) -> str:
         assert settings.tiingo_api_key
     try:
         frame = sync_daily_market_data(engine, settings.tiingo_api_key)
-        validate_daily_market_data_db(engine, expected_count=len(frame))
+        validate_daily_market_data_db(
+            engine,
+            expected_count=len(frame),
+            symbols=PHASE_2A_ETF_SYMBOLS,
+        )
     except DailyMarketDataValidationError as exc:
         raise StageError(str(exc)) from exc
     return (
@@ -139,7 +145,10 @@ def stage_derive_market_data(settings: Settings) -> str:
         frame = sync_derived_market_data(engine)
         validate_derived_market_data_frame(frame)
         validate_daily_market_data_db(
-            engine, expected_count=len(frame), require_derived=True
+            engine,
+            expected_count=len(frame),
+            require_derived=True,
+            symbols=PHASE_2A_ETF_SYMBOLS,
         )
     except DailyMarketDataValidationError as exc:
         raise StageError(str(exc)) from exc
@@ -152,7 +161,11 @@ def stage_market_outcomes(settings: Settings) -> str:
     try:
         frame = sync_market_outcomes(engine)
         validate_market_outcomes_frame(frame)
-        validate_market_outcomes_db(engine, expected_count=len(frame))
+        validate_market_outcomes_db(
+            engine,
+            expected_count=len(frame),
+            symbols=PHASE_2A_ETF_SYMBOLS,
+        )
     except MarketOutcomesValidationError as exc:
         raise StageError(str(exc)) from exc
     return f"rows={len(frame)} symbols={frame['symbol'].nunique()}"
@@ -166,10 +179,53 @@ def stage_asset_regimes(settings: Settings) -> str:
         validate_asset_regimes_frame(frame)
         validate_volatility_formula_sample(frame)
         assert_volatility_regime_is_point_in_time(frame)
-        validate_asset_regimes_db(engine, expected_count=len(frame))
+        validate_asset_regimes_db(
+            engine,
+            expected_count=len(frame),
+            symbols=PHASE_2A_ETF_SYMBOLS,
+        )
     except AssetRegimesValidationError as exc:
         raise StageError(str(exc)) from exc
     return f"rows={len(frame)} symbols={frame['symbol'].nunique()}"
+
+
+def stage_wti_context(settings: Settings) -> str:
+    reset_engine()
+    engine = get_engine(settings)
+    if not is_snapshot_mode():
+        assert settings.fred_api_key
+    try:
+        report = sync_wti_pipeline(engine, settings.fred_api_key)
+        validate_daily_market_data_db(
+            engine,
+            expected_count=report.row_count,
+            required_symbols=(WTI_SYMBOL,),
+            symbol_scope=WTI_SYMBOL,
+        )
+        validate_daily_market_data_db(
+            engine,
+            expected_count=report.row_count,
+            required_symbols=(WTI_SYMBOL,),
+            require_derived=True,
+            symbol_scope=WTI_SYMBOL,
+        )
+        validate_market_outcomes_db(
+            engine,
+            expected_count=report.row_count,
+            required_symbols=(WTI_SYMBOL,),
+            symbol_scope=WTI_SYMBOL,
+        )
+        validate_asset_regimes_db(
+            engine,
+            expected_count=report.row_count,
+            required_symbols=(WTI_SYMBOL,),
+            symbol_scope=WTI_SYMBOL,
+        )
+    except DailyMarketDataValidationError as exc:
+        raise StageError(str(exc)) from exc
+    return (
+        f"rows={report.row_count} {report.first_date}->{report.last_date}"
+    )
 
 
 def stage_macro_conditions(settings: Settings) -> str:
@@ -230,14 +286,15 @@ def stage_calendar_context(settings: Settings) -> str:
 
 BUILD_STAGES: tuple[Stage, ...] = (
     Stage("migrate", "migrate", stage_migrate),
-    Stage("trading_days", "1/8 trading_days", stage_trading_days),
-    Stage("daily_market_data", "2/8 daily_market_data", stage_daily_market_data),
-    Stage("derive_market_data", "3/8 derive_market_data", stage_derive_market_data),
-    Stage("market_outcomes", "4/8 market_outcomes", stage_market_outcomes),
-    Stage("asset_regimes", "5/8 asset_regimes", stage_asset_regimes),
-    Stage("macro_conditions", "6/8 macro_conditions", stage_macro_conditions),
-    Stage("scheduled_events", "7/8 scheduled_events", stage_scheduled_events),
-    Stage("calendar_context", "8/8 calendar_context", stage_calendar_context),
+    Stage("trading_days", "1/9 trading_days", stage_trading_days),
+    Stage("daily_market_data", "2/9 daily_market_data", stage_daily_market_data),
+    Stage("derive_market_data", "3/9 derive_market_data", stage_derive_market_data),
+    Stage("market_outcomes", "4/9 market_outcomes", stage_market_outcomes),
+    Stage("asset_regimes", "5/9 asset_regimes", stage_asset_regimes),
+    Stage("wti_context", "5b/9 wti_context", stage_wti_context),
+    Stage("macro_conditions", "6/9 macro_conditions", stage_macro_conditions),
+    Stage("scheduled_events", "7/9 scheduled_events", stage_scheduled_events),
+    Stage("calendar_context", "8/9 calendar_context", stage_calendar_context),
 )
 
 

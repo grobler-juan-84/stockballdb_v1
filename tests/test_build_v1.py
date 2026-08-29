@@ -24,6 +24,7 @@ def test_build_stages_order() -> None:
         "derive_market_data",
         "market_outcomes",
         "asset_regimes",
+        "wti_context",
         "macro_conditions",
         "scheduled_events",
         "calendar_context",
@@ -63,7 +64,7 @@ def test_run_build_v1_fail_fast_skips_later_stages(
     assert calls == ["migrate", "trading_days"]
     out = capsys.readouterr().out
     assert "STATUS: PARTIAL" in out
-    assert "FAILED STAGE: 1/8 trading_days" in out
+    assert "FAILED STAGE: 1/9 trading_days" in out
     assert "V1 READY" not in out
 
 

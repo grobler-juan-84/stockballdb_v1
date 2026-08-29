@@ -236,6 +236,26 @@ def validate_derived_market_data_frame(frame: pd.DataFrame) -> None:
         raise DailyMarketDataValidationError("; ".join(errors))
 
 
+def _symbol_count_clause(
+    table: str,
+    *,
+    symbols: tuple[str, ...] | None,
+    symbol_scope: str | None,
+) -> tuple[str, dict[str, str]]:
+    if symbol_scope:
+        return f"SELECT COUNT(*) FROM {table} WHERE symbol = :symbol", {
+            "symbol": symbol_scope
+        }
+    if symbols:
+        placeholders = ", ".join(f":s{i}" for i in range(len(symbols)))
+        params = {f"s{i}": s for i, s in enumerate(symbols)}
+        return (
+            f"SELECT COUNT(*) FROM {table} WHERE symbol IN ({placeholders})",
+            params,
+        )
+    return f"SELECT COUNT(*) FROM {table}", {}
+
+
 def validate_daily_market_data_db(
     engine: Engine,
     *,
@@ -243,21 +263,18 @@ def validate_daily_market_data_db(
     required_symbols: tuple[str, ...] = PHASE_2A_ETF_SYMBOLS,
     require_derived: bool = False,
     symbol_scope: str | None = None,
+    symbols: tuple[str, ...] | None = None,
 ) -> None:
     """Validate persisted daily_market_data rows."""
     errors: list[str] = []
+    scope = symbols if symbol_scope is None else None
     with engine.connect() as conn:
-        if symbol_scope:
-            count = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM daily_market_data WHERE symbol = :symbol"
-                ),
-                {"symbol": symbol_scope},
-            ).scalar_one()
-        else:
-            count = conn.execute(
-                text("SELECT COUNT(*) FROM daily_market_data")
-            ).scalar_one()
+        count_sql, count_params = _symbol_count_clause(
+            "daily_market_data",
+            symbols=scope,
+            symbol_scope=symbol_scope,
+        )
+        count = conn.execute(text(count_sql), count_params).scalar_one()
         if count != expected_count:
             errors.append(f"row count {count} != expected {expected_count}")
 
@@ -335,25 +352,29 @@ def validate_daily_market_data_db(
             )
 
         if require_derived:
-            scope_sql = " AND symbol = :symbol_scope" if symbol_scope else ""
-            scope_params = {"symbol_scope": symbol_scope} if symbol_scope else {}
-
             if symbol_scope:
+                scope_sql = " AND symbol = :symbol_scope"
+                scope_params = {"symbol_scope": symbol_scope}
                 symbol_count = 1
-                null_ret = conn.execute(
-                    text(
-                        "SELECT COUNT(*) FROM daily_market_data "
-                        f"WHERE return_1d IS NULL{scope_sql}"
-                    ),
-                    scope_params,
-                ).scalar_one()
+            elif scope:
+                placeholders = ", ".join(f":s{i}" for i in range(len(scope)))
+                scope_params = {f"s{i}": s for i, s in enumerate(scope)}
+                scope_sql = f" AND symbol IN ({placeholders})"
+                symbol_count = len(scope)
             else:
+                scope_sql = ""
+                scope_params = {}
                 symbol_count = conn.execute(
                     text("SELECT COUNT(DISTINCT symbol) FROM daily_market_data")
                 ).scalar_one()
-                null_ret = conn.execute(
-                    text("SELECT COUNT(*) FROM daily_market_data WHERE return_1d IS NULL")
-                ).scalar_one()
+
+            null_ret = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM daily_market_data "
+                    f"WHERE return_1d IS NULL{scope_sql}"
+                ),
+                scope_params,
+            ).scalar_one()
             if null_ret != symbol_count:
                 errors.append(
                     f"expected {symbol_count} NULL return_1d (first row per symbol); "
@@ -387,6 +408,37 @@ def validate_daily_market_data_db(
                 if close_only_intraday_set:
                     errors.append(
                         "close-only intraday_return/range_pct must remain NULL"
+                    )
+            elif scope:
+                etf_gap_null = conn.execute(
+                    text(
+                        f"""
+                        SELECT COUNT(*) FROM daily_market_data
+                        WHERE symbol IN ({", ".join(f":s{i}" for i in range(len(scope)))})
+                          AND gap_pct IS NULL
+                        """
+                    ),
+                    scope_params,
+                ).scalar_one()
+                if etf_gap_null != len(scope):
+                    errors.append(
+                        f"expected {len(scope)} ETF NULL gap_pct "
+                        f"(first row only); got {etf_gap_null}"
+                    )
+
+                etf_intraday_null = conn.execute(
+                    text(
+                        f"""
+                        SELECT COUNT(*) FROM daily_market_data
+                        WHERE symbol IN ({", ".join(f":s{i}" for i in range(len(scope)))})
+                          AND (intraday_return IS NULL OR range_pct IS NULL)
+                        """
+                    ),
+                    scope_params,
+                ).scalar_one()
+                if etf_intraday_null:
+                    errors.append(
+                        f"ETF intraday_return/range_pct unexpected NULLs: {etf_intraday_null}"
                     )
             elif not symbol_scope:
                 etf_gap_null = conn.execute(

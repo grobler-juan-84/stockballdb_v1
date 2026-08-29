@@ -85,9 +85,11 @@ def validate_market_outcomes_db(
     expected_count: int,
     required_symbols: tuple[str, ...] = PHASE_2A_ETF_SYMBOLS,
     symbol_scope: str | None = None,
+    symbols: tuple[str, ...] | None = None,
 ) -> None:
     """Validate persisted market_outcomes against daily_market_data."""
     errors: list[str] = []
+    scope = symbols if symbol_scope is None else None
     with engine.connect() as conn:
         if symbol_scope:
             count = conn.execute(
@@ -97,6 +99,21 @@ def validate_market_outcomes_db(
             dmd = conn.execute(
                 text("SELECT COUNT(*) FROM daily_market_data WHERE symbol = :symbol"),
                 {"symbol": symbol_scope},
+            ).scalar_one()
+        elif scope:
+            placeholders = ", ".join(f":s{i}" for i in range(len(scope)))
+            params = {f"s{i}": s for i, s in enumerate(scope)}
+            count = conn.execute(
+                text(
+                    f"SELECT COUNT(*) FROM market_outcomes WHERE symbol IN ({placeholders})"
+                ),
+                params,
+            ).scalar_one()
+            dmd = conn.execute(
+                text(
+                    f"SELECT COUNT(*) FROM daily_market_data WHERE symbol IN ({placeholders})"
+                ),
+                params,
             ).scalar_one()
         else:
             count = conn.execute(text("SELECT COUNT(*) FROM market_outcomes")).scalar_one()
