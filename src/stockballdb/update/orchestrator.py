@@ -83,7 +83,7 @@ def run_update(
     Human progress logs go to stderr when ``json_output`` is True so stdout
     remains valid JSON.
     """
-    configure_logging()
+    configure_logging(stream=sys.stderr if json_output else None)
     logger = get_logger("stockballdb.update")
     log_stream = sys.stderr if json_output else sys.stdout
 
