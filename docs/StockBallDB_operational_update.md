@@ -80,5 +80,14 @@ Unlike `build_v1`, **`update` fails** when health status is **UNHEALTHY**. **HEA
 python -m stockballdb.validate_v1
 python -m stockballdb.health
 python -m stockballdb.fingerprint
-python -m stockballdb.rebuild_exact --manifest <path>
+python -m stockballdb.snapshots --manifest build_reports/manifest_<run_id>.json
+python -m stockballdb.rebuild_exact --manifest build_reports/manifest_<run_id>.json
 ```
+
+## Certification (Phase 10C)
+
+Certified **2026-08-30** on implementation commit `77906f3` (fix `71ee638` for `--json` logging).
+
+Authoritative certification record: [`StockBallDB_phase10a_operational_workflow_contract.md`](StockBallDB_phase10a_operational_workflow_contract.md) §27.
+
+Certified operational manifest: `build_reports/manifest_20260830T021244-06a37e08.json` (91 snapshots; `exact_rebuild_capable=true`; rebuild_exact **7/7** fingerprint match on dedicated rebuild DB).

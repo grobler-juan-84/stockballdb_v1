@@ -219,3 +219,15 @@ Committed **`870b560`** `docs: lock StockBallDB phase 10 operational contract` (
 ## Step 55 — Phase 10B unified operational update
 
 Implemented `python -m stockballdb.update` with `--as-of`, `--json`, preflight, Alembic gate, primary/rebuild DB guard, PostgreSQL advisory lock, fingerprint before/after, `UPDATE_STAGES` orchestration, validate_v1 + health gates, Manifest 1.1 on success, and `build_reports/run_<run_id>.json` for every run. Added `tests/test_update.py` (21 tests). pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. **PHASE 10B = IMPLEMENTED**; **PHASE 10C = NOT STARTED**.
+
+## Step 56 — Commit Phase 10B implementation
+
+Committed **`77906f3`** `feat: add unified operational update workflow`. Pre-cert baseline: pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138`.
+
+## Step 57 — Phase 10C operational certification
+
+Live certification **PASS**: fresh update (`20260830T021244-06a37e08`, `SUCCESS_NO_CHANGE`, 91 snapshots), immediate rerun (`SUCCESS_NO_CHANGE`), controlled Tiingo failure/recovery, concurrency lock (exit 3), exact rebuild **7/7** fingerprint match on rebuild DB. Fix **`71ee638`** for `--json` logger stdout pollution. **PHASE 10C = COMPLETE**; **PHASE 10 = COMPLETE**.
+
+## Step 58 — Document Phase 10 certification
+
+Updated contract §27, operator guide, `phase_history.md`. Committed **`bb926f7`** `docs: certify StockBallDB phase 10`.

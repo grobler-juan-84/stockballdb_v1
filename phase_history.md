@@ -411,10 +411,19 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 10 — Operational Workflow
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 
 - Phase 10A contract committed (`870b560`).
-- Phase 10B implemented `stockballdb.update`: preflight, advisory lock, `run_as_of`, `UPDATE_STAGES`, validate_v1/health gates, fingerprint change detection, Manifest 1.1 + run reports.
-- pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; certified fingerprint unchanged (no live update).
-- Operator guide: `docs/StockBallDB_operational_update.md`.
-- **NEXT:** Phase 10C operational certification.
+- Phase 10B implemented and committed (`77906f3`); certification fix `71ee638` (`--json` logging).
+- Phase 10C live certification **PASS** (2026-08-30): fresh update, no-change rerun, controlled failure/recovery, concurrency lock, exact rebuild from update manifest.
+- Certified manifest: `build_reports/manifest_20260830T021244-06a37e08.json` (run `20260830T021244-06a37e08`).
+- Final primary fingerprint: `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138`.
+- pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**.
+
+### End-of-phase summary
+
+**Done:** Unified `python -m stockballdb.update` operational path certified — preflight, advisory lock, full-refetch stages, validate/health gates, fingerprint change detection, Manifest 1.1 + run reports, exact-rebuild compatibility preserved.
+**Problems:** `--json` mode initially leaked logger lines to stdout; fixed in `71ee638`. Concurrency cert lock-holder force-kill left stale PG session until backend terminated (normal `release()` path unaffected).
+**Remember:** Use `python -m stockballdb.snapshots --manifest PATH` for snapshot verify; bootstrap remains `build_v1`; recovery is rerun update; REBUILD EXACT stays offline disaster recovery.
+
+**NEXT:** Phase 11 — StockBallDB Explorer

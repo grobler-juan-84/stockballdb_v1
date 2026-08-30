@@ -27,7 +27,7 @@ Phase 10 **orchestrates existing capabilities**. It does **not** reimplement pro
 | --- | --- | --- |
 | **10A** | Audit + operational contract (this document) | **COMPLETE** |
 | **10B** | Unified `update` implementation | **IMPLEMENTED** (2026-08-29) |
-| **10C** | Operational certification | **NOT STARTED** |
+| **10C** | Operational certification | **COMPLETE** (2026-08-30) |
 
 ### 1.3 Non-goals (Phase 10 overall)
 
@@ -670,6 +670,7 @@ Canonical data unchanged. Database fingerprint should match Phase 9 certificatio
 | --- | --- | --- |
 | 1.0 | 2026-08-29 | Phase 10A audit + contract lock |
 | 1.1 | 2026-08-29 | Phase 10B implementation record (§26) |
+| 1.2 | 2026-08-30 | Phase 10C certification record (§27) |
 
 ---
 
@@ -689,3 +690,58 @@ fingerprint  = sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7
 ```
 
 **NEXT:** Phase 10C — operational certification (live update matrix per §22).
+
+---
+
+## 27. Phase 10C certification record (2026-08-30)
+
+**Implementation commit:** `77906f3` — `feat: add unified operational update workflow`  
+**Certification fix:** `71ee638` — `fix: keep update --json stdout free of log lines` (logger output polluted `--json` stdout during pytest/live JSON mode)
+
+**Pre-certification baseline**
+
+```text
+fingerprint_pre_cert = sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138
+primary_db           = stockballdb
+rebuild_db           = stockballdb_rebuild_cert (distinct)
+```
+
+### Certification matrix
+
+| Test | Run ID | Result | Notes |
+| --- | --- | --- | --- |
+| **A. Fresh update** | `20260830T021244-06a37e08` | **PASS** | `SUCCESS_NO_CHANGE`; ~301s; 91 snapshots; manifest `manifest_20260830T021244-06a37e08.json`; validate_v1 PASS; health HEALTHY; `exact_rebuild_capable=true` |
+| **B. Immediate rerun** | `20260830T021808-c6ede280` | **PASS** | `SUCCESS_NO_CHANGE`; ~293s; fingerprint before==after; 91 snapshots (content-addressed dedup) |
+| **C. Controlled failure** | `20260830T022310-51ec731c` | **PASS** | Invalid `TIINGO_API_KEY` env; exit 1; `FAILED_STAGE` / `daily_market_data`; no success manifest; failure run report written; lock released |
+| **D. Recovery** | `20260830T022341-937dce81` | **PASS** | Normal config restored; exit 0; `SUCCESS_NO_CHANGE`; validate_v1 PASS; health HEALTHY |
+| **E. Concurrency** | `20260830T022932-6ab0fe78` | **PASS** | Advisory lock held by helper process; second update exit 3; `FAILED_CONCURRENT`; no canonical writes; lock re-acquirable after holder release |
+| **F. Exact rebuild** | manifest A | **PASS** | `rebuild_exact` on `stockballdb_rebuild_cert`; snapshot verify missing=0 corrupt=0; validate_v1 PASS; **7/7** table fingerprints MATCH; database fingerprint MATCH; ~215s; offline |
+
+### Manifest A verification
+
+```text
+schema_version         = 1.1
+run_as_of              = 2026-08-29
+git commit             = 77906f3 (dirty=false at success)
+snapshot_capture       = true
+snapshots              = 91
+exact_rebuild_capable  = true
+secret audit           = PASS
+snapshot verify        = PASS (missing=0, corrupt=0)
+```
+
+### JSON / `--as-of`
+
+- `--json`: certified via `tests/test_update.py` after logging fix (`71ee638`); stdout is valid JSON; progress on stderr.
+- `--as-of`: propagation certified via unit tests (`effective_run_as_of`, stage boundary); build boundary only, not historical PIT replay.
+
+### Post-certification primary regression
+
+```text
+validate_v1  = PASS
+health       = HEALTHY
+fingerprint  = sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138
+pytest       = 142/142 PASS
+```
+
+**PHASE 10 = COMPLETE** — **NEXT = Phase 11 — StockBallDB Explorer**
