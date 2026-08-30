@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+
+from stockballdb.calendar.nyse import today_ny
 
 from alembic import command
 from alembic.config import Config
@@ -93,6 +96,13 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def effective_run_as_of(settings: Settings) -> dt.date:
+    """Operational run boundary; defaults to America/New_York calendar today."""
+    if settings.run_as_of is not None:
+        return settings.run_as_of
+    return today_ny()
+
+
 def stage_migrate(settings: Settings) -> str:
     reset_engine()
     cfg = Config(str(_repo_root() / "alembic.ini"))
@@ -110,7 +120,7 @@ def stage_trading_days(settings: Settings) -> str:
     reset_engine()
     engine = get_engine(settings)
     try:
-        frame = sync_trading_days(engine)
+        frame = sync_trading_days(engine, end=effective_run_as_of(settings))
         validate_trading_days_frame(frame)
         validate_trading_days_db(engine, expected_count=len(frame))
     except TradingDaysValidationError as exc:
@@ -254,7 +264,11 @@ def stage_scheduled_events(settings: Settings) -> str:
     if not is_snapshot_mode():
         assert settings.fred_api_key
     try:
-        events = sync_scheduled_events(engine, settings.fred_api_key)
+        events = sync_scheduled_events(
+            engine,
+            settings.fred_api_key,
+            end=effective_run_as_of(settings),
+        )
         validate_events(events)
         validate_fomc_scheduled_only(events)
         validate_events_db(engine, expected_count=len(events))
@@ -282,6 +296,19 @@ def stage_calendar_context(settings: Settings) -> str:
     except CalendarContextValidationError as exc:
         raise StageError(str(exc)) from exc
     return f"rows={len(frame)} (1:1 trading_days)"
+
+
+UPDATE_STAGES: tuple[Stage, ...] = (
+    Stage("trading_days", "1/9 trading_days", stage_trading_days),
+    Stage("daily_market_data", "2/9 daily_market_data", stage_daily_market_data),
+    Stage("derive_market_data", "3/9 derive_market_data", stage_derive_market_data),
+    Stage("market_outcomes", "4/9 market_outcomes", stage_market_outcomes),
+    Stage("asset_regimes", "5/9 asset_regimes", stage_asset_regimes),
+    Stage("wti_context", "5b/9 wti_context", stage_wti_context),
+    Stage("macro_conditions", "6/9 macro_conditions", stage_macro_conditions),
+    Stage("scheduled_events", "7/9 scheduled_events", stage_scheduled_events),
+    Stage("calendar_context", "8/9 calendar_context", stage_calendar_context),
+)
 
 
 BUILD_STAGES: tuple[Stage, ...] = (

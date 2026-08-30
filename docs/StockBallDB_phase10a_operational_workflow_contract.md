@@ -26,7 +26,7 @@ Phase 10 **orchestrates existing capabilities**. It does **not** reimplement pro
 | Sub-phase | Scope | Status after 10A |
 | --- | --- | --- |
 | **10A** | Audit + operational contract (this document) | **COMPLETE** |
-| **10B** | Unified `update` implementation | **NOT STARTED** |
+| **10B** | Unified `update` implementation | **IMPLEMENTED** (2026-08-29) |
 | **10C** | Operational certification | **NOT STARTED** |
 
 ### 1.3 Non-goals (Phase 10 overall)
@@ -669,3 +669,23 @@ Canonical data unchanged. Database fingerprint should match Phase 9 certificatio
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-08-29 | Phase 10A audit + contract lock |
+| 1.1 | 2026-08-29 | Phase 10B implementation record (§26) |
+
+---
+
+## 26. Phase 10B implementation record (2026-08-29)
+
+Phase 10B delivered `python -m stockballdb.update` orchestrating existing `UPDATE_STAGES`, preflight, PostgreSQL advisory lock, fingerprint before/after change detection, validate_v1 + health gates (UNHEALTHY fails), Manifest 1.1 on success only, and per-run JSON reports under `build_reports/run_<run_id>.json`.
+
+Operator guide: [`StockBallDB_operational_update.md`](StockBallDB_operational_update.md).
+
+Verification (no live update performed):
+
+```text
+pytest       = 142/142 PASS (21 new update tests)
+validate_v1  = PASS
+health       = HEALTHY
+fingerprint  = sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138 (unchanged)
+```
+
+**NEXT:** Phase 10C — operational certification (live update matrix per §22).

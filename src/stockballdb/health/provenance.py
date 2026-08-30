@@ -177,8 +177,12 @@ def build_manifest_payload(
     snapshots: list[SnapshotReference] | None = None,
     database_fingerprint: DatabaseFingerprint | None = None,
     schema_version: str = MANIFEST_SCHEMA_1_0,
+    build_id: str | None = None,
+    run_as_of: dt.date | None = None,
 ) -> dict[str, Any]:
-    build_id = started_at.strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
+    build_id = build_id or (
+        started_at.strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
+    )
     snap_entries = snapshots_manifest_entries(snapshots or [])
     snapshot_capture = success and len(snap_entries) >= MIN_SNAPSHOTS_BUILD_V1
     exact_rebuild_capable = snapshot_capture and validation_result == "PASS"
@@ -219,6 +223,8 @@ def build_manifest_payload(
             },
         ],
     }
+    if run_as_of is not None:
+        payload["run_as_of"] = run_as_of.isoformat()
     if schema_version == MANIFEST_SCHEMA_1_1:
         payload["snapshot_capture"] = snapshot_capture
         payload["exact_rebuild_capable"] = exact_rebuild_capable
@@ -290,6 +296,8 @@ def manifest_from_health_report(
     snapshots: list[SnapshotReference] | None = None,
     database_fingerprint: DatabaseFingerprint | None = None,
     schema_version: str = MANIFEST_SCHEMA_1_1,
+    build_id: str | None = None,
+    run_as_of: dt.date | None = None,
 ) -> dict[str, Any]:
     datasets = []
     for t in report.tables:
@@ -315,4 +323,6 @@ def manifest_from_health_report(
         snapshots=snapshots,
         database_fingerprint=database_fingerprint,
         schema_version=schema_version,
+        build_id=build_id,
+        run_as_of=run_as_of,
     )

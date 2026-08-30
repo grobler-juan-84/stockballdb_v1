@@ -413,5 +413,8 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 **Status:** IN PROGRESS
 
-- Catalogued all operational CLI entry points (`build_v1`, per-stage builders, `validate_v1`, `health`, `fingerprint`, `snapshots verify`, `rebuild_exact`, `check_db`, `scripts/` audits) with network/DB/idempotency/failure semantics for operator documentation.
-- Audited derived-table recompute semantics (market_outcomes horizons, asset_regimes rolling/vol regime, derive_daily_market_data, calendar_context), PostgreSQL transaction/upsert patterns, health severity/exit codes, manifest/provenance flow, and build_v1 partial-failure behavior.
+- Phase 10A contract committed (`870b560`).
+- Phase 10B implemented `stockballdb.update`: preflight, advisory lock, `run_as_of`, `UPDATE_STAGES`, validate_v1/health gates, fingerprint change detection, Manifest 1.1 + run reports.
+- pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; certified fingerprint unchanged (no live update).
+- Operator guide: `docs/StockBallDB_operational_update.md`.
+- **NEXT:** Phase 10C operational certification.

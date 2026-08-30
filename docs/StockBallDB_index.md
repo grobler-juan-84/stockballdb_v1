@@ -52,6 +52,9 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 15. [StockBallDB_phase10a_operational_workflow_contract.md](StockBallDB_phase10a_operational_workflow_contract.md)  
    Phase 10A lock: operational workflow audit, dependency graph, source classification, `update` stage model, failure/recovery/concurrency contract, and 10B/10C backlog.
 
+16. [StockBallDB_operational_update.md](StockBallDB_operational_update.md)  
+   Phase 10B operator reference: `python -m stockballdb.update`, exit codes, preflight, recovery, and health gate semantics.
+
 ## Routing
 
 | Need | Open |
@@ -70,6 +73,7 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 | Snapshot & exact-rebuild contract (Phase 9A) | phase9a_snapshot_rebuild |
 | Snapshots & rebuild operator guide (Phase 9B) | snapshots_and_rebuilds |
 | Operational workflow contract (Phase 10A) | phase10a_operational_workflow |
+| Operational update command (Phase 10B) | operational_update |
 | Languages, libraries, and tooling | Tech stack |
 | Build / update / derive / validate steps | workflow |
 | Development phases (0 → N) | workflow |

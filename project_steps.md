@@ -212,6 +212,10 @@ Audited all build/validate/health/fingerprint/rebuild entry points and `build_v1
 
 Audited all `python -m stockballdb.*` modules with `main()` / `__main__`, `scripts/` audit utilities, and core sync functions in `v1/stages.py` and build modules. Documented network usage, DB tables, recompute scope, idempotency, validation, and failure behavior for operational entry points. No code changes.
 
-## Step 53 — Derived recompute semantics audit
+## Step 54 — Commit Phase 10A operational contract
 
-Explored `outcomes/derive.py`, `regimes/derive.py`, `market_data/derive.py`, `calendar_context/derive.py`, health engine/provenance, `v1/report.py`, and `build_v1.py`. Documented lookback/forward horizon requirements, upsert vs delete-reload patterns, transaction boundaries, health exit codes, manifest creation, and partial-state behavior on failure. No code changes.
+Committed **`870b560`** `docs: lock StockBallDB phase 10 operational contract` (Phase 10A docs only; no runtime/schema/data changes). Working tree clean before 10B implementation.
+
+## Step 55 — Phase 10B unified operational update
+
+Implemented `python -m stockballdb.update` with `--as-of`, `--json`, preflight, Alembic gate, primary/rebuild DB guard, PostgreSQL advisory lock, fingerprint before/after, `UPDATE_STAGES` orchestration, validate_v1 + health gates, Manifest 1.1 on success, and `build_reports/run_<run_id>.json` for every run. Added `tests/test_update.py` (21 tests). pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. **PHASE 10B = IMPLEMENTED**; **PHASE 10C = NOT STARTED**.

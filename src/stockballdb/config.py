@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -20,6 +22,7 @@ class Settings:
     tiingo_api_key: str | None = None
     fred_api_key: str | None = None
     eia_api_key: str | None = None
+    run_as_of: dt.date | None = None
 
 
 def load_settings(
@@ -72,3 +75,15 @@ def load_settings(
 def _optional(name: str) -> str | None:
     value = os.getenv(name, "").strip()
     return value or None
+
+
+def database_name_from_url(database_url: str) -> str:
+    """Return PostgreSQL database name from a SQLAlchemy URL (no credentials)."""
+    normalized = database_url.replace("postgresql+psycopg://", "postgresql://", 1)
+    path = urlparse(normalized).path.lstrip("/")
+    return path.split("?")[0] if path else ""
+
+
+def with_run_as_of(settings: Settings, run_as_of: dt.date) -> Settings:
+    """Return settings bound to a deterministic operational run boundary."""
+    return replace(settings, run_as_of=run_as_of)
