@@ -419,6 +419,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Certified manifest: `build_reports/manifest_20260830T021244-06a37e08.json` (run `20260830T021244-06a37e08`).
 - Final primary fingerprint: `sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138`.
 - pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**.
+- Remote: `main` pushed to GitHub (`3e5f797`, 2026-08-30).
 
 ### End-of-phase summary
 

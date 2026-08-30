@@ -230,4 +230,8 @@ Live certification **PASS**: fresh update (`20260830T021244-06a37e08`, `SUCCESS_
 
 ## Step 58 — Document Phase 10 certification
 
-Updated contract §27, operator guide, `phase_history.md`. Committed **`bb926f7`** `docs: certify StockBallDB phase 10`.
+Updated contract §27, operator guide, `phase_history.md`. Committed **`3e5f797`** `docs: certify StockBallDB phase 10`.
+
+## Step 59 — Push Phase 10 to GitHub
+
+Working tree was already clean. Pushed `main` to `origin` (`f35d23f..3e5f797`): Phase 10A contract `870b560`, Phase 10B implementation `77906f3`, cert fix `71ee638`, Phase 10 certification docs `3e5f797`.
