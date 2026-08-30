@@ -64,7 +64,7 @@ The Explorer **must not** change StockBallDB's architectural boundary. Canonical
 | Sub-phase | Scope | Status after 11A |
 | --- | --- | --- |
 | **11A** | Audit + Explorer contract (this document) | **COMPLETE** |
-| **11B** | Explorer implementation | **NOT STARTED** |
+| **11B** | Explorer implementation | **IMPLEMENTED** (2026-08-30) |
 | **11C** | Explorer verification & closeout | **NOT STARTED** |
 
 ### 1.4 Non-goals (Phase 11 overall)
@@ -971,4 +971,42 @@ Canonical data unchanged. Matches Phase 10C certified primary fingerprint.
 | --- | --- | --- |
 | 1.0 | 2026-08-30 | Phase 11A audit + contract lock |
 
-**NEXT:** Phase 11B — StockBallDB Explorer Implementation
+**NEXT:** Phase 11C — Explorer certification
+
+---
+
+## 25. Phase 11B implementation record (2026-08-30)
+
+**Status:** IMPLEMENTED — read-only Streamlit Explorer at `python -m stockballdb.explorer`.
+
+### Delivered
+
+| Component | Location |
+| --- | --- |
+| Entry point | `src/stockballdb/explorer/__main__.py` |
+| App shell + navigation | `src/stockballdb/explorer/app.py` |
+| Read-only DB engine | `src/stockballdb/explorer/db.py` |
+| Table registry + queries | `registry.py`, `queries.py` |
+| Six Streamlit pages | `src/stockballdb/explorer/pages/` |
+| Service layer | `src/stockballdb/explorer/services/` |
+| Operator guide | `docs/StockBallDB_explorer.md` |
+| Tests | `tests/test_explorer.py` |
+
+### Verification (2026-08-30)
+
+```text
+pytest       = 189/189 PASS
+validate_v1  = PASS
+health       = HEALTHY
+fingerprint  = sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138
+```
+
+Canonical data unchanged. **Phase 11C NOT STARTED.**
+
+---
+
+## 26. Document history (continued)
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.1 | 2026-08-30 | Phase 11B implementation record |

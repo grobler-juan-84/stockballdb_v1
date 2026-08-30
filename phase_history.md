@@ -448,6 +448,10 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 11 — StockBallDB Explorer
 
-**Status:** IN PROGRESS
+**Status:** IN PROGRESS — Phase 11B implemented; **11C NOT STARTED**
 
-- Phase 11A contract complete. **NEXT:** Phase 11B implementation.
+- Phase 11A contract complete (`88256e4`).
+- Phase 11B: read-only Streamlit Explorer at `python -m stockballdb.explorer` — registry/queries, six pages, service layer, 47 unit tests, operator guide.
+- pytest **189/189 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged (`sha256:9e474ed...`).
+- Phase 11B committed and pushed to `origin/main`.
+- **NEXT:** Phase 11C Explorer certification matrix.

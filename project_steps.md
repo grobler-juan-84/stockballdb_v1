@@ -239,3 +239,15 @@ Working tree was already clean. Pushed `main` to `origin` (`f35d23f..3e5f797`): 
 ## Step 60 — Phase 11A Explorer audit & contract
 
 Audited SQLAlchemy models, health/validate/fingerprint/provenance/snapshot APIs, seven-table inspection inventory, and definitions docs. Locked read-only Explorer boundary, Streamlit technology choice, six-area navigation, query/pagination/security contract, and 11B/11C backlog in `docs/StockBallDB_phase11a_explorer_contract.md`. Updated index and `phase_history.md`. pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. **PHASE 11A = COMPLETE**; **PHASE 11B = NOT STARTED**.
+
+## Step 61 — Commit Phase 11A explorer contract
+
+Committed **`88256e4`** `docs: lock StockBallDB phase 11 explorer contract` (Phase 11A docs only). Baseline before 11B: pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint `sha256:9e474ed...`.
+
+## Step 62 — Phase 11B StockBallDB Explorer implementation
+
+Implemented read-only Streamlit Explorer (`python -m stockballdb.explorer`): isolated read-only DB engine, seven-table registry/query layer, artifacts/formatting/definitions, six service modules, six Streamlit pages with sidebar Refresh and CSV export, and `tests/test_explorer.py` (47 tests). Added `streamlit>=1.40,<2`, `explorer_database_url()` config helper, and `docs/StockBallDB_explorer.md`. Updated contract §11B record and index. pytest **189/189 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged; Streamlit launch verified on localhost:8501. **PHASE 11B = IMPLEMENTED**; **PHASE 11C = NOT STARTED**.
+
+## Step 63 — Commit and push Phase 11B Explorer
+
+Committed Phase 11B implementation (`feat: add StockBallDB Explorer`). Pre-push verification: pytest **189/189 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. Pushed to `origin/main`.

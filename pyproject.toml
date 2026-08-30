@@ -16,6 +16,7 @@ dependencies = [
     "requests",
     "python-dotenv",
     "pandas_market_calendars==5.4.0",
+    "streamlit>=1.40,<2",
 ]
 
 [project.optional-dependencies]

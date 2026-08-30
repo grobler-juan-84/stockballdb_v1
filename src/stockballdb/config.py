@@ -84,6 +84,16 @@ def database_name_from_url(database_url: str) -> str:
     return path.split("?")[0] if path else ""
 
 
+def explorer_database_url(settings: Settings | None = None) -> str:
+    """Return Explorer DB URL (read-only role preferred, else primary)."""
+    load_dotenv()
+    explicit = os.getenv("STOCKBALLDB_EXPLORER_DATABASE_URL", "").strip()
+    if explicit:
+        return explicit
+    cfg = settings or load_settings(require_database_url=True)
+    return cfg.database_url
+
+
 def with_run_as_of(settings: Settings, run_as_of: dt.date) -> Settings:
     """Return settings bound to a deterministic operational run boundary."""
     return replace(settings, run_as_of=run_as_of)
