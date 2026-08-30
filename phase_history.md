@@ -428,3 +428,26 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 **Remember:** Use `python -m stockballdb.snapshots --manifest PATH` for snapshot verify; bootstrap remains `build_v1`; recovery is rerun update; REBUILD EXACT stays offline disaster recovery.
 
 **NEXT:** Phase 11 — StockBallDB Explorer
+
+## Phase 11A — Explorer Audit & Contract
+
+**Status:** COMPLETE
+
+- Audited reusable package APIs (health, validate_v1, fingerprint, provenance, snapshots, coverage) vs CLI-only outputs.
+- Inventoried seven canonical tables: keys, indexes, filters, NULL patterns, live row counts (Phase 10C baseline).
+- Locked Explorer boundary: read-only inspection only — no research, trading, mutation, or operational triggers.
+- Locked technology: **Streamlit** (`python -m stockballdb.explorer`); six-area navigation (Control Center, Data Explorer, Day Inspector, Coverage, Provenance, Validation).
+- Contract: `docs/StockBallDB_phase11a_explorer_contract.md` with 11B MUST/SHOULD/DEFER and 11C certification matrix.
+- pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged.
+
+### End-of-phase summary
+
+**Done:** Authoritative Phase 11A Explorer contract; technology decision record; read-only architecture; per-table inspection inventory; security and performance guidance.
+**Problems:** None — audit-only phase.
+**Remember:** Explorer calls shared Python APIs, not CLI parsing; no raw SQL console; Day Inspector uses separate bounded queries; reuse health coverage/missingness taxonomy.
+
+## Phase 11 — StockBallDB Explorer
+
+**Status:** IN PROGRESS
+
+- Phase 11A contract complete. **NEXT:** Phase 11B implementation.

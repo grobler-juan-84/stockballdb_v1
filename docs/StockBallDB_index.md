@@ -55,6 +55,9 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 16. [StockBallDB_operational_update.md](StockBallDB_operational_update.md)  
    Phase 10B operator reference: `python -m stockballdb.update`, exit codes, preflight, recovery, and health gate semantics.
 
+17. [StockBallDB_phase11a_explorer_contract.md](StockBallDB_phase11a_explorer_contract.md)  
+   Phase 11A lock: read-only Explorer audit, six-area information architecture, Streamlit recommendation, query/safety/security contract, and 11B/11C backlog.
+
 ## Routing
 
 | Need | Open |
@@ -74,6 +77,7 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
 | Snapshots & rebuild operator guide (Phase 9B) | snapshots_and_rebuilds |
 | Operational workflow contract (Phase 10A) | phase10a_operational_workflow |
 | Operational update command (Phase 10B) | operational_update |
+| Explorer contract (Phase 11A) | phase11a_explorer |
 | Languages, libraries, and tooling | Tech stack |
 | Build / update / derive / validate steps | workflow |
 | Development phases (0 → N) | workflow |

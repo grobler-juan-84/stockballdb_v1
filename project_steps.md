@@ -235,3 +235,7 @@ Updated contract §27, operator guide, `phase_history.md`. Committed **`3e5f797`
 ## Step 59 — Push Phase 10 to GitHub
 
 Working tree was already clean. Pushed `main` to `origin` (`f35d23f..3e5f797`): Phase 10A contract `870b560`, Phase 10B implementation `77906f3`, cert fix `71ee638`, Phase 10 certification docs `3e5f797`.
+
+## Step 60 — Phase 11A Explorer audit & contract
+
+Audited SQLAlchemy models, health/validate/fingerprint/provenance/snapshot APIs, seven-table inspection inventory, and definitions docs. Locked read-only Explorer boundary, Streamlit technology choice, six-area navigation, query/pagination/security contract, and 11B/11C backlog in `docs/StockBallDB_phase11a_explorer_contract.md`. Updated index and `phase_history.md`. pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. **PHASE 11A = COMPLETE**; **PHASE 11B = NOT STARTED**.
