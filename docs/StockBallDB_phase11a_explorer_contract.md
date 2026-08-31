@@ -987,7 +987,7 @@ Canonical data unchanged. Matches Phase 10C certified primary fingerprint.
 | App shell + navigation | `src/stockballdb/explorer/app.py` |
 | Read-only DB engine | `src/stockballdb/explorer/db.py` |
 | Table registry + queries | `registry.py`, `queries.py` |
-| Six Streamlit pages | `src/stockballdb/explorer/pages/` |
+| Six Streamlit pages | `src/stockballdb/explorer/views/` |
 | Service layer | `src/stockballdb/explorer/services/` |
 | Operator guide | `docs/StockBallDB_explorer.md` |
 | Tests | `tests/test_explorer.py` |

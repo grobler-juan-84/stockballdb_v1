@@ -251,3 +251,7 @@ Implemented read-only Streamlit Explorer (`python -m stockballdb.explorer`): iso
 ## Step 63 — Commit and push Phase 11B Explorer
 
 Committed Phase 11B implementation (`feat: add StockBallDB Explorer`). Pre-push verification: pytest **189/189 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged. Pushed to `origin/main`.
+
+## Step 64 — Fix Explorer navigation startup crash (11C finding)
+
+Fixed Streamlit `Multiple Pages specified with URL pathname render` crash: renamed `explorer/pages/` → `explorer/views/` (avoid Streamlit auto-discovery) and added explicit unique `url_path` values via `navigation.py`. Added regression tests for unique pathnames and absence of auto-discovery `pages/` dir. pytest **192/192 PASS**; manual launch succeeds without `StreamlitAPIException`. Committed **`fix: correct Explorer page navigation`** and pushed to `origin/main`.

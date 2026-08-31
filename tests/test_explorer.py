@@ -532,6 +532,51 @@ def test_import_explorer_app() -> None:
     import stockballdb.explorer.app  # noqa: F401
 
 
+def test_explorer_no_streamlit_pages_directory() -> None:
+    """Streamlit auto-discovers a sibling pages/ dir — must not exist beside app.py."""
+    explorer_dir = Path(__file__).resolve().parents[1] / "src" / "stockballdb" / "explorer"
+    assert not (explorer_dir / "pages").is_dir()
+    assert (explorer_dir / "views").is_dir()
+
+
+def test_explorer_navigation_url_paths_unique() -> None:
+    from stockballdb.explorer.navigation import (
+        EXPLORER_PAGE_SPECS,
+        build_explorer_pages,
+        navigation_url_paths,
+    )
+
+    assert len(EXPLORER_PAGE_SPECS) == 6
+    titles = [spec.title for spec in EXPLORER_PAGE_SPECS]
+    assert len(titles) == len(set(titles))
+
+    non_default_paths = [spec.url_path for spec in EXPLORER_PAGE_SPECS if not spec.default]
+    assert len(non_default_paths) == 5
+    assert len(set(non_default_paths)) == 5
+
+    configured_paths = navigation_url_paths()
+    assert len(configured_paths) == 6
+    assert len(set(configured_paths)) == 6
+
+    pages = build_explorer_pages()
+    assert len(pages) == 6
+    # st.Page.url_path requires ScriptRunContext; uniqueness is enforced via specs above.
+
+
+def test_explorer_navigation_expected_areas() -> None:
+    from stockballdb.explorer.navigation import EXPLORER_PAGE_SPECS
+
+    titles = {spec.title for spec in EXPLORER_PAGE_SPECS}
+    assert titles == {
+        "Control Center",
+        "Data Explorer",
+        "Day Inspector",
+        "Coverage Explorer",
+        "Provenance Explorer",
+        "Validation Center",
+    }
+
+
 def test_import_explorer_main() -> None:
     import stockballdb.explorer.__main__  # noqa: F401
 
