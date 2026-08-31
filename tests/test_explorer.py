@@ -32,12 +32,20 @@ from stockballdb.explorer.queries import (
 from stockballdb.explorer.registry import TABLE_REGISTRY, ExplorerQueryError as RegistryError, get_table_spec, list_table_keys
 from stockballdb.explorer.services import day as day_service
 from stockballdb.explorer.services import validation as validation_service
-from stockballdb.explorer.services.control import load_control_center, manifest_summary
+from stockballdb.explorer.services.control import (
+    database_status_from_health,
+    load_control_center,
+    manifest_summary,
+    run_report_view,
+    select_operational_runs,
+)
 from stockballdb.explorer.services.coverage import load_coverage
 from stockballdb.explorer.services.provenance import manifest_detail, resolve_snapshot_path, snapshot_metadata_list
 from stockballdb.explorer.services.tables import browse_table, list_tables
 from stockballdb.fingerprint.compute import DatabaseFingerprint, TableFingerprint
 from stockballdb.health.models import HealthReport, HealthStatus
+from stockballdb.health.provenance import MANIFEST_SCHEMA_1_1, build_manifest_payload
+from stockballdb.update.report import RunReport
 from stockballdb.validate_v1 import ValidateV1Error
 
 
@@ -425,7 +433,169 @@ def test_validation_run_validate_v1_fail(monkeypatch: pytest.MonkeyPatch) -> Non
     assert result.error == "bad"
 
 
-def test_control_center_manifest_summary() -> None:
+def _healthy_report(**overrides) -> HealthReport:
+    fields = {
+        "status": HealthStatus.HEALTHY,
+        "generated_at": dt.datetime.now(dt.timezone.utc),
+        "runtime_ms": 1.0,
+        "database_connected": True,
+        "alembic_head": "a8f3c2d1b4e5",
+        "expected_alembic_head": "a8f3c2d1b4e5",
+        "calendar_version": "5.4.0",
+        "validate_v1_pass": True,
+        "integrity": {"validate_v1": "PASS", "diagnostics": ["calendar=5.4.0"]},
+    }
+    fields.update(overrides)
+    return HealthReport(**fields)
+
+
+def test_database_status_from_healthy_health_report() -> None:
+    report = _healthy_report()
+    status = database_status_from_health(report)
+    assert status.health_label == "HEALTHY"
+    assert status.validate_v1_label == "PASS"
+    assert status.validate_v1_pass is True
+    assert report.integrity["validate_v1"] == "PASS"
+
+
+def test_database_status_from_unhealthy_health_report() -> None:
+    report = _healthy_report(
+        status=HealthStatus.UNHEALTHY,
+        validate_v1_pass=False,
+        integrity={"validate_v1": "FAIL", "diagnostics": []},
+    )
+    status = database_status_from_health(report)
+    assert status.health_label == "UNHEALTHY"
+    assert status.validate_v1_label == "FAIL"
+    report = _healthy_report()
+    status = database_status_from_health(report)
+    assert status.health_label == "HEALTHY"
+    assert status.validate_v1_label == "PASS"
+    assert status.validate_v1_pass is True
+    assert report.integrity["validate_v1"] == "PASS"
+
+
+def test_database_status_not_inferred_from_failed_run() -> None:
+    report = _healthy_report()
+    status = database_status_from_health(report)
+    failed = RunReport(
+        run_id="failed-run",
+        command="python -m stockballdb.update",
+        run_as_of="2026-08-28",
+        started_at=dt.datetime(2026, 8, 30, tzinfo=dt.timezone.utc),
+        finished_at=dt.datetime(2026, 8, 30, tzinfo=dt.timezone.utc),
+        status="FAILED",
+        failure_stage="preflight",
+        error="controlled certification failure",
+        validation_result="FAIL",
+        health_status="UNHEALTHY",
+    ).as_dict()
+    from stockballdb.explorer.artifacts import ArtifactRecord
+
+    attempt, success = select_operational_runs(
+        [
+            ArtifactRecord(
+                path=Path("run_failed-run.json"),
+                kind="run_report",
+                artifact_id="failed-run",
+                started_at=failed["started_at"],
+                payload=failed,
+            )
+        ]
+    )
+    assert attempt is not None
+    assert attempt.payload["status"] == "FAILED"
+    assert success is None
+    assert status.health_label == "HEALTHY"
+    assert status.validate_v1_label == "PASS"
+
+
+def test_select_operational_runs_failed_then_success() -> None:
+    from stockballdb.explorer.artifacts import ArtifactRecord
+
+    failed = RunReport(
+        run_id="fail-newest",
+        command="python -m stockballdb.update",
+        run_as_of="2026-08-28",
+        started_at=dt.datetime(2026, 8, 30, 12, 0, tzinfo=dt.timezone.utc),
+        finished_at=dt.datetime(2026, 8, 30, 12, 1, tzinfo=dt.timezone.utc),
+        status="FAILED",
+        failure_stage="tiingo",
+        error="controlled failure",
+    ).as_dict()
+    success = RunReport(
+        run_id="success-older",
+        command="python -m stockballdb.update",
+        run_as_of="2026-08-28",
+        started_at=dt.datetime(2026, 8, 30, 11, 0, tzinfo=dt.timezone.utc),
+        finished_at=dt.datetime(2026, 8, 30, 11, 1, tzinfo=dt.timezone.utc),
+        status="SUCCESS_NO_CHANGE",
+        validation_result="PASS",
+        health_status="HEALTHY",
+        change_classification="SUCCESS_NO_CHANGE",
+    ).as_dict()
+    records = [
+        ArtifactRecord(
+            path=Path("run_fail-newest.json"),
+            kind="run_report",
+            artifact_id="fail-newest",
+            started_at=failed["started_at"],
+            payload=failed,
+        ),
+        ArtifactRecord(
+            path=Path("run_success-older.json"),
+            kind="run_report",
+            artifact_id="success-older",
+            started_at=success["started_at"],
+            payload=success,
+        ),
+    ]
+    attempt, latest_success = select_operational_runs(records)
+    assert attempt.payload["run_id"] == "fail-newest"
+    assert latest_success.payload["run_id"] == "success-older"
+    view = run_report_view(latest_success.payload)
+    assert view.status == "SUCCESS_NO_CHANGE"
+    assert view.validation_result == "PASS"
+
+
+def test_manifest_summary_manifest_11_string_fingerprint() -> None:
+    from stockballdb.explorer.artifacts import ArtifactRecord
+
+    fp = DatabaseFingerprint(
+        fingerprint_schema_version="1.0",
+        database_fingerprint="sha256:9e474ed3105b9fbdd43b213ce36f415d3f11e804f01aa20716b3629ae7a65138",
+        table_fingerprints=(
+            TableFingerprint(table="trading_days", row_count=17532, sha256="sha256:abc"),
+        ),
+    )
+    payload = build_manifest_payload(
+        command="python -m stockballdb.update",
+        started_at=dt.datetime(2026, 8, 30, 2, 12, 44, tzinfo=dt.timezone.utc),
+        finished_at=dt.datetime(2026, 8, 30, 2, 15, 0, tzinfo=dt.timezone.utc),
+        success=True,
+        datasets=[],
+        validation_result="PASS",
+        alembic_head="a8f3c2d1b4e5",
+        health_status="HEALTHY",
+        schema_version=MANIFEST_SCHEMA_1_1,
+        database_fingerprint=fp,
+        snapshots=[],
+    )
+    rec = ArtifactRecord(
+        path=Path("manifest_phase10.json"),
+        kind="manifest",
+        artifact_id=str(payload["build_id"]),
+        started_at=payload["build_started_at"],
+        payload=payload,
+    )
+    summary = manifest_summary(rec)
+    assert summary["schema_version"] == MANIFEST_SCHEMA_1_1
+    assert summary["database_fingerprint"] == fp.database_fingerprint
+    assert summary["table_fingerprint_count"] == 1
+    assert isinstance(payload["database_fingerprint"], str)
+
+
+def test_control_center_manifest_summary_legacy_nested_fingerprint() -> None:
     from stockballdb.explorer.artifacts import ArtifactRecord
 
     rec = ArtifactRecord(
@@ -435,7 +605,7 @@ def test_control_center_manifest_summary() -> None:
         started_at="2026-01-01",
         payload={
             "build_id": "x",
-            "schema_version": "1.1",
+            "schema_version": "1.0",
             "validation_result": "PASS",
             "health_status": "HEALTHY",
             "snapshots": [{"snapshot_id": "a"}],
@@ -445,22 +615,12 @@ def test_control_center_manifest_summary() -> None:
     summary = manifest_summary(rec)
     assert summary["build_id"] == "x"
     assert summary["snapshot_count"] == 1
+    assert summary["database_fingerprint"] == "sha256:abc"
 
 
 def test_load_control_center(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    engine = MagicMock(spec=Engine)
-    health = HealthReport(
-        status=HealthStatus.HEALTHY,
-        generated_at=dt.datetime.now(dt.timezone.utc),
-        runtime_ms=1.0,
-        database_connected=True,
-        alembic_head="head",
-        expected_alembic_head="head",
-        calendar_version="4.3.3",
-        validate_v1_pass=True,
-        findings=[],
-    )
-    monkeypatch.setattr("stockballdb.explorer.services.control.run_health", lambda _e: health)
+    health = _healthy_report()
+    monkeypatch.setattr("stockballdb.explorer.services.control.load_current_health", lambda: health)
     monkeypatch.setattr(
         "stockballdb.explorer.services.control.collect_diagnostics",
         lambda _e: {"tables": {}},
@@ -476,8 +636,10 @@ def test_load_control_center(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     )
     monkeypatch.setattr("stockballdb.explorer.services.control.discover_manifests", lambda: discover_manifests(tmp_path))
     monkeypatch.setattr("stockballdb.explorer.services.control.discover_run_reports", lambda: [])
-    snap = load_control_center(engine)
-    assert snap.health.status == HealthStatus.HEALTHY
+    monkeypatch.setattr("stockballdb.db.get_engine", lambda: MagicMock(spec=Engine))
+    snap = load_control_center()
+    assert snap.database_status.health_label == "HEALTHY"
+    assert snap.database_status.validate_v1_label == "PASS"
     assert snap.latest_manifest is not None
 
 

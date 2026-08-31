@@ -255,3 +255,7 @@ Committed Phase 11B implementation (`feat: add StockBallDB Explorer`). Pre-push 
 ## Step 64 — Fix Explorer navigation startup crash (11C finding)
 
 Fixed Streamlit `Multiple Pages specified with URL pathname render` crash: renamed `explorer/pages/` → `explorer/views/` (avoid Streamlit auto-discovery) and added explicit unique `url_path` values via `navigation.py`. Added regression tests for unique pathnames and absence of auto-discovery `pages/` dir. pytest **192/192 PASS**; manual launch succeeds without `StreamlitAPIException`. Committed **`fix: correct Explorer page navigation`** and pushed to `origin/main`.
+
+## Step 65 — Fix Explorer Control Center status and manifest rendering
+
+Fixed Phase 11C findings: Manifest 1.1 crash (`database_fingerprint` string vs nested dict), split Latest Attempt / Latest Successful Run, headline Database Status from live `run_health()` only via `database_status_from_health()`. Added regression tests with real `HealthReport`, `build_manifest_payload`, and `RunReport` shapes. pytest **197/197 PASS**. Committed **`fix: correct Explorer status and manifest rendering`**; pushed to `origin/main`.

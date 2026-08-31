@@ -453,4 +453,5 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Phase 11A contract complete (`88256e4`).
 - Phase 11B: read-only Streamlit Explorer at `python -m stockballdb.explorer` — registry/queries, six pages, service layer, operator guide (`677de04`).
 - Phase 11C finding: startup crash from duplicate Streamlit page pathnames — fixed by `views/` rename + explicit `url_path` in `navigation.py`.
+- Phase 11C finding: Control Center manifest crash + operational-run/status semantics — fixed manifest 1.1 fingerprint parsing, split Latest Attempt vs Latest Successful Run, headline status from live `run_health()` only.
 - **NEXT:** Continue Phase 11C manual certification matrix.
