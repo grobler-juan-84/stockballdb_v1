@@ -259,3 +259,7 @@ Fixed Streamlit `Multiple Pages specified with URL pathname render` crash: renam
 ## Step 65 — Fix Explorer Control Center status and manifest rendering
 
 Fixed Phase 11C findings: Manifest 1.1 crash (`database_fingerprint` string vs nested dict), split Latest Attempt / Latest Successful Run, headline Database Status from live `run_health()` only via `database_status_from_health()`. Added regression tests with real `HealthReport`, `build_manifest_payload`, and `RunReport` shapes. pytest **197/197 PASS**. Committed **`fix: correct Explorer status and manifest rendering`**; pushed to `origin/main`.
+
+## Step 66 — Fix Explorer live Database Status caching
+
+Root cause: `@st.cache_data` on `_cached_control` cached entire `ControlCenterSnapshot` including stale `HealthReport` from an earlier render; CLI always runs fresh `run_health()`. Fix: `load_live_database_status()` runs uncached every Control Center render; artifacts loaded separately. Added ERROR label for adapter exceptions; integration tests assert Explorer live status matches CLI `run_health()` and `validate_v1_database()` when `DATABASE_URL` set. pytest **200/200 PASS**. Committed **`fix: correct Explorer live database status`**; pushed to `origin/main`.

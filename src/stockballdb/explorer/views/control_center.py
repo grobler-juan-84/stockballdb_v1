@@ -6,16 +6,12 @@ import streamlit as st
 
 from stockballdb.explorer.db import get_explorer_engine
 from stockballdb.explorer.services.control import (
-    load_control_center,
+    load_control_artifacts,
     load_fingerprint,
+    load_live_database_status,
     manifest_summary,
     run_report_view,
 )
-
-
-@st.cache_data(show_spinner="Loading status…")
-def _cached_control(_nonce: int):
-    return load_control_center()
 
 
 @st.cache_data(show_spinner="Computing fingerprint…")
@@ -47,21 +43,26 @@ def _render_run_section(title: str, record) -> None:
 
 def render() -> None:
     nonce = st.session_state.get("refresh_nonce", 0)
+
+    # Live status is NEVER cached — must match CLI on every render.
+    live = load_live_database_status()
+    if live.error_message:
+        st.error(f"Live health check error: {live.error_message}")
+
     try:
-        snap = _cached_control(nonce)
+        artifacts = load_control_artifacts()
     except Exception as exc:
-        st.error(f"Unable to load Control Center: {exc}")
+        st.error(f"Unable to load Control Center artifacts: {exc}")
         return
 
-    status = snap.database_status
     st.subheader("Database Status")
     st.caption("Live checks only — not inferred from historical run reports or manifests.")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Health", status.health_label)
-    c2.metric("validate_v1", status.validate_v1_label)
-    c3.metric("Alembic", status.alembic_head or "—")
+    c1.metric("Health", live.health_label)
+    c2.metric("validate_v1", live.validate_v1_label)
+    c3.metric("Alembic", live.alembic_head or "—")
 
-    st.write("Git:", snap.git.get("commit", "—"), "| dirty:", snap.git.get("dirty"))
+    st.write("Git:", artifacts.git.get("commit", "—"), "| dirty:", artifacts.git.get("dirty"))
 
     if st.button("Compute database fingerprint"):
         st.session_state["compute_fp"] = True
@@ -75,22 +76,28 @@ def render() -> None:
             st.error(f"Fingerprint failed: {exc}")
 
     st.subheader("Table Summary")
-    for t in snap.health.tables:
-        st.write(
-            f"**{t.table}** — {t.row_count:,} rows | "
-            f"{t.first_date} → {t.last_date} ({t.grain})"
-        )
+    if live.health_report:
+        for t in live.health_report.tables:
+            st.write(
+                f"**{t.table}** — {t.row_count:,} rows | "
+                f"{t.first_date} → {t.last_date} ({t.grain})"
+            )
+    else:
+        st.info("Table summary unavailable — live health check did not complete.")
 
     st.subheader("Operational Runs")
-    _render_run_section("Latest Attempt", snap.latest_run_attempt)
-    _render_run_section("Latest Successful Run", snap.latest_successful_run)
+    _render_run_section("Latest Attempt", artifacts.latest_run_attempt)
+    _render_run_section("Latest Successful Run", artifacts.latest_successful_run)
 
     st.subheader("Latest Manifest 1.1")
-    summary = manifest_summary(snap.latest_manifest)
+    summary = manifest_summary(artifacts.latest_manifest)
     if summary:
         st.json(summary)
     else:
         st.info("No manifests found.")
 
-    with st.expander("Health details"):
-        st.json(snap.health_dict)
+    if live.health_report:
+        with st.expander("Health details"):
+            from stockballdb.health.render import report_to_dict
+
+            st.json(report_to_dict(live.health_report))

@@ -33,8 +33,11 @@ from stockballdb.explorer.registry import TABLE_REGISTRY, ExplorerQueryError as 
 from stockballdb.explorer.services import day as day_service
 from stockballdb.explorer.services import validation as validation_service
 from stockballdb.explorer.services.control import (
+    LiveDatabaseStatus,
     database_status_from_health,
+    load_control_artifacts,
     load_control_center,
+    load_live_database_status,
     manifest_summary,
     run_report_view,
     select_operational_runs,
@@ -454,7 +457,7 @@ def test_database_status_from_healthy_health_report() -> None:
     status = database_status_from_health(report)
     assert status.health_label == "HEALTHY"
     assert status.validate_v1_label == "PASS"
-    assert status.validate_v1_pass is True
+    assert status.health_report.validate_v1_pass is True
     assert report.integrity["validate_v1"] == "PASS"
 
 
@@ -467,12 +470,6 @@ def test_database_status_from_unhealthy_health_report() -> None:
     status = database_status_from_health(report)
     assert status.health_label == "UNHEALTHY"
     assert status.validate_v1_label == "FAIL"
-    report = _healthy_report()
-    status = database_status_from_health(report)
-    assert status.health_label == "HEALTHY"
-    assert status.validate_v1_label == "PASS"
-    assert status.validate_v1_pass is True
-    assert report.integrity["validate_v1"] == "PASS"
 
 
 def test_database_status_not_inferred_from_failed_run() -> None:
@@ -620,7 +617,11 @@ def test_control_center_manifest_summary_legacy_nested_fingerprint() -> None:
 
 def test_load_control_center(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     health = _healthy_report()
-    monkeypatch.setattr("stockballdb.explorer.services.control.load_current_health", lambda: health)
+    live = LiveDatabaseStatus.from_health_report(health)
+    monkeypatch.setattr(
+        "stockballdb.explorer.services.control.load_live_database_status",
+        lambda: live,
+    )
     monkeypatch.setattr(
         "stockballdb.explorer.services.control.collect_diagnostics",
         lambda _e: {"tables": {}},
@@ -638,9 +639,72 @@ def test_load_control_center(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     monkeypatch.setattr("stockballdb.explorer.services.control.discover_run_reports", lambda: [])
     monkeypatch.setattr("stockballdb.db.get_engine", lambda: MagicMock(spec=Engine))
     snap = load_control_center()
-    assert snap.database_status.health_label == "HEALTHY"
-    assert snap.database_status.validate_v1_label == "PASS"
+    assert snap.live_status.health_label == "HEALTHY"
+    assert snap.live_status.validate_v1_label == "PASS"
     assert snap.latest_manifest is not None
+
+
+def test_load_live_database_status_surfaces_adapter_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "stockballdb.explorer.services.control.run_health",
+        lambda: (_ for _ in ()).throw(RuntimeError("connection lost")),
+    )
+    live = load_live_database_status()
+    assert live.health_label == "ERROR"
+    assert live.validate_v1_label == "ERROR"
+    assert "connection lost" in (live.error_message or "")
+
+
+def test_live_database_status_matches_cli_health_integration() -> None:
+    from dotenv import load_dotenv
+
+    from stockballdb.config import ConfigError, load_settings
+    from stockballdb.db import reset_engine
+    from stockballdb.health.engine import run_health
+
+    load_dotenv()
+    try:
+        load_settings(require_database_url=True)
+    except ConfigError as exc:
+        pytest.skip(f"DATABASE_URL not set: {exc}")
+
+    reset_engine()
+    cli_report = run_health()
+    live = load_live_database_status()
+
+    assert live.error_message is None, live.error_message
+    assert type(cli_report).__name__ == "HealthReport"
+    assert type(live).__name__ == "LiveDatabaseStatus"
+    assert live.health_label == cli_report.status.value
+    assert live.validate_v1_label == ("PASS" if cli_report.validate_v1_pass else "FAIL")
+    assert live.health_report is not None
+    assert live.health_report.validate_v1_pass == cli_report.validate_v1_pass
+    assert live.health_report.status == cli_report.status
+
+
+def test_live_validate_v1_matches_cli_validate_integration() -> None:
+    from dotenv import load_dotenv
+
+    from stockballdb.config import ConfigError, load_settings
+    from stockballdb.db import get_engine, reset_engine
+    from stockballdb.validate_v1 import ValidateV1Error, validate_v1_database
+
+    load_dotenv()
+    try:
+        load_settings(require_database_url=True)
+    except ConfigError as exc:
+        pytest.skip(f"DATABASE_URL not set: {exc}")
+
+    reset_engine()
+    try:
+        validate_v1_database(get_engine())
+        cli_pass = True
+    except ValidateV1Error:
+        cli_pass = False
+
+    live = load_live_database_status()
+    assert live.error_message is None
+    assert (live.validate_v1_label == "PASS") == cli_pass
 
 
 # --- Config ---
