@@ -6,21 +6,10 @@ from typing import Any
 
 import streamlit as st
 
-from stockballdb.explorer.formatting import NULL_DISPLAY, format_cell, rows_to_display_dicts
-
-# Columns where signed financial coloring is semantically appropriate (display-only).
-FINANCIAL_COLOR_COLUMNS = frozenset(
-    {
-        "return_1d",
-        "return_3d",
-        "return_5d",
-        "return_10d",
-        "return_20d",
-        "gap_pct",
-        "intraday_return",
-        "range_pct",
-        "drawdown_from_high",
-    }
+from stockballdb.explorer.formatting import (
+    NULL_DISPLAY,
+    is_decimal_ratio_column,
+    rows_to_display_dicts,
 )
 
 
@@ -32,9 +21,19 @@ def financial_column_config(columns: list[str]) -> dict[str, Any]:
             cfg[col] = st.column_config.TextColumn("date", width="small")
         elif col == "symbol":
             cfg[col] = st.column_config.TextColumn("symbol", width="small")
-        elif col in FINANCIAL_COLOR_COLUMNS or col.endswith("_pct") or col.startswith("return_"):
+        elif is_decimal_ratio_column(col):
             cfg[col] = st.column_config.TextColumn(col, width="small")
-        elif col in {"open", "high", "low", "close", "adj_open", "adj_high", "adj_low", "adj_close", "volume"}:
+        elif col in {
+            "open",
+            "high",
+            "low",
+            "close",
+            "adj_open",
+            "adj_high",
+            "adj_low",
+            "adj_close",
+            "volume",
+        }:
             cfg[col] = st.column_config.TextColumn(col, width="small")
     return cfg
 
@@ -44,7 +43,7 @@ def _signed_color(value: Any) -> str:
     if value is None or value == NULL_DISPLAY or value == "":
         return ""
     try:
-        # Already formatted display strings from format_cell
+        # Display strings from format_cell (may already be percent like "0.70%")
         text = str(value).replace(",", "").strip()
         if text.endswith("%"):
             text = text[:-1]
@@ -62,7 +61,8 @@ def rows_to_styled_dataframe(rows: list[dict[str, Any]]):
     """
     Build a display dataframe with optional green/red styling on financial columns.
 
-    Uses formatted cells (NULL → —) so certified NULL presentation is preserved.
+    Uses formatted cells (NULL → —; decimal ratios → percent) so certified NULL
+    presentation is preserved. Does not mutate ``rows``.
     Returns (data, column_config) where data may be a pandas Styler or list[dict].
     """
     display = rows_to_display_dicts(rows)
@@ -70,7 +70,7 @@ def rows_to_styled_dataframe(rows: list[dict[str, Any]]):
         return display, None
 
     columns = list(display[0].keys())
-    color_cols = [c for c in columns if c in FINANCIAL_COLOR_COLUMNS]
+    color_cols = [c for c in columns if is_decimal_ratio_column(c)]
     cfg = financial_column_config(columns)
 
     if not color_cols:

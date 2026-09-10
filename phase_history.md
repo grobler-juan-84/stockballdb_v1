@@ -467,6 +467,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - **Phase 11D Pass 2 polish:** unified navy shell with `st.page_link` nav (`navigation` hidden, same `url_path`s), page headers, bordered toolbars, result strip, shared CSS/theme denser toward mockup. pytest **214 passed / 2 skipped**; fingerprint **MATCH**. Still **MANUAL CERTIFICATION PENDING**.
 - **Phase 11D Pass 3:** full-bleed shell + active cyan pill nav styling; presentation-only CSS/chrome polish.
 - **Phase 11D Pass 4:** flush top sticky shell, mockup deep navy `#0a1628`, soft blue active pill; kill residual Streamlit top chrome.
+- **Phase 11D fix:** Data Explorer decimal-ratio columns display as percent (e.g. `0.00697` → `0.70%`) in presentation layer only; CSV/DB unchanged.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

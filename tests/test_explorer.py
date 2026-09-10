@@ -287,6 +287,69 @@ def test_format_cell_date_and_decimal() -> None:
     assert format_cell(Decimal("1.2300")) == "1.23"
 
 
+def test_format_cell_decimal_ratio_as_percent() -> None:
+    from stockballdb.explorer.formatting import (
+        format_percent_ratio,
+        is_decimal_ratio_column,
+    )
+
+    assert is_decimal_ratio_column("return_1d")
+    assert is_decimal_ratio_column("gap_pct")
+    assert is_decimal_ratio_column("intraday_return")
+    assert is_decimal_ratio_column("range_pct")
+    assert is_decimal_ratio_column("drawdown_from_high")
+    assert is_decimal_ratio_column("distance_20dma_pct")
+    assert is_decimal_ratio_column("return_20d")
+    # Macro percentage *points* must not be treated as decimal ratios.
+    assert not is_decimal_ratio_column("fed_funds_rate")
+    assert not is_decimal_ratio_column("inflation_rate")
+    assert not is_decimal_ratio_column("coverage_pct")
+
+    assert format_percent_ratio(0.0069774366) == "0.70%"
+    assert format_percent_ratio(-0.0019797398) == "-0.20%"
+    assert format_percent_ratio(0) == "0.00%"
+    assert format_percent_ratio(Decimal("0.0180289571")) == "1.80%"
+
+    assert format_cell(0.0069774366, column="return_1d") == "0.70%"
+    assert format_cell(-0.0019797398, column="gap_pct") == "-0.20%"
+    assert format_cell(0, column="intraday_return") == "0.00%"
+    assert format_cell(None, column="return_1d") == NULL_DISPLAY
+    # Without column context, decimals stay raw (non-ratio path).
+    assert format_cell(Decimal("0.0069774366")) == "0.0069774366"
+    # Macro points: no ×100.
+    assert format_cell(Decimal("3.25"), column="fed_funds_rate") == "3.25"
+
+
+def test_rows_to_display_dicts_percent_and_no_mutation() -> None:
+    raw = [{"return_1d": 0.0069774366, "close": None, "symbol": "SPY"}]
+    snapshot = [dict(raw[0])]
+    out = rows_to_display_dicts(raw)
+    assert out[0]["return_1d"] == "0.70%"
+    assert out[0]["close"] == NULL_DISPLAY
+    assert out[0]["symbol"] == "SPY"
+    assert raw == snapshot
+
+
+def test_rows_to_styled_dataframe_preserves_percent_and_color_path() -> None:
+    from stockballdb.explorer.ui.dataframes import _signed_color, rows_to_styled_dataframe
+
+    assert "15803d" in _signed_color("0.70%")
+    assert "b91c1c" in _signed_color("-0.20%")
+    assert _signed_color("0.00%") == ""
+    assert _signed_color(NULL_DISPLAY) == ""
+
+    raw = [{"return_1d": 0.0069774366, "gap_pct": -0.0019797398, "close": 100.0}]
+    data, _cfg = rows_to_styled_dataframe(raw)
+    if hasattr(data, "data"):
+        assert data.data.iloc[0]["return_1d"] == "0.70%"
+        assert data.data.iloc[0]["gap_pct"] == "-0.20%"
+    else:
+        assert data[0]["return_1d"] == "0.70%"
+        assert data[0]["gap_pct"] == "-0.20%"
+    # Source untouched.
+    assert raw[0]["return_1d"] == 0.0069774366
+
+
 def test_format_hash_truncates() -> None:
     digest = "sha256:" + "a" * 64
     assert "…" in format_hash(digest)
@@ -928,11 +991,15 @@ def test_explorer_ui_helpers_status_and_null_color() -> None:
     data, _cfg = rows_to_styled_dataframe(
         [{"date": None, "return_1d": 0.01, "gap_pct": -0.02, "close": 100}]
     )
-    # Styler or list — formatted NULL preserved in underlying frame/list
+    # Styler or list — formatted NULL + percent display preserved
     if hasattr(data, "data"):
         assert data.data.iloc[0]["date"] == NULL_DISPLAY
+        assert data.data.iloc[0]["return_1d"] == "1.00%"
+        assert data.data.iloc[0]["gap_pct"] == "-2.00%"
     else:
         assert data[0]["date"] == NULL_DISPLAY
+        assert data[0]["return_1d"] == "1.00%"
+        assert data[0]["gap_pct"] == "-2.00%"
 
 
 def test_fingerprint_wrapper(monkeypatch: pytest.MonkeyPatch) -> None:

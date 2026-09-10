@@ -311,3 +311,7 @@ Full-bleed navy shell, active nav pill (cyan border/glow), denser inactive links
 ## Step 78 — Phase 11D Pass 4 flush top bar
 
 Pinned shell to viewport top (sticky + zero Streamlit header/decoration padding), mockup deep navy `#0a1628`, softer blue active nav pill. Presentation-only CSS. Explorer tests **66 passed**; fingerprint **MATCH**. Manual certification still pending.
+
+## Step 79 — Fix Data Explorer decimal-ratio percent display
+
+Restored on-screen percentage formatting for definition-backed decimal ratio columns (`return_*`, `*_pct`, gap/intraday/drawdown/vol) via `formatting.format_cell(..., column=)`; macro percentage-point fields excluded. CSV/export and source values unchanged. Green/red coloring still applies to formatted `%` strings. pytest **219 passed, 2 skipped**; fingerprint **MATCH**.
