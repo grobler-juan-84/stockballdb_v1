@@ -13,7 +13,14 @@ from stockballdb.explorer.services.control import (
     manifest_summary,
     run_report_view,
 )
-from stockballdb.explorer.ui.components import dataframe_dense, metric_row, page_header, section_heading, status_badge
+from stockballdb.explorer.ui.components import (
+    dataframe_dense,
+    metric_row,
+    page_header,
+    panel,
+    section_heading,
+    status_badge,
+)
 
 
 @st.cache_data(show_spinner="Computing fingerprint…")
@@ -48,7 +55,7 @@ def _run_card(title: str, record) -> None:
 
 
 def render() -> None:
-    page_header("Control Center", "Live database status and latest operational provenance.")
+    page_header("Control Center", "Live database status and latest operational provenance.", icon="◫")
     nonce = st.session_state.get("refresh_nonce", 0)
 
     live = load_live_database_status()
@@ -71,22 +78,22 @@ def render() -> None:
     v_kind = "ok" if live.validate_v1_label == "PASS" else "bad"
     alembic_label = f"Alembic {live.alembic_head or '—'}"
 
-    st.markdown(
-        f"{status_badge(health_kind, f'Health {live.health_label}')} "
-        f"{status_badge(v_kind, f'validate_v1 {live.validate_v1_label}')} "
-        f"{status_badge('muted', alembic_label)}",
-        unsafe_allow_html=True,
-    )
-
-    metric_row(
-        [
-            ("Health", live.health_label),
-            ("validate_v1", live.validate_v1_label),
-            ("Alembic", live.alembic_head or "—"),
-            ("Git", format_hash(str(artifacts.git.get("commit") or ""), prefix_len=10)),
-        ]
-    )
-    st.caption(f"Git dirty: {artifacts.git.get('dirty')} — live checks only (not inferred from run reports).")
+    with panel():
+        st.markdown(
+            f"{status_badge(health_kind, f'Health {live.health_label}')} "
+            f"{status_badge(v_kind, f'validate_v1 {live.validate_v1_label}')} "
+            f"{status_badge('muted', alembic_label)}",
+            unsafe_allow_html=True,
+        )
+        metric_row(
+            [
+                ("Health", live.health_label),
+                ("validate_v1", live.validate_v1_label),
+                ("Alembic", live.alembic_head or "—"),
+                ("Git", format_hash(str(artifacts.git.get("commit") or ""), prefix_len=10)),
+            ]
+        )
+        st.caption(f"Git dirty: {artifacts.git.get('dirty')} — live checks only (not inferred from run reports).")
 
     left, right = st.columns(2)
     with left:

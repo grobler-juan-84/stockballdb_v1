@@ -1,4 +1,4 @@
-"""Streamlit application shell and navigation (Phase 11D desktop shell)."""
+"""Streamlit application shell and navigation (Phase 11D Pass 2)."""
 
 from __future__ import annotations
 
@@ -28,8 +28,10 @@ def main() -> None:
     _configure_page()
     _init_session()
     inject_explorer_css()
-    render_app_header()
-    nav = st.navigation(build_explorer_pages(), position="top")
+    pages = build_explorer_pages()
+    # Hidden native nav + custom shell page_link row (same st.Page / url_path objects).
+    nav = st.navigation(pages, position="hidden")
+    render_app_header(pages)
     nav.run()
 
 

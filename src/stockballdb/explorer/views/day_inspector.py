@@ -8,27 +8,28 @@ from stockballdb.explorer.config import explorer_date_input_bounds, explorer_dat
 from stockballdb.explorer.db import readonly_connection
 from stockballdb.explorer.formatting import rows_to_display_dicts
 from stockballdb.explorer.services.day import inspect_day
-from stockballdb.explorer.ui.components import dataframe_dense, kv_table, page_header, section_heading
+from stockballdb.explorer.ui.components import dataframe_dense, kv_table, page_header, panel, section_heading
 from stockballdb.market_data.universe import V1_MARKET_SYMBOLS
 
 
 def render() -> None:
-    page_header("Day Inspector", "Cross-table factual inspection for one calendar date.")
+    page_header("Day Inspector", "Cross-table factual inspection for one calendar date.", icon="▦")
 
-    c_date, c_sym, c_go = st.columns([1.4, 1.2, 0.8])
-    target = c_date.date_input(
-        "Calendar date",
-        value=explorer_date_max(),
-        key="di_date",
-        **explorer_date_input_bounds(),
-    )
-    sym_choice = c_sym.selectbox(
-        "Symbol (optional)",
-        options=["(all)"] + list(V1_MARKET_SYMBOLS),
-        key="di_symbol",
-    )
-    symbol = None if sym_choice == "(all)" else sym_choice
-    inspect = c_go.button("Inspect", type="primary", use_container_width=True)
+    with panel():
+        c_date, c_sym, c_go = st.columns([1.4, 1.2, 0.8], gap="small")
+        target = c_date.date_input(
+            "Calendar date",
+            value=explorer_date_max(),
+            key="di_date",
+            **explorer_date_input_bounds(),
+        )
+        sym_choice = c_sym.selectbox(
+            "Symbol (optional)",
+            options=["(all)"] + list(V1_MARKET_SYMBOLS),
+            key="di_symbol",
+        )
+        symbol = None if sym_choice == "(all)" else sym_choice
+        inspect = c_go.button("Inspect", type="primary", use_container_width=True)
 
     if not inspect and "di_result" not in st.session_state:
         st.info("Choose a date (and optional symbol), then click **Inspect**.")

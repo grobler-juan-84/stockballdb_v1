@@ -1,6 +1,8 @@
-"""Application shell header (Phase 11D) — presentation only."""
+"""Application shell header (Phase 11D Pass 2) — presentation only."""
 
 from __future__ import annotations
+
+from typing import Any
 
 import streamlit as st
 
@@ -49,8 +51,22 @@ def _dot_class(health: str) -> str:
     return "sbdb-dot-muted"
 
 
-def render_app_header() -> None:
-    """Dark compact application identity + status strip."""
+def _health_display(health: str) -> str:
+    h = health.upper()
+    if h == "HEALTHY":
+        return "Database Healthy"
+    if "WARN" in h:
+        return health
+    return health
+
+
+def render_app_header(pages: list[Any] | None = None) -> None:
+    """
+    Unified dark application shell: brand + page links + status.
+
+    Uses ``st.page_link`` against the same ``st.Page`` objects as ``st.navigation``
+    so url_path routing stays certified. Navigation position is ``hidden``.
+    """
     nonce = int(st.session_state.get("refresh_nonce", 0))
     try:
         status = _shell_status(nonce)
@@ -60,34 +76,42 @@ def render_app_header() -> None:
     health = status["health"]
     last_update = status["last_update"]
     dot = _dot_class(health)
+    health_label = _health_display(health)
 
-    left, mid, right = st.columns([2.2, 4.5, 3.3])
-    with left:
-        st.markdown(
-            '<p class="sbdb-brand">StockBallDB</p>'
-            '<p class="sbdb-tagline">Historical Data. Real Context.</p>',
-            unsafe_allow_html=True,
-        )
-    with mid:
-        st.caption("Explorer · read-only · desktop")
-    with right:
-        st.markdown(
-            f'<div class="sbdb-status">'
-            f"Last update: <strong>{last_update}</strong>"
-            f"&nbsp;&nbsp;"
-            f'<span class="sbdb-dot {dot}"></span>{health}'
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-        b1, b2 = st.columns(2)
-        if b1.button("Refresh", key="sbdb_header_refresh", use_container_width=True):
-            st.session_state.refresh_nonce = nonce + 1
-            st.cache_data.clear()
-            st.rerun()
-        try:
-            from stockballdb.explorer.db import check_explorer_connection
+    with st.container(border=True):
+        st.markdown('<span class="sbdb-shell-marker"></span>', unsafe_allow_html=True)
+        brand_col, nav_col, status_col = st.columns([1.55, 5.2, 2.0], gap="small")
 
-            check_explorer_connection()
-            b2.caption("DB connected")
-        except Exception:
-            b2.caption("DB unavailable")
+        with brand_col:
+            st.markdown(
+                '<p class="sbdb-brand">StockBallDB</p>'
+                '<p class="sbdb-tagline">Historical Data. Real Context.</p>',
+                unsafe_allow_html=True,
+            )
+
+        with nav_col:
+            if pages:
+                link_cols = st.columns(len(pages), gap="small")
+                for col, page in zip(link_cols, pages, strict=True):
+                    with col:
+                        label = getattr(page, "title", None) or str(page)
+                        icon = getattr(page, "icon", None)
+                        st.page_link(page, label=label, icon=icon, use_container_width=True)
+
+        with status_col:
+            s1, s2 = st.columns([2.4, 1.0], gap="small")
+            with s1:
+                st.markdown(
+                    f'<div class="sbdb-status-block">'
+                    f'<div class="sbdb-status-label">Last Update</div>'
+                    f'<div class="sbdb-status-value">{last_update}</div>'
+                    f'<div class="sbdb-health-line">'
+                    f'<span class="sbdb-dot {dot}"></span>{health_label}'
+                    f"</div></div>",
+                    unsafe_allow_html=True,
+                )
+            with s2:
+                if st.button("↻", key="sbdb_header_refresh", help="Refresh status & caches", use_container_width=True):
+                    st.session_state.refresh_nonce = nonce + 1
+                    st.cache_data.clear()
+                    st.rerun()

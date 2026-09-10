@@ -880,7 +880,16 @@ def test_explorer_app_configures_wide_layout() -> None:
     src = Path(explorer_app.__file__).read_text(encoding="utf-8")
     assert 'layout="wide"' in src
     assert "set_page_config" in src
-    assert 'position="top"' in src
+    assert 'position="hidden"' in src
+    assert "render_app_header" in src
+
+
+def test_explorer_shell_uses_page_link_nav() -> None:
+    from stockballdb.explorer.ui import chrome
+
+    src = Path(chrome.__file__).read_text(encoding="utf-8")
+    assert "st.page_link" in src
+    assert "sbdb-shell-marker" in src
 
 
 def test_explorer_ui_helpers_status_and_null_color() -> None:

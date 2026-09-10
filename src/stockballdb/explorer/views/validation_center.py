@@ -7,18 +7,19 @@ import streamlit as st
 from stockballdb.explorer.artifacts import discover_manifests
 from stockballdb.explorer.db import get_explorer_engine
 from stockballdb.explorer.services import validation as val_service
-from stockballdb.explorer.ui.components import page_header, section_heading, status_badge
+from stockballdb.explorer.ui.components import page_header, panel, section_heading, status_badge
 
 
 def render() -> None:
-    page_header("Validation", "On-demand read-only validation — does not mutate the database.")
+    page_header("Validation", "On-demand read-only validation — does not mutate the database.", icon="☑")
     engine = get_explorer_engine()
 
-    b1, b2, b3, b4 = st.columns(4)
-    run_health = b1.button("Run Health", type="primary", use_container_width=True)
-    run_v1 = b2.button("Run validate_v1", use_container_width=True)
-    run_fp = b3.button("Compute Fingerprint", use_container_width=True)
-    run_ver = b4.button("Verify Latest Manifest", use_container_width=True)
+    with panel():
+        b1, b2, b3, b4 = st.columns(4, gap="small")
+        run_health = b1.button("Run Health", type="primary", use_container_width=True)
+        run_v1 = b2.button("Run validate_v1", use_container_width=True)
+        run_fp = b3.button("Compute Fingerprint", use_container_width=True)
+        run_ver = b4.button("Verify Latest Manifest", use_container_width=True)
 
     if run_health:
         try:

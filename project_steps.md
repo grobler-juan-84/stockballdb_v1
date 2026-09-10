@@ -299,3 +299,7 @@ Audited current Streamlit Explorer architecture vs desktop-first mockup goals. D
 ## Step 75 — Implement Phase 11D Explorer desktop UI refresh
 
 Locked `docs/StockBallDB_phase11d_explorer_desktop_ui_contract.md`. Added `.streamlit/config.toml`, `explorer/ui/` helpers (CSS, chrome header, components, dataframe styling), wide top-nav shell in `app.py`, and recomposed all six views for desktop density. Preserved read-only services/queries/health. pytest **213 passed, 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH** `sha256:5055ae10...`. Status: **PHASE 11D IMPLEMENTED — MANUAL CERTIFICATION PENDING**.
+
+## Step 76 — Phase 11D visual polish Pass 2
+
+Unified dark application shell (brand + `st.page_link` nav + status) with `st.navigation(position="hidden")` preserving url_paths; page headers, bordered toolbars/panels, structured result strip, denser CSS/theme. Pass 1 structure kept. pytest **214 passed, 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH**. Still **MANUAL CERTIFICATION PENDING**.

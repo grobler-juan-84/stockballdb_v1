@@ -1,4 +1,4 @@
-"""Data Explorer page — desktop-dense layout (Phase 11D)."""
+"""Data Explorer page — desktop-dense layout (Phase 11D Pass 2 polish)."""
 
 from __future__ import annotations
 
@@ -20,79 +20,89 @@ from stockballdb.explorer.definitions import definition_for
 from stockballdb.explorer.queries import PageRequest, TableFilters
 from stockballdb.explorer.registry import TABLE_REGISTRY, allowed_event_types
 from stockballdb.explorer.services import tables as table_service
-from stockballdb.explorer.ui.components import dataframe_dense, page_header, result_banner, section_heading
+from stockballdb.explorer.ui.components import (
+    dataframe_dense,
+    page_header,
+    panel,
+    result_strip,
+)
 from stockballdb.explorer.ui.dataframes import rows_to_styled_dataframe
 from stockballdb.market_data.universe import V1_MARKET_SYMBOLS
 
 
 def render() -> None:
-    page_header("Data Explorer", "Browse canonical tables — read-only.")
+    page_header(
+        "Data Explorer",
+        "Browse the canonical data in StockBallDB. Read-only access.",
+        icon="⛁",
+    )
 
     bounds = explorer_date_input_bounds()
     default_from = dt.date(1957, 1, 2)
     default_to = explorer_date_max()
 
-    # Compact primary toolbar
-    c_table, c_sym, c_from, c_to, c_sort, c_dir, c_rows, c_run = st.columns(
-        [1.6, 1.0, 1.35, 1.35, 1.0, 0.75, 0.7, 0.85]
-    )
-
-    table_key = c_table.selectbox(
-        "Table",
-        options=list(TABLE_REGISTRY.keys()),
-        format_func=lambda k: TABLE_REGISTRY[k].display_name,
-        key="de_table",
-    )
-    spec = TABLE_REGISTRY[table_key]
-
-    symbol = None
-    if spec.symbol_column:
-        sym_choice = c_sym.selectbox(
-            "Symbol",
-            options=["(all)"] + list(V1_MARKET_SYMBOLS),
-            key="de_symbol",
+    with panel():
+        c_table, c_sym, c_from, c_to, c_sort, c_dir, c_rows, c_run = st.columns(
+            [1.6, 1.0, 1.35, 1.35, 1.0, 0.75, 0.7, 0.95],
+            gap="small",
         )
-        symbol = None if sym_choice == "(all)" else sym_choice
-    else:
-        c_sym.caption("Symbol")
-        c_sym.write("—")
 
-    use_from = c_from.checkbox("From", value=False, key="de_use_from")
-    date_from = c_from.date_input(
-        "From date",
-        value=default_from,
-        disabled=not use_from,
-        label_visibility="collapsed",
-        key="de_from",
-        **bounds,
-    )
-    use_to = c_to.checkbox("To", value=False, key="de_use_to")
-    date_to = c_to.date_input(
-        "To date",
-        value=default_to,
-        disabled=not use_to,
-        label_visibility="collapsed",
-        key="de_to",
-        **bounds,
-    )
-
-    sort_col = c_sort.selectbox(
-        "Sort by",
-        options=sorted(spec.sortable_columns),
-        key=f"de_sort_{table_key}",
-    )
-    sort_dir = c_dir.selectbox("Order", options=["desc", "asc"], key="de_dir")
-    page_size = int(
-        c_rows.number_input(
-            "Rows",
-            min_value=1,
-            max_value=MAX_PAGE_SIZE,
-            value=DEFAULT_PAGE_SIZE,
-            key="de_page_size",
+        table_key = c_table.selectbox(
+            "Table",
+            options=list(TABLE_REGISTRY.keys()),
+            format_func=lambda k: TABLE_REGISTRY[k].display_name,
+            key="de_table",
         )
-    )
+        spec = TABLE_REGISTRY[table_key]
 
-    run_clicked = c_run.button("Run query", type="primary", use_container_width=True)
+        symbol = None
+        if spec.symbol_column:
+            sym_choice = c_sym.selectbox(
+                "Symbol",
+                options=["(all)"] + list(V1_MARKET_SYMBOLS),
+                key="de_symbol",
+            )
+            symbol = None if sym_choice == "(all)" else sym_choice
+        else:
+            c_sym.caption("Symbol")
+            c_sym.write("—")
+
+        use_from = c_from.checkbox("From", value=False, key="de_use_from")
+        date_from = c_from.date_input(
+            "From date",
+            value=default_from,
+            disabled=not use_from,
+            label_visibility="collapsed",
+            key="de_from",
+            **bounds,
+        )
+        use_to = c_to.checkbox("To", value=False, key="de_use_to")
+        date_to = c_to.date_input(
+            "To date",
+            value=default_to,
+            disabled=not use_to,
+            label_visibility="collapsed",
+            key="de_to",
+            **bounds,
+        )
+
+        sort_col = c_sort.selectbox(
+            "Sort by",
+            options=sorted(spec.sortable_columns),
+            key=f"de_sort_{table_key}",
+        )
+        sort_dir = c_dir.selectbox("Order", options=["desc", "asc"], key="de_dir")
+        page_size = int(
+            c_rows.number_input(
+                "Rows",
+                min_value=1,
+                max_value=MAX_PAGE_SIZE,
+                value=DEFAULT_PAGE_SIZE,
+                key="de_page_size",
+            )
+        )
+
+        run_clicked = c_run.button("Run Query", type="primary", use_container_width=True)
 
     # Second row: table-specific filters
     event_type = None
@@ -141,12 +151,11 @@ def render() -> None:
         st.session_state["de_result"] = (table_key, filters, req)
 
     if "de_result" not in st.session_state:
-        st.info("Configure filters and click **Run query**.")
+        st.info("Configure filters and click **Run Query**.")
         _table_info_footer(table_key)
         return
 
     tk, flt, pg = st.session_state["de_result"]
-    # Keep page size / sort from toolbar if user changed them after a prior run and clicks nav
     try:
         with readonly_connection() as conn:
             result = table_service.browse_table(conn, tk, flt, pg)
@@ -155,15 +164,18 @@ def render() -> None:
         return
 
     total_pages = max(1, math.ceil(result.total_count / result.page_size) if result.page_size else 1)
-    sym_label = flt.symbol or "(all symbols)"
-    result_banner(
-        [
-            f"<strong>{sym_label}</strong>",
-            f"<strong>{result.total_count:,}</strong> matching rows",
-            f"Page <strong>{result.page}</strong> / {total_pages}",
-            f"Showing <strong>{len(result.rows)}</strong> rows",
-            f"sort {result.sort_column} {result.sort_direction}",
-        ]
+    table_label = TABLE_REGISTRY[tk].display_name.upper() if tk in TABLE_REGISTRY else tk
+    identity = flt.symbol or table_label
+    identity_sub = None if flt.symbol else tk
+    sort_arrow = "↓" if result.sort_direction == "desc" else "↑"
+    result_strip(
+        identity=identity,
+        identity_sub=identity_sub,
+        metrics=[
+            ("Matching rows", f"{result.total_count:,}", None),
+            ("Page", f"{result.page} of {total_pages}", f"Showing {len(result.rows)} rows"),
+            ("Sort", f"{result.sort_column} {sort_arrow}", result.sort_direction.upper()),
+        ],
     )
 
     data, col_cfg = rows_to_styled_dataframe(result.rows)
@@ -172,44 +184,44 @@ def render() -> None:
     else:
         st.info("No rows match filters.")
 
-    # Pagination + export
-    p_prev, p_info, p_next, p_export = st.columns([1, 2.5, 1, 1.4])
-    if p_prev.button("Previous", disabled=result.page <= 1, use_container_width=True):
-        new_page = max(1, result.page - 1)
-        st.session_state["de_page_num"] = new_page
-        st.session_state["de_result"] = (
-            tk,
-            flt,
-            PageRequest(
-                page=new_page,
-                page_size=pg.page_size,
-                sort_column=pg.sort_column,
-                sort_direction=pg.sort_direction,
-            ),
+    with panel():
+        p_rows, p_prev, p_info, p_next, p_export = st.columns([1.1, 1.0, 2.2, 1.0, 1.3], gap="small")
+        p_rows.caption(f"Show {result.page_size} rows")
+        if p_prev.button("Previous", disabled=result.page <= 1, use_container_width=True):
+            new_page = max(1, result.page - 1)
+            st.session_state["de_page_num"] = new_page
+            st.session_state["de_result"] = (
+                tk,
+                flt,
+                PageRequest(
+                    page=new_page,
+                    page_size=pg.page_size,
+                    sort_column=pg.sort_column,
+                    sort_direction=pg.sort_direction,
+                ),
+            )
+            st.rerun()
+        p_info.markdown(
+            f'<div class="sbdb-muted" style="text-align:center;padding-top:0.55rem;">'
+            f"Page <strong>{result.page}</strong> of {total_pages}</div>",
+            unsafe_allow_html=True,
         )
-        st.rerun()
-    p_info.markdown(
-        f'<div class="sbdb-muted" style="text-align:center;padding-top:0.45rem;">'
-        f"Page {result.page} of {total_pages} · {result.page_size} rows / page</div>",
-        unsafe_allow_html=True,
-    )
-    if p_next.button("Next", disabled=result.page >= total_pages, use_container_width=True):
-        new_page = result.page + 1
-        st.session_state["de_page_num"] = new_page
-        st.session_state["de_result"] = (
-            tk,
-            flt,
-            PageRequest(
-                page=new_page,
-                page_size=pg.page_size,
-                sort_column=pg.sort_column,
-                sort_direction=pg.sort_direction,
-            ),
-        )
-        st.rerun()
-
-    if p_export.button("Export CSV", use_container_width=True):
-        st.session_state["de_do_export"] = True
+        if p_next.button("Next", disabled=result.page >= total_pages, use_container_width=True):
+            new_page = result.page + 1
+            st.session_state["de_page_num"] = new_page
+            st.session_state["de_result"] = (
+                tk,
+                flt,
+                PageRequest(
+                    page=new_page,
+                    page_size=pg.page_size,
+                    sort_column=pg.sort_column,
+                    sort_direction=pg.sort_direction,
+                ),
+            )
+            st.rerun()
+        if p_export.button("Export CSV", use_container_width=True):
+            st.session_state["de_do_export"] = True
 
     if st.session_state.pop("de_do_export", False):
         try:
@@ -232,7 +244,7 @@ def render() -> None:
         except Exception as exc:
             st.error(f"Export failed: {exc}")
 
-    with st.expander("Column definitions"):
+    with st.expander("Column definitions", expanded=False):
         display_cols = list(result.rows[0].keys()) if result.rows else []
         for col in display_cols:
             d = definition_for(col)
@@ -246,12 +258,12 @@ def _table_info_footer(table_key: str) -> None:
     spec = TABLE_REGISTRY.get(table_key)
     if not spec:
         return
-    section_heading("Table information")
-    st.markdown(
-        f'<div class="sbdb-banner">'
-        f"<strong>{spec.display_name}</strong> <span class=\"sbdb-muted\">({spec.key})</span>"
-        f" &nbsp;·&nbsp; date column: <code>{spec.date_column}</code>"
-        f" &nbsp;·&nbsp; symbol column: <code>{spec.symbol_column or '—'}</code>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
+    with st.expander(f"Table information · {spec.key}", expanded=False):
+        st.markdown(
+            f'<div class="sbdb-meta-panel">'
+            f"<strong>{spec.display_name}</strong> ({spec.key})<br/>"
+            f"Grain / keys driven by registry · date column <code>{spec.date_column}</code>"
+            f" · symbol column <code>{spec.symbol_column or '—'}</code>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )

@@ -464,6 +464,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Pushed Phase 11C closeout commits to `origin/main` (`4403cb9..17d70fc`).
 - Planning started for **Phase 11D — Explorer Desktop UI Refresh** (presentation-only).
 - **Phase 11D implemented (2026-09-10):** desktop-first shell (`layout=wide`, top nav, header status), `explorer/ui` helpers, all six views recomposed; contract `docs/StockBallDB_phase11d_explorer_desktop_ui_contract.md`. Gates: pytest **213 passed / 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH** `sha256:5055ae10...`. Backend/health/query semantics unchanged. **Manual UX certification pending.**
+- **Phase 11D Pass 2 polish:** unified navy shell with `st.page_link` nav (`navigation` hidden, same `url_path`s), page headers, bordered toolbars, result strip, shared CSS/theme denser toward mockup. pytest **214 passed / 2 skipped**; fingerprint **MATCH**. Still **MANUAL CERTIFICATION PENDING**.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

@@ -11,7 +11,7 @@ from stockballdb.explorer.ui.components import dataframe_dense, kv_table, page_h
 
 
 def render() -> None:
-    page_header("Provenance", "Build-level provenance — not row-level snapshot lineage.")
+    page_header("Provenance", "Build-level provenance — not row-level snapshot lineage.", icon="◷")
     manifests = prov_service.list_manifests()
     runs = prov_service.list_run_reports()
 

@@ -10,7 +10,7 @@ from stockballdb.explorer.ui.components import dataframe_dense, page_header, sec
 
 
 def render() -> None:
-    page_header("Coverage", "Coverage and missingness from Phase 8 health logic.")
+    page_header("Coverage", "Coverage and missingness from Phase 8 health logic.", icon="▥")
     try:
         with readonly_connection() as conn:
             snap = load_coverage(conn)
