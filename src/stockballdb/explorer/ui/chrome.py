@@ -1,7 +1,8 @@
-"""Application shell header (Phase 11D Pass 2) — presentation only."""
+"""Application shell header (Phase 11D Pass 3) — presentation only."""
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 
 import streamlit as st
@@ -29,15 +30,31 @@ def _shell_status(_nonce: int) -> dict[str, str]:
                 or success.artifact_id
                 or "—"
             )
-            if "T" in last_update and len(last_update) >= 10:
-                last_update = last_update[:10]
     except Exception:
         pass
 
     health = live.health_label or "ERROR"
     if live.error_message:
         health = "ERROR"
-    return {"health": str(health), "last_update": last_update, "validate": str(live.validate_v1_label)}
+    return {
+        "health": str(health),
+        "last_update": _format_last_update(last_update),
+        "validate": str(live.validate_v1_label),
+    }
+
+
+def _format_last_update(raw: str) -> str:
+    """Presentation-only: ISO dates → 'Aug 31, 2026' style."""
+    if not raw or raw == "—":
+        return "—"
+    text = str(raw).strip()
+    try:
+        day = dt.date.fromisoformat(text[:10])
+        return f"{day.strftime('%b')} {day.day}, {day.year}"
+    except ValueError:
+        if "T" in text and len(text) >= 10:
+            return text[:10]
+        return text
 
 
 def _dot_class(health: str) -> str:
@@ -80,7 +97,7 @@ def render_app_header(pages: list[Any] | None = None) -> None:
 
     with st.container(border=True):
         st.markdown('<span class="sbdb-shell-marker"></span>', unsafe_allow_html=True)
-        brand_col, nav_col, status_col = st.columns([1.55, 5.2, 2.0], gap="small")
+        brand_col, nav_col, status_col = st.columns([1.65, 5.5, 1.85], gap="small")
 
         with brand_col:
             st.markdown(
@@ -99,7 +116,7 @@ def render_app_header(pages: list[Any] | None = None) -> None:
                         st.page_link(page, label=label, icon=icon, use_container_width=True)
 
         with status_col:
-            s1, s2 = st.columns([2.4, 1.0], gap="small")
+            s1, s2 = st.columns([3.2, 0.9], gap="small")
             with s1:
                 st.markdown(
                     f'<div class="sbdb-status-block">'
@@ -111,7 +128,12 @@ def render_app_header(pages: list[Any] | None = None) -> None:
                     unsafe_allow_html=True,
                 )
             with s2:
-                if st.button("↻", key="sbdb_header_refresh", help="Refresh status & caches", use_container_width=True):
+                if st.button(
+                    "↻",
+                    key="sbdb_header_refresh",
+                    help="Refresh status & caches",
+                    use_container_width=True,
+                ):
                     st.session_state.refresh_nonce = nonce + 1
                     st.cache_data.clear()
                     st.rerun()

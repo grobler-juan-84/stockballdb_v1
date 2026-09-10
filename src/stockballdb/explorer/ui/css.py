@@ -1,12 +1,12 @@
-"""Narrow Explorer CSS for desktop density + Pass 2 visual polish (Phase 11D)."""
+"""Narrow Explorer CSS — Phase 11D Pass 3 (shell / nav fidelity)."""
 
 from __future__ import annotations
 
 import streamlit as st
 
 # Documented assumptions (Streamlit 1.40–1.x / 1.62):
-# - Styles header shell, page_link nav, panels, result strip, dataframe chrome.
-# - Uses structural testids + our sbdb-* classes — not deep nth-child widget trees.
+# - Pass 3 targets full-bleed shell + page_link active pill via shell marker + aria-current.
+# - Uses structural testids + sbdb-* classes — not deep nth-child widget trees.
 # - Layout degrades gracefully if a selector is ignored after a Streamlit bump.
 # - Functional correctness never depends on CSS.
 
@@ -14,9 +14,12 @@ _EXPLORER_CSS = """
 <style>
 :root {
   --sbdb-navy: #0b1f3a;
-  --sbdb-navy-2: #132a4a;
+  --sbdb-navy-2: #143056;
   --sbdb-navy-3: #1a3558;
+  --sbdb-navy-pill: #17345a;
   --sbdb-blue: #2563eb;
+  --sbdb-cyan: #38bdf8;
+  --sbdb-cyan-glow: rgba(56, 189, 248, 0.38);
   --sbdb-blue-soft: #dbeafe;
   --sbdb-bg: #eef2f7;
   --sbdb-panel: #ffffff;
@@ -26,6 +29,7 @@ _EXPLORER_CSS = """
   --sbdb-ok: #15803d;
   --sbdb-bad: #b91c1c;
   --sbdb-warn: #b45309;
+  --sbdb-gutter: 1.25rem;
 }
 
 /* App canvas */
@@ -34,18 +38,24 @@ _EXPLORER_CSS = """
 }
 section.main > div.block-container {
   max-width: 100%;
-  padding-top: 0.55rem;
+  padding-top: 0 !important;
   padding-bottom: 1.25rem;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  padding-left: var(--sbdb-gutter);
+  padding-right: var(--sbdb-gutter);
 }
 
-/* Collapse unused Streamlit chrome when using custom shell nav */
+/* Minimize Streamlit header chrome above custom shell */
 header[data-testid="stHeader"] {
-  background: transparent;
-  height: 2.25rem;
+  background: transparent !important;
+  height: 0 !important;
+  min-height: 0 !important;
 }
-div[data-testid="stToolbar"] { right: 0.5rem; }
+header[data-testid="stHeader"] * {
+  display: none !important;
+}
+div[data-testid="stToolbar"] {
+  display: none !important;
+}
 
 /* Compact heading rhythm */
 h1, h2, h3 { color: var(--sbdb-text) !important; }
@@ -57,51 +67,67 @@ label, .stCaption, [data-testid="stCaptionContainer"] {
   color: var(--sbdb-muted) !important;
 }
 
-/* ===== Application shell ===== */
-div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker),
-.sbdb-shell-wrap {
+/* ===== Application shell (Pass 3: near full-bleed) ===== */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) {
   background: var(--sbdb-navy) !important;
-  border: 1px solid var(--sbdb-navy) !important;
-  border-radius: 8px !important;
-  padding: 0.35rem 0.65rem 0.45rem 0.65rem !important;
-  margin: 0 0 0.55rem 0 !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+  border: none !important;
+  border-bottom: 1px solid #0a1830 !important;
+  border-radius: 0 !important;
+  padding: 0.55rem var(--sbdb-gutter) 0.5rem var(--sbdb-gutter) !important;
+  margin: 0 calc(-1 * var(--sbdb-gutter)) 0.75rem calc(-1 * var(--sbdb-gutter)) !important;
+  width: calc(100% + 2 * var(--sbdb-gutter)) !important;
+  max-width: none !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+  position: relative;
+  z-index: 5;
 }
 .sbdb-shell-marker { display: none; }
+
+/* Tighten shell row gaps */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker)
+  div[data-testid="stHorizontalBlock"] {
+  gap: 0.35rem 0.5rem !important;
+  align-items: center !important;
+}
+
 .sbdb-brand {
   color: #f8fafc;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   letter-spacing: 0.01em;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 .sbdb-tagline {
   color: #94a3b8;
-  font-size: 0.68rem;
-  margin: 0.05rem 0 0 0;
+  font-size: 0.66rem;
+  margin: 0.08rem 0 0 0;
   line-height: 1.2;
 }
 .sbdb-status-block {
   text-align: right;
   color: #e2e8f0;
   line-height: 1.15;
+  padding-top: 0.1rem;
 }
 .sbdb-status-label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-weight: 500;
 }
 .sbdb-status-value {
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 650;
   color: #f8fafc;
 }
 .sbdb-health-line {
-  margin-top: 0.2rem;
-  font-size: 0.8rem;
+  margin-top: 0.28rem;
+  font-size: 0.78rem;
   color: #e2e8f0;
+  font-weight: 500;
+  white-space: nowrap;
 }
 .sbdb-dot {
   display: inline-block;
@@ -110,47 +136,76 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker),
   border-radius: 50%;
   margin-right: 0.35rem;
   vertical-align: middle;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
 }
 .sbdb-dot-ok { background: #22c55e; }
-.sbdb-dot-warn { background: #f59e0b; }
-.sbdb-dot-bad { background: #ef4444; }
-.sbdb-dot-muted { background: #64748b; }
+.sbdb-dot-warn { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
+.sbdb-dot-bad { background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+.sbdb-dot-muted { background: #64748b; box-shadow: none; }
 
-/* Shell page links (custom nav) */
+/* Shell page links — inactive */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a {
-  color: #cbd5e1 !important;
+  color: #a8b6c8 !important;
   background: transparent !important;
-  border-radius: 4px !important;
-  border-bottom: 2px solid transparent !important;
-  padding: 0.35rem 0.4rem !important;
-  font-size: 0.82rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  border-bottom: 1px solid transparent !important;
+  padding: 0.38rem 0.55rem !important;
+  font-size: 0.78rem !important;
   font-weight: 500 !important;
   justify-content: center !important;
+  gap: 0.3rem !important;
+  box-shadow: none !important;
+  min-height: 2.1rem !important;
+  transition: color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"] span,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a span {
+  color: inherit !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"]:hover,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a:hover {
   color: #ffffff !important;
-  background: var(--sbdb-navy-3) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
 }
+
+/* Shell page links — active pill (mockup-inspired) */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[aria-current="page"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [aria-current="page"] a,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"][aria-current="page"] {
   color: #ffffff !important;
-  background: var(--sbdb-navy-2) !important;
-  border-bottom: 2px solid var(--sbdb-blue) !important;
+  background: var(--sbdb-navy-pill) !important;
+  border: 1px solid var(--sbdb-cyan) !important;
+  border-radius: 999px !important;
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.18),
+    0 0 14px var(--sbdb-cyan-glow) !important;
   font-weight: 650 !important;
 }
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[aria-current="page"]:hover,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"][aria-current="page"]:hover {
+  background: #1c3d68 !important;
+  border-color: #7dd3fc !important;
+  color: #ffffff !important;
+}
+
+/* Compact refresh control in shell */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button {
-  background: var(--sbdb-navy-3) !important;
-  color: #e2e8f0 !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
   border: 1px solid #334155 !important;
-  min-height: 2rem !important;
-  font-size: 0.75rem !important;
+  border-radius: 8px !important;
+  min-height: 2.1rem !important;
+  height: 2.1rem !important;
+  font-size: 0.85rem !important;
+  padding: 0 !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button:hover {
-  border-color: var(--sbdb-blue) !important;
+  border-color: var(--sbdb-cyan) !important;
   color: #fff !important;
+  background: rgba(56, 189, 248, 0.08) !important;
 }
 
 /* ===== Page header ===== */
@@ -158,20 +213,21 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button:h
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
-  margin: 0.1rem 0 0.55rem 0;
+  margin: 0.15rem 0 0.55rem 0;
 }
 .sbdb-page-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: var(--sbdb-blue-soft);
-  color: var(--sbdb-blue);
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.55rem;
+  background: var(--sbdb-blue);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.95rem;
   flex-shrink: 0;
   margin-top: 0.05rem;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.35);
 }
 .sbdb-page-title {
   margin: 0;
@@ -197,7 +253,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-panel-marker) {
 }
 .sbdb-panel-marker { display: none; }
 
-/* Primary button emphasis */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-panel-marker) button[kind="primary"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-panel-marker) button[data-testid="baseButton-primary"] {
   background: var(--sbdb-blue) !important;
@@ -217,9 +272,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-panel-marker) button[d
   padding: 0.65rem 0.85rem;
   margin: 0 0 0.55rem 0;
 }
-.sbdb-result-id {
-  min-width: 7rem;
-}
+.sbdb-result-id { min-width: 7rem; }
 .sbdb-result-id .k {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -250,23 +303,11 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-panel-marker) button[d
 }
 
 /* ===== Table / footer ===== */
-.sbdb-table-wrap div[data-testid="stDataFrame"],
 div[data-testid="stDataFrame"] {
   border: 1px solid var(--sbdb-border);
   border-radius: 8px;
   overflow: hidden;
   background: var(--sbdb-panel);
-}
-.sbdb-table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  background: var(--sbdb-panel);
-  border: 1px solid var(--sbdb-border);
-  border-radius: 8px;
-  padding: 0.45rem 0.65rem;
-  margin: 0.45rem 0 0.55rem 0;
 }
 .sbdb-meta-panel {
   background: #f8fafc;
@@ -303,12 +344,11 @@ div[data-testid="stDataFrame"] {
 .sbdb-badge-info { background: #dbeafe; color: #1e40af; }
 .sbdb-badge-muted { background: #e2e8f0; color: #334155; }
 
-/* Hide collapsed sidebar gutter when unused */
 section[data-testid="stSidebar"] { display: none !important; }
 </style>
 """
 
 
 def inject_explorer_css() -> None:
-    """Inject every run so Pass 2 CSS updates without a stale session flag."""
+    """Inject every run so Pass 3 CSS updates without a stale session flag."""
     st.markdown(_EXPLORER_CSS, unsafe_allow_html=True)

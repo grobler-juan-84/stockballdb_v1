@@ -892,6 +892,24 @@ def test_explorer_shell_uses_page_link_nav() -> None:
     assert "sbdb-shell-marker" in src
 
 
+def test_explorer_pass3_shell_css_targets() -> None:
+    from stockballdb.explorer.ui import css
+
+    src = Path(css.__file__).read_text(encoding="utf-8")
+    assert "sbdb-cyan" in src
+    assert "999px" in src  # active pill radius
+    assert "calc(-1 * var(--sbdb-gutter))" in src  # full-bleed shell margins
+    assert "aria-current" in src
+
+
+def test_format_last_update_iso() -> None:
+    from stockballdb.explorer.ui.chrome import _format_last_update
+
+    assert _format_last_update("2026-08-31") == "Aug 31, 2026"
+    assert _format_last_update("2026-08-31T14:54:47") == "Aug 31, 2026"
+    assert _format_last_update("—") == "—"
+
+
 def test_explorer_ui_helpers_status_and_null_color() -> None:
     from stockballdb.explorer.formatting import NULL_DISPLAY
     from stockballdb.explorer.ui.components import status_badge

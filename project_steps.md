@@ -303,3 +303,7 @@ Locked `docs/StockBallDB_phase11d_explorer_desktop_ui_contract.md`. Added `.stre
 ## Step 76 — Phase 11D visual polish Pass 2
 
 Unified dark application shell (brand + `st.page_link` nav + status) with `st.navigation(position="hidden")` preserving url_paths; page headers, bordered toolbars/panels, structured result strip, denser CSS/theme. Pass 1 structure kept. pytest **214 passed, 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH**. Still **MANUAL CERTIFICATION PENDING**.
+
+## Step 77 — Phase 11D Pass 3 shell/nav fidelity
+
+Full-bleed navy shell, active nav pill (cyan border/glow), denser inactive links, compact status date formatting, reduced Streamlit header chrome. Presentation-only; same `st.page_link` routing. pytest **216 passed, 2 skipped**; fingerprint **MATCH**. Manual certification still pending.
