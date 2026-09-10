@@ -1,25 +1,26 @@
-"""Narrow Explorer CSS — Phase 11D Pass 3 (shell / nav fidelity)."""
+"""Explorer CSS — Phase 11D Pass 4 (flush top shell + mockup navy)."""
 
 from __future__ import annotations
 
 import streamlit as st
 
 # Documented assumptions (Streamlit 1.40–1.x / 1.62):
-# - Pass 3 targets full-bleed shell + page_link active pill via shell marker + aria-current.
-# - Uses structural testids + sbdb-* classes — not deep nth-child widget trees.
+# - Pass 4: pin shell to viewport top; match mockup deep navy; soft blue active pill.
+# - Targets structural testids + sbdb-* classes; no deep nth-child widget trees.
 # - Layout degrades gracefully if a selector is ignored after a Streamlit bump.
 # - Functional correctness never depends on CSS.
 
 _EXPLORER_CSS = """
 <style>
 :root {
-  --sbdb-navy: #0b1f3a;
-  --sbdb-navy-2: #143056;
-  --sbdb-navy-3: #1a3558;
-  --sbdb-navy-pill: #17345a;
+  /* Mockup-aligned deep navy (charcoal-navy, not bright blue-navy) */
+  --sbdb-navy: #0a1628;
+  --sbdb-navy-2: #102038;
+  --sbdb-navy-3: #162a45;
+  --sbdb-navy-edge: #060e1a;
+  --sbdb-pill-bg: rgba(37, 99, 235, 0.32);
+  --sbdb-pill-border: rgba(96, 165, 250, 0.55);
   --sbdb-blue: #2563eb;
-  --sbdb-cyan: #38bdf8;
-  --sbdb-cyan-glow: rgba(56, 189, 248, 0.38);
   --sbdb-blue-soft: #dbeafe;
   --sbdb-bg: #eef2f7;
   --sbdb-panel: #ffffff;
@@ -32,29 +33,56 @@ _EXPLORER_CSS = """
   --sbdb-gutter: 1.25rem;
 }
 
-/* App canvas */
-.stApp {
-  background: var(--sbdb-bg);
-}
-section.main > div.block-container {
-  max-width: 100%;
-  padding-top: 0 !important;
-  padding-bottom: 1.25rem;
-  padding-left: var(--sbdb-gutter);
-  padding-right: var(--sbdb-gutter);
-}
-
-/* Minimize Streamlit header chrome above custom shell */
-header[data-testid="stHeader"] {
-  background: transparent !important;
+/* ===== Kill Streamlit chrome that creates top gap ===== */
+header[data-testid="stHeader"],
+header[data-testid="stHeader"] > * {
+  display: none !important;
   height: 0 !important;
   min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
-header[data-testid="stHeader"] * {
+div[data-testid="stToolbar"],
+div[data-testid="stDecoration"],
+div[data-testid="stStatusWidget"],
+#MainMenu,
+footer,
+.stDeployButton,
+[data-testid="stSidebarCollapsedControl"] {
   display: none !important;
 }
-div[data-testid="stToolbar"] {
-  display: none !important;
+
+.stApp {
+  background: var(--sbdb-bg);
+  margin: 0 !important;
+  padding: 0 !important;
+}
+[data-testid="stAppViewContainer"] {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+[data-testid="stAppViewContainer"] > section.main {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+section.main > div.block-container,
+div[data-testid="stMainBlockContainer"] {
+  max-width: 100% !important;
+  padding-top: 0 !important;
+  padding-bottom: 1.25rem !important;
+  padding-left: var(--sbdb-gutter) !important;
+  padding-right: var(--sbdb-gutter) !important;
+  margin-top: 0 !important;
+}
+/* Collapse gap before first content block (our shell) */
+section.main > div.block-container > div:first-child,
+div[data-testid="stMainBlockContainer"] > div:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* Compact heading rhythm */
@@ -67,26 +95,30 @@ label, .stCaption, [data-testid="stCaptionContainer"] {
   color: var(--sbdb-muted) !important;
 }
 
-/* ===== Application shell (Pass 3: near full-bleed) ===== */
+/* ===== Application shell: flush top + full bleed ===== */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) {
   background: var(--sbdb-navy) !important;
   border: none !important;
-  border-bottom: 1px solid #0a1830 !important;
+  border-bottom: 1px solid var(--sbdb-navy-edge) !important;
   border-radius: 0 !important;
-  padding: 0.55rem var(--sbdb-gutter) 0.5rem var(--sbdb-gutter) !important;
-  margin: 0 calc(-1 * var(--sbdb-gutter)) 0.75rem calc(-1 * var(--sbdb-gutter)) !important;
+  padding: 0.5rem var(--sbdb-gutter) 0.45rem var(--sbdb-gutter) !important;
+  /* Cancel block-container gutters so bar hits left/right viewport edges */
+  margin-left: calc(-1 * var(--sbdb-gutter)) !important;
+  margin-right: calc(-1 * var(--sbdb-gutter)) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.85rem !important;
   width: calc(100% + 2 * var(--sbdb-gutter)) !important;
   max-width: none !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
-  position: relative;
-  z-index: 5;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 12px rgba(0, 0, 0, 0.28);
+  position: sticky;
+  top: 0;
+  z-index: 999;
 }
 .sbdb-shell-marker { display: none; }
 
-/* Tighten shell row gaps */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker)
   div[data-testid="stHorizontalBlock"] {
-  gap: 0.35rem 0.5rem !important;
+  gap: 0.3rem 0.45rem !important;
   align-items: center !important;
 }
 
@@ -108,7 +140,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker)
   text-align: right;
   color: #e2e8f0;
   line-height: 1.15;
-  padding-top: 0.1rem;
+  padding-top: 0.05rem;
 }
 .sbdb-status-label {
   font-size: 0.62rem;
@@ -143,22 +175,21 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker)
 .sbdb-dot-bad { background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
 .sbdb-dot-muted { background: #64748b; box-shadow: none; }
 
-/* Shell page links — inactive */
+/* Inactive nav links */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a {
-  color: #a8b6c8 !important;
+  color: #b6c2d1 !important;
   background: transparent !important;
   border: 1px solid transparent !important;
-  border-radius: 999px !important;
-  border-bottom: 1px solid transparent !important;
-  padding: 0.38rem 0.55rem !important;
+  border-radius: 0.55rem !important;
+  padding: 0.36rem 0.55rem !important;
   font-size: 0.78rem !important;
   font-weight: 500 !important;
   justify-content: center !important;
   gap: 0.3rem !important;
   box-shadow: none !important;
-  min-height: 2.1rem !important;
-  transition: color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  min-height: 2.05rem !important;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"] span,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a span {
@@ -168,44 +199,41 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-t
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [data-testid="stPageLink"] a:hover {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(148, 163, 184, 0.25) !important;
 }
 
-/* Shell page links — active pill (mockup-inspired) */
+/* Active nav — soft blue rounded rect (mockup), not cyan neon glow */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[aria-current="page"],
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) [aria-current="page"] a,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"][aria-current="page"] {
   color: #ffffff !important;
-  background: var(--sbdb-navy-pill) !important;
-  border: 1px solid var(--sbdb-cyan) !important;
-  border-radius: 999px !important;
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.18),
-    0 0 14px var(--sbdb-cyan-glow) !important;
+  background: var(--sbdb-pill-bg) !important;
+  border: 1px solid var(--sbdb-pill-border) !important;
+  border-radius: 0.55rem !important;
+  box-shadow: none !important;
   font-weight: 650 !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[aria-current="page"]:hover,
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) a[data-testid="stPageLink-NavLink"][aria-current="page"]:hover {
-  background: #1c3d68 !important;
-  border-color: #7dd3fc !important;
+  background: rgba(37, 99, 235, 0.42) !important;
+  border-color: rgba(147, 197, 253, 0.7) !important;
   color: #ffffff !important;
 }
 
-/* Compact refresh control in shell */
+/* Compact refresh in shell */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button {
   background: transparent !important;
   color: #94a3b8 !important;
   border: 1px solid #334155 !important;
-  border-radius: 8px !important;
-  min-height: 2.1rem !important;
-  height: 2.1rem !important;
+  border-radius: 999px !important;
+  min-height: 2.05rem !important;
+  height: 2.05rem !important;
   font-size: 0.85rem !important;
   padding: 0 !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button:hover {
-  border-color: var(--sbdb-cyan) !important;
+  border-color: #60a5fa !important;
   color: #fff !important;
-  background: rgba(56, 189, 248, 0.08) !important;
+  background: rgba(37, 99, 235, 0.15) !important;
 }
 
 /* ===== Page header ===== */
@@ -213,7 +241,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.sbdb-shell-marker) button:h
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
-  margin: 0.15rem 0 0.55rem 0;
+  margin: 0.1rem 0 0.55rem 0;
 }
 .sbdb-page-icon {
   width: 2.15rem;
@@ -319,7 +347,6 @@ div[data-testid="stDataFrame"] {
   font-size: 0.82rem;
 }
 
-/* Badges / misc */
 .sbdb-banner {
   background: var(--sbdb-panel);
   border: 1px solid var(--sbdb-border);
@@ -350,5 +377,5 @@ section[data-testid="stSidebar"] { display: none !important; }
 
 
 def inject_explorer_css() -> None:
-    """Inject every run so Pass 3 CSS updates without a stale session flag."""
+    """Inject every run so Pass 4 CSS updates without a stale session flag."""
     st.markdown(_EXPLORER_CSS, unsafe_allow_html=True)

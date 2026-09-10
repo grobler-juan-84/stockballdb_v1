@@ -1,4 +1,4 @@
-"""Application shell header (Phase 11D Pass 3) — presentation only."""
+"""Application shell header (Phase 11D Pass 4) — presentation only."""
 
 from __future__ import annotations
 

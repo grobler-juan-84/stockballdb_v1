@@ -307,3 +307,7 @@ Unified dark application shell (brand + `st.page_link` nav + status) with `st.na
 ## Step 77 — Phase 11D Pass 3 shell/nav fidelity
 
 Full-bleed navy shell, active nav pill (cyan border/glow), denser inactive links, compact status date formatting, reduced Streamlit header chrome. Presentation-only; same `st.page_link` routing. pytest **216 passed, 2 skipped**; fingerprint **MATCH**. Manual certification still pending.
+
+## Step 78 — Phase 11D Pass 4 flush top bar
+
+Pinned shell to viewport top (sticky + zero Streamlit header/decoration padding), mockup deep navy `#0a1628`, softer blue active nav pill. Presentation-only CSS. Explorer tests **66 passed**; fingerprint **MATCH**. Manual certification still pending.

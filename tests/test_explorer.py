@@ -896,10 +896,15 @@ def test_explorer_pass3_shell_css_targets() -> None:
     from stockballdb.explorer.ui import css
 
     src = Path(css.__file__).read_text(encoding="utf-8")
-    assert "sbdb-cyan" in src
-    assert "999px" in src  # active pill radius
     assert "calc(-1 * var(--sbdb-gutter))" in src  # full-bleed shell margins
     assert "aria-current" in src
+    # Pass 4: flush top + mockup navy
+    assert "position: sticky" in src
+    assert "top: 0" in src
+    assert "#0a1628" in src
+    assert "stDecoration" in src
+    assert "stMainBlockContainer" in src
+    assert "--sbdb-pill-bg" in src
 
 
 def test_format_last_update_iso() -> None:
