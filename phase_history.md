@@ -448,7 +448,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 11 — StockBallDB Explorer
 
-**Status:** IN PROGRESS — Phase 11B implemented; **11C in progress** (navigation fix applied)
+**Status:** COMPLETE — **PHASE 11C = CERTIFIED**; **PHASE 11 = COMPLETE** (2026-09-10)
 
 - Phase 11A contract complete (`88256e4`).
 - Phase 11B: read-only Streamlit Explorer at `python -m stockballdb.explorer` — registry/queries, six pages, service layer, operator guide (`677de04`).
@@ -460,4 +460,10 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Added always-on Cursor rule `.cursor/rules/github-commit.mdc` for end-of-prompt local commits (no auto-push).
 - Phase 11C: fixed Streamlit date_input ±10y trap — shared Explorer date bounds on Data Explorer and Day Inspector.
 - Phase 11C: Coverage Explorer adapter fixed — stale `collect_freshness`/`gap_findings` calls now match certified health API (`engine.py` contract); health semantics unchanged.
-- **NEXT:** Continue Phase 11C manual certification matrix (restart Explorer and re-open Coverage; standalone `build_*` warnings still deferred).
+- Phase 11C closeout (2026-09-10): full six-surface manual browser certification complete; formal gates PASS; primary fingerprint unchanged vs certification baseline; Explorer read-only audit PASS.
+
+### End-of-phase summary
+
+**Done:** Phase 11A contract; Phase 11B Streamlit Explorer; Phase 11C manual certification of all six surfaces with read-only proof (fingerprint match). Defects fixed during 11C: navigation pathnames (`ffa8914`), Control Center status/manifest (`baf8a34`, `4403cb9`), date_input ±10y bounds (`3d79d3d`), Coverage freshness/gaps adapter (`d176ca6`). Final gates: pytest **211 passed / 2 skipped**; validate_v1 **PASS**; health **HEALTHY** (3 INFO); fingerprint `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca`; latest manifest `20260831T145447-9be32508` snapshot verify **PASS** (91/0/0).
+**Problems:** Mid-11C spine drift from mutating pytest against primary (restored via update `20260831T145447-9be32508`); mitigated by `STOCKBALLDB_TEST_DATABASE_URL` guard. Stale health limitation text still says “No raw snapshot archive (Phase 9)” despite Phase 9 complete — non-blocking docs debt outside Explorer redesign.
+**Remember:** Prefer adapting Explorer to certified health APIs, not changing Phase 8 for UI; Streamlit date_input needs explicit min/max for historical ranges; Explorer mocks must match real signatures. **No Phase 12 is defined in the repository** — next step is a planning/design decision, not silent phase creation.

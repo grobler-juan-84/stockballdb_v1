@@ -283,3 +283,7 @@ Centralized `EXPLORER_DATE_MIN` / `explorer_date_max()` / `explorer_date_input_b
 ## Step 71 — Fix Coverage Explorer health API adapter (11C)
 
 Aligned `explorer/services/coverage.py` with certified Phase 8 contracts: `collect_freshness(conn)` (unpack results/findings; ignore findings for UI) and `gap_findings(symbols)`. Updated `test_load_coverage_delegates` so mocks enforce real arity/return shape. Health modules unchanged. pytest **211 passed, 2 skipped**. No DB mutation.
+
+## Step 72 — Phase 11C certification closeout
+
+Formal closeout audit (2026-09-10): pytest **211 passed, 2 skipped**; validate_v1 **PASS**; health **HEALTHY** (3 INFO freshness/gap findings); primary fingerprint **MATCH** `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca`; latest manifest `20260831T145447-9be32508` snapshot verify checked=91 missing=0 corrupt=0 **PASS**; Explorer package read-only audit PASS (no DML/DDL/update/rebuild/SQL console). Manual six-surface certification accepted. **PHASE 11C = CERTIFIED**; **PHASE 11 = COMPLETE**. No Phase 12 defined in repo — next action is planning/design.

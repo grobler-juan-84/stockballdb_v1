@@ -971,7 +971,7 @@ Canonical data unchanged. Matches Phase 10C certified primary fingerprint.
 | --- | --- | --- |
 | 1.0 | 2026-08-30 | Phase 11A audit + contract lock |
 
-**NEXT:** Phase 11C — Explorer certification
+**Historical NEXT (at 11A lock):** Phase 11B/11C — superseded; see §27 (Phase 11 COMPLETE 2026-09-10).
 
 ---
 
@@ -1010,3 +1010,73 @@ Canonical data unchanged. **Phase 11C NOT STARTED.**
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.1 | 2026-08-30 | Phase 11B implementation record |
+
+**Superseded NEXT:** historical note from Phase 11B — Phase 11C certified 2026-09-10 (§27).
+
+---
+
+## 27. Phase 11C certification record (2026-09-10)
+
+**Status:** **CERTIFIED** — **PHASE 11C = CERTIFIED**; **PHASE 11 = COMPLETE**.
+
+### Manual browser certification
+
+All six Explorer surfaces exercised and accepted:
+
+| Area | Result |
+| --- | --- |
+| Control Center | PASS |
+| Data Explorer | PASS (incl. historical date bounds after fix) |
+| Day Inspector | PASS (incl. 1958-11-04 after fix) |
+| Coverage Explorer | PASS (after Phase 8 adapter fix) |
+| Provenance Explorer | PASS |
+| Validation Center | PASS |
+
+### Defects discovered and fixed during 11C
+
+| ID | Defect | Fix commit |
+| --- | --- | --- |
+| Nav | Streamlit duplicate pathname / `pages/` auto-discovery crash | `ffa8914` |
+| Control | Manifest 1.1 fingerprint + Latest Attempt vs Successful Run + live status | `baf8a34`, `4403cb9` |
+| A | Streamlit `date_input` implicit ±10y bounds blocked historical dates | `3d79d3d` |
+| B | Coverage Explorer stale `collect_freshness` / `gap_findings` arities | `d176ca6` |
+
+Related ops (not Explorer DML): primary spine drift restored via update run `20260831T145447-9be32508`; mutating pytest guarded by `STOCKBALLDB_TEST_DATABASE_URL` (`0bfa6d0`).
+
+### Formal gates (closeout 2026-09-10)
+
+```text
+pytest       = 211 passed, 2 skipped
+validate_v1  = PASS (V1 VALID)
+health       = HEALTHY
+  findings   = INFO 3 / WARNING 0 / ERROR 0 / FATAL 0
+  INFO       = ETF_EXPECTED_LAG, WTI_EXPECTED_LAG, WTI_PROVIDER_GAP
+fingerprint  = sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca
+               MATCH vs certification-session / Validation Center baseline
+manifest     = 20260831T145447-9be32508
+snapshot verify = checked=91 missing=0 corrupt=0 ok=true (PASS)
+exact_rebuild_capable = True
+read-only audit = PASS (SET TRANSACTION READ ONLY; no INSERT/UPDATE/DELETE/TRUNCATE/DDL;
+                  no update/rebuild triggers; no raw SQL console)
+```
+
+### Non-blocking observations (not fixed at closeout)
+
+- Day Inspector date-level objects use raw developer-oriented formatting — UX debt.
+- Non-session messaging somewhat duplicated — UX debt.
+- Data Explorer column definitions sparse — UX/docs debt.
+- Review whether generic return/drawdown definitions adequately describe WTI close-only semantics — docs review.
+- Health `EXPECTED_LIMITATIONS` still includes “No raw snapshot archive (Phase 9)” despite Phase 9 complete — stale provenance wording (docs/health registry debt; not Explorer-blocking).
+- PMI / XAU/USD / DXY limitation wording reflects deferred V1 scope — intentional limitation; clarity review optional.
+
+### Repository NEXT
+
+**No Phase 12 is formally defined** in `docs/StockBallDB_index.md`, `docs/StockBallDB_workflow.md`, or phase contracts. After Phase 11, the next action is a **planning/design decision**, not silent creation of a new phase. Deferred tooling note: standalone `build_*` warnings remain optional follow-up outside Explorer scope.
+
+---
+
+## 28. Document history (continued)
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.2 | 2026-09-10 | Phase 11C certification record; Phase 11 COMPLETE |

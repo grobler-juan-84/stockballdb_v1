@@ -59,7 +59,7 @@ StockBallDB is a historical financial and market-context database. Philosophy, s
    Phase 11A lock: read-only Explorer audit, six-area information architecture, Streamlit recommendation, query/safety/security contract, and 11B/11C backlog.
 
 18. [StockBallDB_explorer.md](StockBallDB_explorer.md)  
-   Phase 11B operator reference: launch `python -m stockballdb.explorer`, read-only config, and six inspection pages.
+   Phase 11B operator reference: launch `python -m stockballdb.explorer`, read-only config, and six inspection pages. **Phase 11C CERTIFIED / Phase 11 COMPLETE** (2026-09-10) — see phase11a contract §27.
 
 ## Routing
 

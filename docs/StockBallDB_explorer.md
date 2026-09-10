@@ -1,6 +1,7 @@
 # StockBallDB Explorer — Operator Guide
 
-**Phase 11B** — local, read-only inspection UI for the certified StockBallDB database.
+**Phase 11** — local, read-only inspection UI for the certified StockBallDB database.  
+**Status:** Phase 11B implemented; **Phase 11C CERTIFIED** (2026-09-10); **Phase 11 COMPLETE**.
 
 ## Install
 
@@ -72,7 +73,5 @@ STOCKBALLDB_EXPLORER_DATABASE_URL=postgresql+psycopg://stockballdb_explorer:PASS
 
 ## Related docs
 
-- [StockBallDB_phase11a_explorer_contract.md](StockBallDB_phase11a_explorer_contract.md) — authoritative Explorer contract
+- [StockBallDB_phase11a_explorer_contract.md](StockBallDB_phase11a_explorer_contract.md) — authoritative Explorer contract (§27 Phase 11C certification)
 - [StockBallDB_operational_update.md](StockBallDB_operational_update.md) — operational update (not available from Explorer)
-
-**Phase 11C** (manual certification matrix) is separate from this operator guide.
