@@ -459,4 +459,5 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Tooling harden: mutating pytest requires `STOCKBALLDB_TEST_DATABASE_URL` (no fallback to primary); documented in operational update guide.
 - Added always-on Cursor rule `.cursor/rules/github-commit.mdc` for end-of-prompt local commits (no auto-push).
 - Phase 11C: fixed Streamlit date_input ±10y trap — shared Explorer date bounds on Data Explorer and Day Inspector.
-- **NEXT:** Continue Phase 11C manual certification matrix (standalone `build_*` warnings still deferred).
+- Phase 11C: Coverage Explorer adapter fixed — stale `collect_freshness`/`gap_findings` calls now match certified health API (`engine.py` contract); health semantics unchanged.
+- **NEXT:** Continue Phase 11C manual certification matrix (restart Explorer and re-open Coverage; standalone `build_*` warnings still deferred).

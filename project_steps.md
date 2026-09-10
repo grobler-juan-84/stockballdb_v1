@@ -279,3 +279,7 @@ Created `.cursor/rules/github-commit.mdc` (`alwaysApply: true`): after every pro
 ## Step 70 — Fix Explorer date_input Streamlit ±10y bounds
 
 Centralized `EXPLORER_DATE_MIN` / `explorer_date_max()` / `explorer_date_input_bounds()` in `explorer/config.py`. Applied explicit min/max to Data Explorer From/To and Day Inspector Calendar date; removed stale `2026-08-28` defaults. Added bound regression tests. pytest **211 passed, 2 skipped**.
+
+## Step 71 — Fix Coverage Explorer health API adapter (11C)
+
+Aligned `explorer/services/coverage.py` with certified Phase 8 contracts: `collect_freshness(conn)` (unpack results/findings; ignore findings for UI) and `gap_findings(symbols)`. Updated `test_load_coverage_delegates` so mocks enforce real arity/return shape. Health modules unchanged. pytest **211 passed, 2 skipped**. No DB mutation.

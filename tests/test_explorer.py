@@ -388,10 +388,28 @@ def test_resolve_snapshot_path_rejects_traversal() -> None:
 
 
 def test_load_coverage_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mocks match certified APIs: collect_freshness(conn) -> (results, findings); gap_findings(symbols)."""
     conn = MagicMock()
+    trading_days = [dt.date(2020, 1, 2)]
+    symbols = [SimpleNamespace(symbol="SPY")]
+    freshness_results = [SimpleNamespace(dataset="daily_market_data")]
+    freshness_findings = [SimpleNamespace(code="FRESH_LAG")]
+    gap_list = [SimpleNamespace(code="GAP", message="gap", severity=SimpleNamespace(value="INFO"))]
+
+    fresh_calls: list[tuple] = []
+    gap_calls: list[tuple] = []
+
+    def fake_collect_freshness(c: object) -> tuple[list, list]:
+        fresh_calls.append((c,))
+        return freshness_results, freshness_findings
+
+    def fake_gap_findings(syms: object) -> list:
+        gap_calls.append((syms,))
+        return gap_list
+
     monkeypatch.setattr(
         "stockballdb.explorer.services.coverage.load_trading_days",
-        lambda _c: [dt.date(2020, 1, 2)],
+        lambda _c: trading_days,
     )
     monkeypatch.setattr(
         "stockballdb.explorer.services.coverage.collect_table_coverage",
@@ -399,19 +417,25 @@ def test_load_coverage_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         "stockballdb.explorer.services.coverage.collect_symbol_coverage",
-        lambda _c, _td: [],
+        lambda _c, _td: symbols,
     )
     monkeypatch.setattr(
         "stockballdb.explorer.services.coverage.collect_freshness",
-        lambda _c, _td: [],
+        fake_collect_freshness,
     )
     monkeypatch.setattr(
         "stockballdb.explorer.services.coverage.gap_findings",
-        lambda _c, _td, _sym: [],
+        fake_gap_findings,
     )
     snap = load_coverage(conn)
     assert snap.tables
     assert snap.limitations
+    assert snap.freshness is freshness_results
+    assert snap.gap_findings is gap_list
+    assert len(fresh_calls) == 1
+    assert fresh_calls[0] == (conn,)
+    assert len(gap_calls) == 1
+    assert gap_calls[0] == (symbols,)
 
 
 def test_validation_run_validate_v1_pass(monkeypatch: pytest.MonkeyPatch) -> None:

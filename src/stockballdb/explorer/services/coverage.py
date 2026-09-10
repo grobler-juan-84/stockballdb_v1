@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from sqlalchemy.engine import Connection
 
@@ -29,12 +28,12 @@ def load_coverage(conn: Connection) -> CoverageSnapshot:
     trading_days = load_trading_days(conn)
     tables = collect_table_coverage(conn)
     symbols = collect_symbol_coverage(conn, trading_days)
-    fresh = collect_freshness(conn, trading_days)
-    gaps = gap_findings(conn, trading_days, symbols)
+    freshness, _fresh_findings = collect_freshness(conn)
+    gaps = gap_findings(symbols)
     return CoverageSnapshot(
         tables=tables,
         symbols=symbols,
-        freshness=fresh,
+        freshness=freshness,
         gap_findings=gaps,
         limitations=EXPECTED_LIMITATIONS,
         unresolved_symbols=UNRESOLVED_SYMBOLS,
