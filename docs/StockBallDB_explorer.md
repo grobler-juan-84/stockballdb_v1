@@ -1,7 +1,14 @@
 # StockBallDB Explorer — Operator Guide
 
 **Phase 11** — local, read-only inspection UI for the certified StockBallDB database.  
-**Status:** Phase 11B implemented; **Phase 11C CERTIFIED** (2026-09-10); **Phase 11 COMPLETE**.
+**Status:** Phase 11C CERTIFIED; **Phase 11D IMPLEMENTED — MANUAL CERTIFICATION PENDING** (desktop UI refresh).
+
+## Desktop UI (Phase 11D)
+
+- Wide layout (`layout="wide"`), top navigation, compact application header
+- Shared presentation helpers under `src/stockballdb/explorer/ui/`
+- Theme: `.streamlit/config.toml` + narrow CSS in `explorer/ui/css.py`
+- Visual contract: [StockBallDB_phase11d_explorer_desktop_ui_contract.md](StockBallDB_phase11d_explorer_desktop_ui_contract.md)
 
 ## Install
 
@@ -74,4 +81,5 @@ STOCKBALLDB_EXPLORER_DATABASE_URL=postgresql+psycopg://stockballdb_explorer:PASS
 ## Related docs
 
 - [StockBallDB_phase11a_explorer_contract.md](StockBallDB_phase11a_explorer_contract.md) — authoritative Explorer contract (§27 Phase 11C certification)
+- [StockBallDB_phase11d_explorer_desktop_ui_contract.md](StockBallDB_phase11d_explorer_desktop_ui_contract.md) — Phase 11D desktop UI refresh
 - [StockBallDB_operational_update.md](StockBallDB_operational_update.md) — operational update (not available from Explorer)

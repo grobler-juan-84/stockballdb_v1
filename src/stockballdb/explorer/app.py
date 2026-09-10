@@ -1,11 +1,12 @@
-"""Streamlit application shell and navigation."""
+"""Streamlit application shell and navigation (Phase 11D desktop shell)."""
 
 from __future__ import annotations
 
 import streamlit as st
 
-from stockballdb.explorer.db import check_explorer_connection
 from stockballdb.explorer.navigation import build_explorer_pages
+from stockballdb.explorer.ui.chrome import render_app_header
+from stockballdb.explorer.ui.css import inject_explorer_css
 
 
 def _init_session() -> None:
@@ -13,25 +14,22 @@ def _init_session() -> None:
         st.session_state.refresh_nonce = 0
 
 
-def _sidebar() -> None:
-    st.sidebar.title("StockBallDB Explorer")
-    st.sidebar.caption("Read-only inspection")
-    if st.sidebar.button("Refresh", type="primary"):
-        st.session_state.refresh_nonce += 1
-        st.cache_data.clear()
-        st.rerun()
-    st.sidebar.divider()
-    try:
-        check_explorer_connection()
-        st.sidebar.success("Database connected")
-    except Exception:
-        st.sidebar.error("Database unavailable")
+def _configure_page() -> None:
+    """Must run before other Streamlit calls."""
+    st.set_page_config(
+        page_title="StockBallDB Explorer",
+        page_icon=":material/database:",
+        layout="wide",
+        initial_sidebar_state="collapsed",
+    )
 
 
 def main() -> None:
+    _configure_page()
     _init_session()
-    _sidebar()
-    nav = st.navigation(build_explorer_pages())
+    inject_explorer_css()
+    render_app_header()
+    nav = st.navigation(build_explorer_pages(), position="top")
     nav.run()
 
 

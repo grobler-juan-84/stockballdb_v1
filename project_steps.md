@@ -291,3 +291,11 @@ Formal closeout audit (2026-09-10): pytest **211 passed, 2 skipped**; validate_v
 ## Step 73 — Push Phase 11C commits to GitHub
 
 Pushed local `main` to `origin/main` (`4403cb9..17d70fc`): mutating-test guard, Explorer date bounds, Coverage adapter fix, Phase 11C certification docs. Working tree clean; branch up to date with origin.
+
+## Step 74 — Phase 11D Explorer desktop UI refresh planning (no implementation)
+
+Audited current Streamlit Explorer architecture vs desktop-first mockup goals. Drafted Phase 11D plan: presentation-layer only; preserve 11C read-only/fingerprint guarantees; Streamlit-native wide layout + compact toolbars + small CSS shell; mockup extras (presets, column picker, research metrics) deferred as out of scope. No code, no DB mutation, no commit (user-requested plan-only).
+
+## Step 75 — Implement Phase 11D Explorer desktop UI refresh
+
+Locked `docs/StockBallDB_phase11d_explorer_desktop_ui_contract.md`. Added `.streamlit/config.toml`, `explorer/ui/` helpers (CSS, chrome header, components, dataframe styling), wide top-nav shell in `app.py`, and recomposed all six views for desktop density. Preserved read-only services/queries/health. pytest **213 passed, 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH** `sha256:5055ae10...`. Status: **PHASE 11D IMPLEMENTED — MANUAL CERTIFICATION PENDING**.

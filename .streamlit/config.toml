@@ -1,0 +1,16 @@
+# StockBallDB Explorer — Phase 11D desktop theme (local Streamlit).
+# Presentation only; does not affect database semantics.
+
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#f4f6f9"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0f172a"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

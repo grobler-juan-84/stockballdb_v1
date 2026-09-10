@@ -1,42 +1,47 @@
-"""Validation Center page."""
+"""Validation Center page — compact action bar (Phase 11D)."""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import streamlit as st
 
 from stockballdb.explorer.artifacts import discover_manifests
 from stockballdb.explorer.db import get_explorer_engine
 from stockballdb.explorer.services import validation as val_service
+from stockballdb.explorer.ui.components import page_header, section_heading, status_badge
 
 
 def render() -> None:
-    st.caption("On-demand read-only validation — does not mutate the database.")
+    page_header("Validation", "On-demand read-only validation — does not mutate the database.")
     engine = get_explorer_engine()
 
-    if st.button("Run health", type="primary"):
+    b1, b2, b3, b4 = st.columns(4)
+    run_health = b1.button("Run Health", type="primary", use_container_width=True)
+    run_v1 = b2.button("Run validate_v1", use_container_width=True)
+    run_fp = b3.button("Compute Fingerprint", use_container_width=True)
+    run_ver = b4.button("Verify Latest Manifest", use_container_width=True)
+
+    if run_health:
         try:
             report = val_service.run_health_check(engine)
             st.session_state["val_health"] = val_service.health_as_dict(report)
         except Exception as exc:
             st.error(f"Health failed: {exc}")
 
-    if st.button("Run validate_v1"):
+    if run_v1:
         try:
             result = val_service.run_validate_v1(engine)
             st.session_state["val_v1"] = result
         except Exception as exc:
             st.error(f"validate_v1 failed: {exc}")
 
-    if st.button("Compute fingerprint"):
+    if run_fp:
         try:
             fp = val_service.run_fingerprint(engine)
             st.session_state["val_fp"] = fp.as_dict()
         except Exception as exc:
             st.error(f"Fingerprint failed: {exc}")
 
-    if st.button("Verify latest manifest"):
+    if run_ver:
         manifests = discover_manifests()
         latest = next((m for m in manifests if m.payload and not m.error), None)
         if not latest:
@@ -45,6 +50,7 @@ def render() -> None:
             try:
                 rep = val_service.verify_manifest_file(latest.path)
                 st.session_state["val_verify"] = {
+                    "manifest": latest.artifact_id,
                     "checked": rep.checked,
                     "missing": rep.missing,
                     "corrupt": rep.corrupt,
@@ -54,22 +60,44 @@ def render() -> None:
                 st.error(f"Verify failed: {exc}")
 
     if "val_health" in st.session_state:
-        st.subheader("Health")
-        st.json(st.session_state["val_health"])
+        section_heading("Health")
+        h = st.session_state["val_health"]
+        status = h.get("status") or h.get("health_status") or "—"
+        kind = "ok" if str(status).upper() == "HEALTHY" else ("warn" if "WARN" in str(status).upper() else "bad")
+        st.markdown(f"{status_badge(kind, str(status))}", unsafe_allow_html=True)
+        with st.expander("Health details (raw)"):
+            st.json(h)
 
     if "val_v1" in st.session_state:
-        st.subheader("validate_v1")
+        section_heading("validate_v1")
         r = st.session_state["val_v1"]
-        st.write("PASS" if r.passed else "FAIL")
+        kind = "ok" if r.passed else "bad"
+        st.markdown(
+            f"{status_badge(kind, 'PASS' if r.passed else 'FAIL')}",
+            unsafe_allow_html=True,
+        )
         if r.error:
             st.error(r.error)
-        for line in r.diagnostics[:30]:
-            st.text(line)
+        with st.expander("Diagnostics", expanded=not r.passed):
+            for line in r.diagnostics[:40]:
+                st.text(line)
 
     if "val_fp" in st.session_state:
-        st.subheader("Fingerprint")
-        st.json(st.session_state["val_fp"])
+        section_heading("Fingerprint")
+        fp = st.session_state["val_fp"]
+        st.code(fp.get("database_fingerprint") or fp)
+        with st.expander("Fingerprint details (raw)"):
+            st.json(fp)
 
     if "val_verify" in st.session_state:
-        st.subheader("Snapshot verification")
-        st.json(st.session_state["val_verify"])
+        section_heading("Snapshot verification")
+        v = st.session_state["val_verify"]
+        kind = "ok" if v.get("ok") else "bad"
+        st.markdown(
+            f"{status_badge(kind, 'PASS' if v.get('ok') else 'FAIL')} "
+            f"checked={v.get('checked')} missing={v.get('missing')} corrupt={v.get('corrupt')}"
+            + (f" · manifest `{v.get('manifest')}`" if v.get("manifest") else ""),
+            unsafe_allow_html=True,
+        )
+        with st.expander("Verify details (raw)"):
+            st.json(v)

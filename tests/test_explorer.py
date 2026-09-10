@@ -864,14 +864,43 @@ def test_explorer_navigation_expected_areas() -> None:
         "Control Center",
         "Data Explorer",
         "Day Inspector",
-        "Coverage Explorer",
-        "Provenance Explorer",
-        "Validation Center",
+        "Coverage",
+        "Provenance",
+        "Validation",
     }
 
 
 def test_import_explorer_main() -> None:
     import stockballdb.explorer.__main__  # noqa: F401
+
+
+def test_explorer_app_configures_wide_layout() -> None:
+    from stockballdb.explorer import app as explorer_app
+
+    src = Path(explorer_app.__file__).read_text(encoding="utf-8")
+    assert 'layout="wide"' in src
+    assert "set_page_config" in src
+    assert 'position="top"' in src
+
+
+def test_explorer_ui_helpers_status_and_null_color() -> None:
+    from stockballdb.explorer.formatting import NULL_DISPLAY
+    from stockballdb.explorer.ui.components import status_badge
+    from stockballdb.explorer.ui.dataframes import _signed_color, rows_to_styled_dataframe
+
+    assert "sbdb-badge-ok" in status_badge("ok", "HEALTHY")
+    assert _signed_color(NULL_DISPLAY) == ""
+    assert "15803d" in _signed_color("0.012")
+    assert "b91c1c" in _signed_color("-0.01")
+
+    data, _cfg = rows_to_styled_dataframe(
+        [{"date": None, "return_1d": 0.01, "gap_pct": -0.02, "close": 100}]
+    )
+    # Styler or list — formatted NULL preserved in underlying frame/list
+    if hasattr(data, "data"):
+        assert data.data.iloc[0]["date"] == NULL_DISPLAY
+    else:
+        assert data[0]["date"] == NULL_DISPLAY
 
 
 def test_fingerprint_wrapper(monkeypatch: pytest.MonkeyPatch) -> None:

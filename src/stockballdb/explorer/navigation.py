@@ -32,19 +32,19 @@ EXPLORER_PAGE_SPECS: tuple[ExplorerPageSpec, ...] = (
     ExplorerPageSpec(
         "coverage_explorer",
         "coverage-explorer",
-        "Coverage Explorer",
+        "Coverage",
         ":material/analytics:",
     ),
     ExplorerPageSpec(
         "provenance_explorer",
         "provenance-explorer",
-        "Provenance Explorer",
+        "Provenance",
         ":material/history:",
     ),
     ExplorerPageSpec(
         "validation_center",
         "validation-center",
-        "Validation Center",
+        "Validation",
         ":material/verified:",
     ),
 )
