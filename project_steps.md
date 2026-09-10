@@ -319,3 +319,7 @@ Restored on-screen percentage formatting for definition-backed decimal ratio col
 ## Step 80 — Round adj OHLC to 2 decimals on screen
 
 Display-only 2 d.p. for `adj_open` / `adj_high` / `adj_low` / `adj_close` in Explorer formatting (e.g. `584.1333193` → `584.13`). CSV/DB unchanged. Explorer tests **70 passed**.
+
+## Step 81 — Push Phase 11D commits to GitHub
+
+Pushed local `main` to `origin/main` (`e6d4013..d3350e1`): Phase 11D Passes 1–4 UI refresh, percent display fix, adj OHLC 2 d.p. display. Branch up to date with origin.
