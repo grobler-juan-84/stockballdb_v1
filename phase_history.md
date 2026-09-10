@@ -458,4 +458,5 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Phase 11C paused: canonical DB spine drift restored via update `20260831T145447-9be32508`; fingerprint `sha256:5055ae10...`.
 - Tooling harden: mutating pytest requires `STOCKBALLDB_TEST_DATABASE_URL` (no fallback to primary); documented in operational update guide.
 - Added always-on Cursor rule `.cursor/rules/github-commit.mdc` for end-of-prompt local commits (no auto-push).
+- Phase 11C: fixed Streamlit date_input ±10y trap — shared Explorer date bounds on Data Explorer and Day Inspector.
 - **NEXT:** Continue Phase 11C manual certification matrix (standalone `build_*` warnings still deferred).

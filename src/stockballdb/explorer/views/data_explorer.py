@@ -8,7 +8,12 @@ import datetime as dt
 
 import streamlit as st
 
-from stockballdb.explorer.config import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from stockballdb.explorer.config import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    explorer_date_input_bounds,
+    explorer_date_max,
+)
 from stockballdb.explorer.db import readonly_connection
 from stockballdb.explorer.definitions import definition_for
 from stockballdb.explorer.formatting import rows_to_display_dicts
@@ -26,11 +31,25 @@ def render() -> None:
     )
     spec = TABLE_REGISTRY[table_key]
 
+    bounds = explorer_date_input_bounds()
+    default_from = dt.date(1957, 1, 2)
+    default_to = explorer_date_max()
+
     col1, col2, col3 = st.columns(3)
     use_from = col1.checkbox("Filter from date")
-    date_from = col1.date_input("From date", value=dt.date(1957, 1, 2), disabled=not use_from)
+    date_from = col1.date_input(
+        "From date",
+        value=default_from,
+        disabled=not use_from,
+        **bounds,
+    )
     use_to = col2.checkbox("Filter to date")
-    date_to = col2.date_input("To date", value=dt.date(2026, 8, 28), disabled=not use_to)
+    date_to = col2.date_input(
+        "To date",
+        value=default_to,
+        disabled=not use_to,
+        **bounds,
+    )
     symbol = None
     if spec.symbol_column:
         symbol = col3.selectbox("Symbol", options=["(all)"] + list(V1_MARKET_SYMBOLS))

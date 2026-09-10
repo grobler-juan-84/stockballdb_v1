@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import datetime as dt
-
 import streamlit as st
 
+from stockballdb.explorer.config import explorer_date_input_bounds, explorer_date_max
 from stockballdb.explorer.db import readonly_connection
 from stockballdb.explorer.formatting import rows_to_display_dicts
 from stockballdb.explorer.services.day import inspect_day
@@ -15,7 +14,11 @@ from stockballdb.market_data.universe import V1_MARKET_SYMBOLS
 def render() -> None:
     st.caption("Cross-table factual inspection for one calendar date.")
     col1, col2 = st.columns(2)
-    target = col1.date_input("Calendar date", value=dt.date(2026, 8, 28))
+    target = col1.date_input(
+        "Calendar date",
+        value=explorer_date_max(),
+        **explorer_date_input_bounds(),
+    )
     sym_choice = col2.selectbox("Symbol (optional)", options=["(all)"] + list(V1_MARKET_SYMBOLS))
     symbol = None if sym_choice == "(all)" else sym_choice
 

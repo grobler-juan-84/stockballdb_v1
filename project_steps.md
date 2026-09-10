@@ -275,3 +275,7 @@ Added `STOCKBALLDB_TEST_DATABASE_URL` boundary: `stockballdb.testing` guard neve
 ## Step 69 — Add auto-commit Cursor rule
 
 Created `.cursor/rules/github-commit.mdc` (`alwaysApply: true`): after every prompt, create a local git commit for intentional changes with a conventional message; never push unless explicitly asked; skip secrets/empty trees.
+
+## Step 70 — Fix Explorer date_input Streamlit ±10y bounds
+
+Centralized `EXPLORER_DATE_MIN` / `explorer_date_max()` / `explorer_date_input_bounds()` in `explorer/config.py`. Applied explicit min/max to Data Explorer From/To and Day Inspector Calendar date; removed stale `2026-08-28` defaults. Added bound regression tests. pytest **211 passed, 2 skipped**.

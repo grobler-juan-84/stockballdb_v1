@@ -732,6 +732,49 @@ def test_explorer_config_constants() -> None:
     assert explorer_config.CSV_EXPORT_MAX_ROWS == 10_000
 
 
+def test_explorer_date_bounds_cover_stockballdb_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(explorer_config, "today_ny", lambda: dt.date(2026, 9, 10))
+    assert explorer_config.EXPLORER_DATE_MIN == dt.date(1957, 1, 1)
+    hi = explorer_config.explorer_date_max()
+    assert hi == dt.date(2026, 9, 10)
+    assert explorer_config.EXPLORER_DATE_MIN <= dt.date(1958, 11, 4) <= hi
+    assert explorer_config.EXPLORER_DATE_MIN <= dt.date(2020, 1, 1) <= hi
+    assert explorer_config.EXPLORER_DATE_MIN <= dt.date(2020, 12, 31) <= hi
+    assert explorer_config.EXPLORER_DATE_MIN <= hi <= hi
+    bounds = explorer_config.explorer_date_input_bounds()
+    assert bounds["min_value"] == dt.date(1957, 1, 1)
+    assert bounds["max_value"] == hi
+
+
+def test_data_explorer_date_inputs_use_explicit_bounds() -> None:
+    text = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "stockballdb"
+        / "explorer"
+        / "views"
+        / "data_explorer.py"
+    ).read_text(encoding="utf-8")
+    assert "explorer_date_input_bounds" in text
+    assert "min_value" in text or "**bounds" in text
+    assert "2026, 8, 28" not in text
+    assert "date(2026, 8, 28)" not in text
+
+
+def test_day_inspector_date_input_uses_explicit_bounds() -> None:
+    text = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "stockballdb"
+        / "explorer"
+        / "views"
+        / "day_inspector.py"
+    ).read_text(encoding="utf-8")
+    assert "explorer_date_input_bounds" in text
+    assert "explorer_date_max" in text
+    assert "date(2026, 8, 28)" not in text
+
+
 # --- Read-only audit ---
 
 
