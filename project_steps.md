@@ -323,3 +323,7 @@ Display-only 2 d.p. for `adj_open` / `adj_high` / `adj_low` / `adj_close` in Exp
 ## Step 81 — Push Phase 11D commits to GitHub
 
 Pushed local `main` to `origin/main` (`e6d4013..d3350e1`): Phase 11D Passes 1–4 UI refresh, percent display fix, adj OHLC 2 d.p. display. Branch up to date with origin.
+
+## Step 82 — Report primary PostgreSQL sizes (read-only)
+
+Queried `pg_database_size` / `pg_total_relation_size` on primary `stockballdb`: total **166 MB** (~165.9 MiB); largest tables `daily_market_data` 67 MB, `asset_regimes` 41 MB, `market_outcomes` 36 MB. No DB mutation.

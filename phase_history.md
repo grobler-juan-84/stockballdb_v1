@@ -470,6 +470,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - **Phase 11D fix:** Data Explorer decimal-ratio columns display as percent (e.g. `0.00697` → `0.70%`) in presentation layer only; CSV/DB unchanged.
 - **Phase 11D fix:** `adj_open`/`adj_high`/`adj_low`/`adj_close` display rounded to 2 decimals on screen only.
 - Pushed Phase 11D work to `origin/main` (`e6d4013..d3350e1`).
+- Read-only size check: primary DB ~166 MB; largest `daily_market_data` 67 MB.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 
