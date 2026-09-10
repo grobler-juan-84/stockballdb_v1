@@ -454,5 +454,8 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Phase 11B: read-only Streamlit Explorer at `python -m stockballdb.explorer` — registry/queries, six pages, service layer, operator guide (`677de04`).
 - Phase 11C finding: startup crash from duplicate Streamlit page pathnames — fixed by `views/` rename + explicit `url_path` in `navigation.py`.
 - Phase 11C finding: Control Center manifest crash + operational-run/status semantics — fixed manifest 1.1 fingerprint parsing, split Latest Attempt vs Latest Successful Run, headline status from live `run_health()` only.
-- Phase 11C finding: stale live Database Status from Streamlit `@st.cache_data` on `_cached_control` — removed health caching; added `load_live_database_status()` + CLI parity integration tests.
-- **NEXT:** Continue Phase 11C manual certification matrix.
+- Phase 11C finding: stale live Database Status from Streamlit `@st.cache_data` — fixed in `4403cb9`.
+- Phase 11C paused: canonical DB spine drift restored via update `20260831T145447-9be32508`; fingerprint `sha256:5055ae10...`.
+- Tooling harden: mutating pytest requires `STOCKBALLDB_TEST_DATABASE_URL` (no fallback to primary); documented in operational update guide.
+- Added always-on Cursor rule `.cursor/rules/github-commit.mdc` for end-of-prompt local commits (no auto-push).
+- **NEXT:** Continue Phase 11C manual certification matrix (standalone `build_*` warnings still deferred).

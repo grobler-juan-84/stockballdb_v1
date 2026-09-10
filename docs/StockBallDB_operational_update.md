@@ -74,6 +74,21 @@ Unlike `build_v1`, **`update` fails** when health status is **UNHEALTHY**. **HEA
 | Empty / new database | `python -m stockballdb.build_v1` (includes migrate) |
 | Established StockBallDB routine refresh | `python -m stockballdb.update` |
 
+## Test database boundary
+
+| Variable | Role |
+| --- | --- |
+| `DATABASE_URL` | Primary / normal StockBallDB (operational + read-only checks) |
+| `STOCKBALLDB_TEST_DATABASE_URL` | Separate disposable PostgreSQL DB for **mutating** pytest integration tests |
+
+Rules:
+
+- Mutating integration tests (`tests/test_trading_days_db.py`, `tests/test_daily_market_data_db.py`) use **only** `STOCKBALLDB_TEST_DATABASE_URL`.
+- They **never** fall back to `DATABASE_URL`. If the test URL is unset, those tests **skip**.
+- If the test URL identifies the same host/port/database as `DATABASE_URL` (credentials ignored), the tests **refuse** to run.
+- Read-only tests may still use `DATABASE_URL`.
+- Canonical primary refresh remains: `python -m stockballdb.update`
+
 ## Related commands
 
 ```text

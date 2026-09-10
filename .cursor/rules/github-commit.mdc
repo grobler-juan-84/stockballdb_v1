@@ -1,0 +1,42 @@
+---
+description: After every prompt, commit local changes (never push) with a clear message
+alwaysApply: true
+---
+
+# Auto-commit after every prompt (no push)
+
+At the **end of every user prompt**, after finishing the real work (and after updating `project_steps.md` / `phase_history.md` when those rules apply), create a **local git commit** if there is anything to commit.
+
+## Required behavior
+
+1. Run `git status` and `git diff` (staged + unstaged). If the working tree is clean, **do not** create an empty commit.
+2. If there are changes, stage the **intended** project files for this prompt (including new untracked files that belong to the work).
+3. **Never push** to `origin` or any remote unless the user explicitly asks to push in that same prompt.
+4. **Never** update git config, force-push, amend unless the user explicitly asked and amend safety rules are met, or use `--no-verify`.
+5. **Do not commit secrets**: `.env`, credentials, API keys, private keys, or files that look secret-bearing. Warn if such files appear dirty.
+6. Prefer not to commit large generated artifacts (`build_reports/` payloads, snapshot blobs, `__pycache__`, `.venv`) unless the user explicitly asked for those paths.
+7. Draft a concise commit message (1–2 sentences) focused on **why**, matching this repo’s style (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
+8. Commit with a HEREDOC message (PowerShell-safe equivalent is fine on Windows). Then run `git status` to confirm success.
+9. If the commit fails (hooks), fix and create a **new** commit — do not amend a failed commit.
+10. Briefly mention in the user-facing reply that a local commit was created (hash + subject), and that it was **not** pushed.
+
+## Skip committing when
+
+- Working tree is clean
+- The prompt was pure Q&A / audit with **no** file changes
+- The user said not to commit / wait / report only
+- The only dirty files are secrets or explicitly excluded artifacts
+
+## Examples
+
+```text
+docs: record Phase 11C tooling note
+
+feat: guard mutating pytest behind STOCKBALLDB_TEST_DATABASE_URL
+
+fix: correct Explorer live database status
+```
+
+## Conflict with “commit only when asked”
+
+This project rule **overrides** the general habit of waiting for an explicit commit request: for this repo, end-of-prompt local commits are required when there are safe, intentional changes. Pushing remains opt-in only.

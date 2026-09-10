@@ -84,6 +84,34 @@ def database_name_from_url(database_url: str) -> str:
     return path.split("?")[0] if path else ""
 
 
+def _normalize_sqlalchemy_url(database_url: str) -> str:
+    url = database_url.strip()
+    for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://"):
+        if url.startswith(prefix):
+            return "postgresql://" + url[len(prefix) :]
+    return url
+
+
+def database_endpoint_identity(database_url: str) -> tuple[str, int, str]:
+    """
+    Return ``(host, port, database_name)`` for comparing database targets.
+
+    Credentials are ignored. Default PostgreSQL port 5432 is assumed when omitted.
+    """
+    parsed = urlparse(_normalize_sqlalchemy_url(database_url))
+    host = (parsed.hostname or "").lower()
+    port = parsed.port if parsed.port is not None else 5432
+    name = parsed.path.lstrip("/").split("?")[0]
+    return (host, port, name)
+
+
+def same_database_url(left: str, right: str) -> bool:
+    """True when both URLs identify the same host/port/database (ignoring credentials)."""
+    if not left.strip() or not right.strip():
+        return False
+    return database_endpoint_identity(left) == database_endpoint_identity(right)
+
+
 def explorer_database_url(settings: Settings | None = None) -> str:
     """Return Explorer DB URL (read-only role preferred, else primary)."""
     load_dotenv()

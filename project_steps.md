@@ -262,4 +262,16 @@ Fixed Phase 11C findings: Manifest 1.1 crash (`database_fingerprint` string vs n
 
 ## Step 66 — Fix Explorer live Database Status caching
 
-Root cause: `@st.cache_data` on `_cached_control` cached entire `ControlCenterSnapshot` including stale `HealthReport` from an earlier render; CLI always runs fresh `run_health()`. Fix: `load_live_database_status()` runs uncached every Control Center render; artifacts loaded separately. Added ERROR label for adapter exceptions; integration tests assert Explorer live status matches CLI `run_health()` and `validate_v1_database()` when `DATABASE_URL` set. pytest **200/200 PASS**. Committed **`fix: correct Explorer live database status`**; pushed to `origin/main`.
+Root cause: `@st.cache_data` on `_cached_control` cached entire `ControlCenterSnapshot` including stale `HealthReport` from an earlier render; CLI always runs fresh `run_health()`. Fix: `load_live_database_status()` runs uncached every Control Center render. pytest **200/200 PASS**. Committed **`4403cb9`** `fix: correct Explorer live database status`.
+
+## Step 67 — Diagnose and restore canonical DB spine health (11C pause)
+
+Diagnosed `trading_days` max `2026-08-31` (17533 rows) ahead of `macro_conditions`/`calendar_context` max `2026-08-28` (17532) — orphan session `2026-08-31` without dependent rows. Explorer confirmed read-only (no DML). Likely spine extended by integration test `test_trading_days_db` (`sync_trading_days` to `today_ny()`) or standalone trading_days sync without full update. Restored via certified `python -m stockballdb.update` run **`20260831T145447-9be32508`** (`SUCCESS_UPDATED`). After: all three tables 17533 rows max `2026-08-31`; validate_v1 **PASS**; health **HEALTHY**; fingerprint `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca`. Phase 11C UX certification remains paused pending user restart of Explorer against restored DB.
+
+## Step 68 — Harden mutating pytest away from primary DB
+
+Added `STOCKBALLDB_TEST_DATABASE_URL` boundary: `stockballdb.testing` guard never falls back to `DATABASE_URL`; skips when unset; fails when test URL shares host/port/database with primary. Wired `test_trading_days_db` and `test_daily_market_data_db` to the guard. Documented in `.env.example` and `docs/StockBallDB_operational_update.md`. With test URL unset: **2 skipped**, pytest **208 passed / 2 skipped**; primary fingerprint unchanged `sha256:5055ae10...`. Standalone `build_*` warnings deferred.
+
+## Step 69 — Add auto-commit Cursor rule
+
+Created `.cursor/rules/github-commit.mdc` (`alwaysApply: true`): after every prompt, create a local git commit for intentional changes with a conventional message; never push unless explicitly asked; skip secrets/empty trees.

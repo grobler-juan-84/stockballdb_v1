@@ -1,11 +1,10 @@
-"""Database integration tests for trading_days."""
+"""Database integration tests for trading_days (mutating — requires test DB)."""
 
 from __future__ import annotations
 
 import datetime as dt
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import text
 
 from stockballdb.calendar.nyse import today_ny
@@ -15,8 +14,8 @@ from stockballdb.calendar.validate import (
     validate_trading_days_db,
     validate_trading_days_frame,
 )
-from stockballdb.config import ConfigError, load_settings
-from stockballdb.db import get_engine, reset_engine
+from stockballdb.db import reset_engine
+from stockballdb.testing import require_mutable_test_settings
 
 
 @pytest.fixture(autouse=True)
@@ -27,14 +26,13 @@ def _reset_engine() -> None:
 
 
 def test_trading_days_sync_and_idempotent() -> None:
-    load_dotenv()
+    settings = require_mutable_test_settings()
+    from stockballdb.db import get_engine
+
+    engine = get_engine(settings)
     try:
-        settings = load_settings(require_database_url=True)
-        engine = get_engine(settings)
         with engine.connect() as conn:
             conn.execute(text("SELECT 1 FROM trading_days LIMIT 1"))
-    except ConfigError as exc:
-        pytest.skip(f"DATABASE_URL not set: {exc}")
     except Exception as exc:
         pytest.skip(
             f"trading_days table or PostgreSQL unavailable ({type(exc).__name__}: {exc})"

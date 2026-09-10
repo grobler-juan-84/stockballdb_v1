@@ -1,22 +1,20 @@
-"""Database integration tests for daily_market_data (lightweight)."""
+"""Database integration tests for daily_market_data (mutating — requires test DB)."""
 
 from __future__ import annotations
 
 import datetime as dt
 
 import pytest
-from dotenv import load_dotenv
 from sqlalchemy import text
 
-from stockballdb.config import ConfigError, load_settings
-from stockballdb.db import get_engine, reset_engine
+from stockballdb.db import reset_engine
 from stockballdb.market_data.build import (
     load_trading_day_dates,
     upsert_daily_market_data,
 )
 from stockballdb.market_data.normalize import normalize_tiingo_bars
-from stockballdb.market_data.validate import validate_daily_market_data_db
 from stockballdb.providers.tiingo import fetch_daily_prices
+from stockballdb.testing import require_mutable_test_settings
 
 
 @pytest.fixture(autouse=True)
@@ -28,18 +26,14 @@ def _reset_engine() -> None:
 
 def test_upsert_idempotent_for_single_symbol_window() -> None:
     """Fetch a short SPY window, upsert twice, assert stable row count."""
-    load_dotenv()
+    settings = require_mutable_test_settings(require_tiingo_api_key=True)
+    from stockballdb.db import get_engine
+
+    engine = get_engine(settings)
     try:
-        settings = load_settings(
-            require_database_url=True,
-            require_tiingo_api_key=True,
-        )
-        engine = get_engine(settings)
         with engine.connect() as conn:
             conn.execute(text("SELECT 1 FROM daily_market_data LIMIT 1"))
             conn.execute(text("SELECT 1 FROM trading_days LIMIT 1"))
-    except ConfigError as exc:
-        pytest.skip(str(exc))
     except Exception as exc:
         pytest.skip(f"DB/table unavailable: {type(exc).__name__}: {exc}")
 
