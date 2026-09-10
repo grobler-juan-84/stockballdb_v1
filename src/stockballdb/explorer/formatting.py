@@ -53,6 +53,16 @@ _EXPLICIT_DECIMAL_RATIO_COLUMNS: frozenset[str] = frozenset(
 # Already 0–100 style percentages (health coverage) — never ×100 again.
 _ALREADY_PERCENT_POINT_COLUMNS: frozenset[str] = frozenset({"coverage_pct"})
 
+# Adjusted OHLC prices: display rounded to 2 decimal places (presentation only).
+PRICE_2DP_COLUMNS: frozenset[str] = frozenset(
+    {
+        "adj_open",
+        "adj_high",
+        "adj_low",
+        "adj_close",
+    }
+)
+
 
 def is_decimal_ratio_column(column: str) -> bool:
     """
@@ -80,6 +90,16 @@ def format_percent_ratio(value: Any) -> str:
     return f"{num * 100:.2f}%"
 
 
+def is_price_2dp_column(column: str) -> bool:
+    """True when ``column`` should round to 2 decimal places on screen (adj OHLC)."""
+    return column in PRICE_2DP_COLUMNS
+
+
+def format_price_2dp(value: Any) -> str:
+    """Display-only: price → 2 decimal places (584.1333193 → 584.13)."""
+    return f"{float(value):.2f}"
+
+
 def format_cell(value: Any, *, column: str | None = None) -> str:
     if value is None:
         return NULL_DISPLAY
@@ -93,6 +113,8 @@ def format_cell(value: Any, *, column: str | None = None) -> str:
         return value.isoformat()
     if column and is_decimal_ratio_column(column) and isinstance(value, (int, float, Decimal)):
         return format_percent_ratio(value)
+    if column and is_price_2dp_column(column) and isinstance(value, (int, float, Decimal)):
+        return format_price_2dp(value)
     if isinstance(value, Decimal):
         return format(value, "f").rstrip("0").rstrip(".") or "0"
     return str(value)

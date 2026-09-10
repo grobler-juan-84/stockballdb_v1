@@ -320,6 +320,28 @@ def test_format_cell_decimal_ratio_as_percent() -> None:
     assert format_cell(Decimal("3.25"), column="fed_funds_rate") == "3.25"
 
 
+def test_format_cell_adj_prices_two_decimals() -> None:
+    from stockballdb.explorer.formatting import format_price_2dp, is_price_2dp_column
+
+    assert is_price_2dp_column("adj_open")
+    assert is_price_2dp_column("adj_high")
+    assert is_price_2dp_column("adj_low")
+    assert is_price_2dp_column("adj_close")
+    assert not is_price_2dp_column("close")
+    assert not is_price_2dp_column("open")
+
+    assert format_price_2dp(584.1333193) == "584.13"
+    assert format_price_2dp(Decimal("584.1333193")) == "584.13"
+    assert format_cell(584.1333193, column="adj_close") == "584.13"
+    assert format_cell(584.1, column="adj_high") == "584.10"
+    assert format_cell(None, column="adj_open") == NULL_DISPLAY
+    raw = [{"adj_close": 584.1333193}]
+    snapshot = [dict(raw[0])]
+    out = rows_to_display_dicts(raw)
+    assert out[0]["adj_close"] == "584.13"
+    assert raw == snapshot
+
+
 def test_rows_to_display_dicts_percent_and_no_mutation() -> None:
     raw = [{"return_1d": 0.0069774366, "close": None, "symbol": "SPY"}]
     snapshot = [dict(raw[0])]

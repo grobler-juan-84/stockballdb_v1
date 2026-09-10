@@ -315,3 +315,7 @@ Pinned shell to viewport top (sticky + zero Streamlit header/decoration padding)
 ## Step 79 — Fix Data Explorer decimal-ratio percent display
 
 Restored on-screen percentage formatting for definition-backed decimal ratio columns (`return_*`, `*_pct`, gap/intraday/drawdown/vol) via `formatting.format_cell(..., column=)`; macro percentage-point fields excluded. CSV/export and source values unchanged. Green/red coloring still applies to formatted `%` strings. pytest **219 passed, 2 skipped**; fingerprint **MATCH**.
+
+## Step 80 — Round adj OHLC to 2 decimals on screen
+
+Display-only 2 d.p. for `adj_open` / `adj_high` / `adj_low` / `adj_close` in Explorer formatting (e.g. `584.1333193` → `584.13`). CSV/DB unchanged. Explorer tests **70 passed**.

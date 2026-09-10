@@ -468,6 +468,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - **Phase 11D Pass 3:** full-bleed shell + active cyan pill nav styling; presentation-only CSS/chrome polish.
 - **Phase 11D Pass 4:** flush top sticky shell, mockup deep navy `#0a1628`, soft blue active pill; kill residual Streamlit top chrome.
 - **Phase 11D fix:** Data Explorer decimal-ratio columns display as percent (e.g. `0.00697` → `0.70%`) in presentation layer only; CSV/DB unchanged.
+- **Phase 11D fix:** `adj_open`/`adj_high`/`adj_low`/`adj_close` display rounded to 2 decimals on screen only.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 
