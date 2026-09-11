@@ -476,9 +476,11 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Docs: rewrote `StockBallDB_snapshots_and_rebuilds.md` as the single canonical snapshot/rebuild reference (durable facts only; historical vs current certified fingerprints noted).
 - Docs: added permanent `StockBallDB_validation.md` (validation/health/provenance/certification baseline; no phase backlog).
 - Docs: full rewrite of `StockBallDB_workflow.md` as current-state V1 lifecycle/dependency workflow (exact rebuild + Explorer; Phase 10A architecture folded in; phase novel deferred to git).
+- Docs: rewrote `StockBallDB_explorer.md` as the single permanent Explorer reference (11C certified; 11D presentation implemented, manual UX cert pending).
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 
 **Done:** Phase 11A contract; Phase 11B Streamlit Explorer; Phase 11C manual certification of all six surfaces with read-only proof (fingerprint match). Defects fixed during 11C: navigation pathnames (`ffa8914`), Control Center status/manifest (`baf8a34`, `4403cb9`), date_input ±10y bounds (`3d79d3d`), Coverage freshness/gaps adapter (`d176ca6`).
 **Problems:** Mid-11C spine drift from mutating pytest against primary (restored via update `20260831T145447-9be32508`); mitigated by `STOCKBALLDB_TEST_DATABASE_URL` guard. Stale health limitation text still says “No raw snapshot archive (Phase 9)” — non-blocking docs debt.
 **Remember:** Prefer adapting Explorer to certified health APIs; Streamlit date_input needs explicit min/max; Explorer mocks must match real signatures. Phase 11D is a presentation refinement after 11C — do not confuse UI polish with functional re-certification until 11D manual cert completes.
+
