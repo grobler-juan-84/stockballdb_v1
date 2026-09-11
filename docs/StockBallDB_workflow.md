@@ -1,67 +1,56 @@
 # StockBallDB — Workflow
 
-## 1. Purpose
+Canonical lifecycle and dependency workflow for **StockBallDB V1 as implemented**.
 
-This document defines the high-level workflow used to build, populate, validate, update, and maintain StockBallDB.
+This document describes **how data moves through the system** and how build / update / rebuild relate. It does not define philosophy, schema, providers, field formulas, or the asset universe — see companions below.
 
-It describes **how data moves through the system**.
+| Concern | Doc |
+| --- | --- |
+| Why / principles | `StockBallDB_manifesto.md` |
+| Tables / keys | `StockBallDB_schema.md` |
+| Providers | `StockBallDB_sources.md` |
+| Field definitions | `StockBallDB_definitions.md` |
+| Universe | `StockBallDB_universe.md` |
+| Operator update commands | `StockBallDB_operational_update.md` |
+| Snapshots / exact rebuild | `StockBallDB_snapshots_and_rebuilds.md` |
+| Update contract (audit lock) | `StockBallDB_phase10a_operational_workflow_contract.md` |
+| Read-only inspection UI | `StockBallDB_explorer.md` |
 
-It does not define:
-
-* the philosophical purpose of StockBallDB — see `StockBallDB_manifesto.md`;
-* the canonical database structure — see `StockBallDB_schema.md`;
-* provider-specific source details — see `StockBallDB_sources.md`;
-* canonical definitions — see `StockBallDB_definitions.md`;
-* the asset universe — see `StockBallDB_universe.md`;
-* technical implementation choices — see `StockBallDB_Tech_stack.md`.
-
-The workflow should remain simple, explicit, reproducible, and auditable.
+Phase novel (0→2G and later) is archived in **git history**; this doc stays current-state only.
 
 ---
 
-# 2. Core Workflow
+## 1. Purpose
 
-The fundamental StockBallDB data flow is:
+StockBallDB is boring infrastructure that produces a **trusted historical dataset**: acquired, preserved, normalized, derived, validated, and inspectable.
+
+The workflow must stay **simple, explicit, deterministic, validated, reproducible, and auditable**.
+
+---
+
+## 2. Core pipeline stages
+
+Every population path follows the same durable stages:
 
 ```text
 Sources
    ↓
-Acquisition
+Acquire
    ↓
-Raw / Preserved Source Data
+Preserve (immutable snapshots of mutable provider bytes)
    ↓
-Normalization
+Normalize
    ↓
-Canonical Historical Data
+Derive
    ↓
-Derivation
+Validate
    ↓
-Validation
-   ↓
-PostgreSQL
+Write (PostgreSQL canonical tables)
 ```
 
-Each stage has a distinct responsibility.
+Data must not silently bypass stages when that would weaken provenance, validation, or reproducibility.
 
-Data should not silently bypass stages when doing so would weaken reproducibility, provenance, or validation.
-
----
-
-# 3. Source Selection
-
-Before data is acquired, StockBallDB must know:
-
-* what data is required;
-* which source provides it;
-* what the source represents;
-* what historical coverage is available;
-* what limitations are known.
-
-Provider selection belongs to the source layer.
-
-The canonical database should not unnecessarily depend on the format or structure of any individual provider.
-
-Where practical:
+Conceptual flow:
 
 ```text
 Provider-specific data
@@ -71,666 +60,248 @@ Normalization
 StockBallDB canonical representation
 ```
 
-This allows providers to be replaced or supplemented without redesigning the canonical database.
+The canonical layer must remain independent of experiments, predictions, strategies, and trading decisions.
 
 ---
 
-# 4. Acquisition
+## 3. Stage responsibilities
 
-The acquisition layer retrieves data from external sources.
+### Acquire
 
-Examples may eventually include:
+Retrieve bytes / observations from locked providers (Tiingo, FRED/ALFRED, Fed HTML, etc.). Acquisition records enough to know source, time, range, status, and success. Failed acquisition is never treated as valid missing data.
 
-* Tiingo;
-* FRED / ALFRED;
-* EIA;
-* other approved historical sources.
+### Preserve
 
-Acquisition should be responsible for retrieving source data, not interpreting research meaning.
-
-Where practical, acquisition should record enough information to determine:
-
-* source;
-* retrieval time;
-* requested range;
-* response status;
-* coverage received;
-* whether the acquisition completed successfully.
-
-Acquisition failure must be visible.
-
-The system must not silently treat failed acquisition as valid missing data.
-
----
-
-# 5. Raw / Preserved Source Data
-
-Where appropriate, StockBallDB should preserve the original source information before transforming it into canonical data.
-
-The purpose is not to create a permanent duplicate of every provider response regardless of value.
-
-The purpose is to preserve enough evidence to:
-
-* reproduce transformations;
-* investigate unexpected values;
-* compare providers;
-* audit historical corrections;
-* understand where canonical values originated.
-
-Raw preservation strategy may differ between sources depending on the nature, size, and reproducibility of the source.
-
----
-
-# 6. Normalization
-
-External data must be converted from provider-specific representations into StockBallDB's canonical definitions.
-
-Normalization may include:
-
-* date normalization;
-* asset identifier mapping;
-* column mapping;
-* numeric type conversion;
-* missing-value handling;
-* unit normalization;
-* provider-specific interpretation;
-* duplicate handling.
-
-Normalization must not silently change the meaning of the source data.
-
-Provider-specific assumptions should remain isolated from the canonical database wherever practical.
-
----
-
-# 7. Canonical Historical Data
-
-After normalization, data may enter the canonical StockBallDB historical layer.
-
-The canonical tables represent StockBallDB's trusted historical record.
-
-The initial canonical model is defined separately in:
-
-`StockBallDB_schema.md`
-
-Canonical data should be:
-
-* deterministic;
-* consistently defined;
-* traceable to its source;
-* validated;
-* reproducible;
-* suitable for future research without knowledge of the original provider format.
-
-The canonical layer must remain independent of future:
-
-* experiments;
-* predictions;
-* strategies;
-* portfolio decisions;
-* trading decisions.
-
-StockBallDB stores historical facts and deterministic historical context.
-
-It does not decide what those facts mean for a trade.
-
----
-
-# 8. Derivation
-
-Some StockBallDB fields cannot be directly acquired and must be deterministically calculated from historical data.
-
-Examples may include:
-
-* returns;
-* rolling values;
-* drawdowns;
-* volatility measures;
-* calendar context;
-* historical market regimes;
-* derived market outcomes.
-
-Derived data must follow definitions established in:
-
-`StockBallDB_definitions.md`
-
-A derived value should be reproducible from:
+Mutable external responses are captured as **immutable, content-addressed snapshots** before parse/normalize:
 
 ```text
-Canonical Inputs
-      +
-Locked Definition
-      ↓
-Derived Value
+network fetch → snapshot → read snapshot → parse → normalize
 ```
 
-Derivation logic should not depend on the result of a research experiment.
+Deterministic local sources (NYSE calendar pin, election statute) are not snapshotted; provenance is code + pins. Operator detail: `StockBallDB_snapshots_and_rebuilds.md`.
 
-If an experiment discovers a useful condition, that does not automatically make the condition part of StockBallDB.
+### Normalize
+
+Convert provider shapes into canonical definitions (dates, identifiers, types, units, duplicates) without silently changing meaning. Provider assumptions stay isolated from the schema.
+
+### Derive
+
+Compute fields that cannot be acquired directly (returns, drawdowns, outcomes, regimes, calendar context) from locked definitions in `StockBallDB_definitions.md`:
+
+```text
+Canonical Inputs + Locked Definition → Derived Value
+```
+
+Derivation must not depend on research experiments.
+
+### Validate
+
+Trust requires explicit checks — not merely a successful HTTP call or insert. Structural, coverage, value, and (where used) cross-source checks apply. Prefer **STOP / FLAG / INVESTIGATE** over silent acceptance of questionable history.
+
+### Write
+
+Validated rows are written idempotently (upsert or delete+insert per stage). Same inputs + definitions must not corrupt or duplicate the trusted record.
 
 ---
 
-# 9. Validation
+## 4. Canonical dependency graph
 
-Validation is a first-class part of StockBallDB.
+```text
+trading_days ─────────────────────────────────────────────┐
+     │                                                     │
+     ├──► daily_market_data (observed: Tiingo + WTI)       │
+     │         │                                           │
+     │         ├──► daily_market_data (derived fields)      │
+     │         │         ├──► market_outcomes               │
+     │         │         └──► asset_regimes                 │
+     │         │                                            │
+     │         └──► (wti_context repeats derive→outcomes→regimes for WTI)
+     │                                                     │
+     ├──► macro_conditions (1:1 trading_days)              │
+     │                                                     │
+scheduled_events ─────────────────────────────────────────┤
+     │                                                     │
+     └──────────────────────────► calendar_context ◄───────┘
+                                  (1:1 trading_days)
+```
 
-Data should not be considered trustworthy merely because an API request succeeded or a database insert completed.
+**Load-bearing order:** ETF derive → outcomes → regimes complete before `wti_context`; macro / events / calendar run after all market symbols. `market_outcomes` and `asset_regimes` require **derived** `daily_market_data`, not observed alone.
 
-Validation may operate at several levels.
+---
 
-### Structural validation
+## 5. FULL-REFETCH-BY-DESIGN
 
-Examples:
+Operational refresh is **not** append-only incremental ingestion for mutable HTTP sources.
 
-* required columns exist;
-* expected types are valid;
-* primary keys are unique;
-* required relationships are valid.
+| Class | Examples | Behavior |
+| --- | --- | --- |
+| **FULL-REFETCH-BY-DESIGN** | Tiingo ETFs, WTI, FRED current, ALFRED vintages, Fed FOMC HTML | Full history / full pages every run — providers revise past values |
+| **DETERMINISTIC-REBUILD** | `trading_days`, elections | Regenerate from code / pins through `run_as_of` |
+| **DERIVED-RECOMPUTE** | derive, outcomes, regimes, `calendar_context` | Full symbol or full spine recompute |
 
-### Coverage validation
+**Why not tail-only for derive / outcomes / regimes:**
 
-Examples:
+* `drawdown_from_high` uses cummax from inception
+* Forward horizons (1/3/5/10/20d) fill NULLs on **prior** dates when new sessions arrive
+* `volatility_regime` / SMA windows need long lookbacks (up to ~252 / 200 sessions)
 
-* expected dates exist;
-* expected assets exist;
-* historical ranges are complete;
-* unexpected gaps are identified.
+No mutable HTTP source is treated as incremental-safe without revision risk. Detail: Phase 10A contract §§4–6.
 
-### Value validation
+---
 
-Examples:
+## 6. Bootstrap vs incremental ops
 
-* impossible values are rejected or flagged;
-* duplicate observations are detected;
-* derived calculations satisfy known invariants.
+| Situation | Command | Migrate? |
+| --- | --- | --- |
+| Empty / new database | `python -m stockballdb.build_v1` | Yes (`alembic upgrade head` as first stage) |
+| Established primary DB refresh | `python -m stockballdb.update` | **No** — preflight requires Alembic already at head |
+| Disaster recovery (byte-faithful) | `python -m stockballdb.rebuild_exact` | Separate path; offline snapshot replay |
 
-### Cross-source validation
+Operator flags, exit codes, preflight list: `StockBallDB_operational_update.md`.  
+Snapshots / verify / rebuild: `StockBallDB_snapshots_and_rebuilds.md`.
 
-Where appropriate, important values may be compared against independent sources.
+### Empty-DB build sequence (`build_v1`)
 
-Validation failures must be visible.
+```text
+preflight
+    ↓
+migrate
+    ↓
+trading_days
+    ↓
+daily_market_data
+    ↓
+derive_market_data
+    ↓
+market_outcomes
+    ↓
+asset_regimes
+    ↓
+wti_context
+    ↓
+macro_conditions
+    ↓
+scheduled_events
+    ↓
+calendar_context
+    ↓
+validate_v1 (+ health / fingerprint / Manifest 1.1 on success)
+```
 
-StockBallDB should prefer:
+Live stages run inside snapshot capture context (`live_build_context`). Fail-fast: later stages do not run after a stage error; earlier committed stages remain; status is never “ready” on partial failure.
+
+### Update stage order (`update`)
+
+Same data stages as build, **without** `migrate`:
+
+```text
+preflight → advisory lock → fingerprint_before
+    → trading_days → daily_market_data → derive_market_data
+    → market_outcomes → asset_regimes → wti_context
+    → macro_conditions → scheduled_events → calendar_context
+    → validate_v1 → health → fingerprint_after
+    → Manifest 1.1 (success only)
+```
+
+Hard gates: `validate_v1` must PASS; health must not be **UNHEALTHY**. Fingerprint before/after classifies `SUCCESS_UPDATED` vs `SUCCESS_NO_CHANGE`. Every run writes an operational report; success also writes Manifest 1.1.
+
+Single run boundary: `run_as_of` (default today America/New_York). Provider publication lag (e.g. WTI) may trail the spine without failing the run when health marks expected lag as INFO.
+
+---
+
+## 7. Failure philosophy
+
+Prefer:
 
 ```text
 STOP / FLAG / INVESTIGATE
 ```
 
-over silently accepting questionable historical data.
+over silent bad or incomplete history.
+
+* Failures name stage, dataset/asset, condition, and required action.
+* A partially successful pipeline is **not** reported as success.
+* Stage-level commits may leave **partial state**; recovery is **idempotent rerun** (no `--resume`).
+* Catastrophic recovery is **`rebuild_exact`** from a successful Manifest 1.1 — not the normal update path.
 
 ---
 
-# 10. Database Write
+## 8. Reproducibility levels
 
-Validated canonical and derived data may be written to PostgreSQL.
+| Level | Status | Meaning |
+| --- | --- | --- |
+| **Structural** | Supported | Locked schema, definitions, transforms, PIT rules, universe, stage order |
+| **Current-source rebuild** | Supported | `build_v1` / `update` rebuild from **live** provider responses (may differ over time as sources revise) |
+| **Exact historical rebuild** | **Supported** | Offline `rebuild_exact` from Manifest 1.1 + content-addressed snapshots; certified path in `StockBallDB_snapshots_and_rebuilds.md` |
 
-Database writes should be:
+Do not claim current-source rebuild is byte-identical months later without snapshots. Exact rebuild **is** the supported DR / audit path when snapshots and a capable manifest exist.
 
-* deterministic;
-* repeatable;
-* safe against accidental duplication;
-* explicit about failures.
-
-Where practical, pipelines should be idempotent.
-
-Running the same pipeline twice with the same source data and definitions should not corrupt or duplicate the canonical historical record.
+Reproduction must not depend on undocumented manual steps, one machine, Cursor, DBeaver, or a personal pre-populated database (credentials/config excepted).
 
 ---
 
-# 11. Provenance
+## 9. Provenance and coverage
 
-StockBallDB should be able to answer:
-
-> Where did this value come from?
-
-Depending on the data type, provenance may include:
+Important canonical values should remain traceable:
 
 ```text
-Canonical Value
-      ↓
-Transformation / Definition
-      ↓
-Source Observation
-      ↓
-Provider
-      ↓
-Retrieval
+Canonical value → transform / definition → source observation → provider → retrieval / snapshot
 ```
 
-Not every value requires identical provenance machinery.
+Coverage (what exists vs missing, freshness, gaps) is first-class operational knowledge — inspectable via health tooling and Explorer. Absence must be distinguishable from provider failure, pipeline failure, genuine non-existence, and intentionally unsupported range.
 
-However, important canonical historical values should not become disconnected from their origin.
+Historical provider revisions are absorbed by full refetch + upsert/replace; successful runs record fingerprints and manifests so changes are detectable.
 
 ---
 
-# 12. Initial Build Workflow (StockBallDB V1.0.0 reproduction)
+## 10. Schema migration
 
-Authoritative path from a new clone to a validated V1 database:
+Structural change is owned by **Alembic**. `build_v1` may apply migrations on empty/bootstrap DBs. **`update` never auto-migrates** — mismatch fails preflight; operators run `alembic upgrade head` explicitly.
+
+Manual DDL in a GUI client is not authoritative schema history.
+
+---
+
+## 11. Explorer (implemented)
+
+StockBallDB includes a **read-only** local Explorer UI — not a future “Inspector”:
 
 ```text
-new clone
-   → configure environment (.env)
-   → create empty PostgreSQL database
-   → python -m stockballdb.build_v1
-   → python -m stockballdb.validate_v1
-   → V1 ready
+python -m stockballdb.explorer
 ```
 
-## 12.1 Prerequisites
+Six areas: Control Center, Data Explorer, Day Inspector, Coverage Explorer, Provenance Explorer, Validation Center. Operator guide: `StockBallDB_explorer.md`.
 
-* Python >= 3.11
-* PostgreSQL server with an **empty** target database already created
-* Valid credentials in `.env` (`DATABASE_URL`, `TIINGO_API_KEY`, `FRED_API_KEY`)
-* Pinned calendar package: `pandas_market_calendars==5.4.0`
+Explorer inspects trusted history; it does not research edges, predict, or trade.
 
-StockBallDB does **not** install PostgreSQL, create roles, create the database itself, drop databases, or wipe populated databases automatically.
+---
 
-For a fresh reproduction test, use a separate database (for example `stockballdb_v1_rebuild`). Never destroy a working StockBallDB.
+## 12. Research / trading boundary
 
-## 12.2 Canonical command
-
-```bash
-python -m stockballdb.build_v1
-```
-
-This orchestrator runs, fail-fast and sequentially:
+StockBallDB **ends at trusted history**.
 
 ```text
-preflight
-    ↓
-alembic upgrade head
-    ↓
-build_trading_days
-    ↓
-build_daily_market_data
-    ↓
-derive_daily_market_data
-    ↓
-build_market_outcomes
-    ↓
-build_asset_regimes
-    ↓
-build_macro_conditions
-    ↓
-build_scheduled_events
-    ↓
-build_calendar_context
-    ↓
-validate_v1
-    ↓
-pytest / final verification
+External Sources → StockBallDB → Trusted Historical Dataset
+================================ BOUNDARY ================================
+Research / experiments / models / predictions / strategies / trading
 ```
 
-It calls existing builder/service functions; it does not reimplement the seven pipelines.
-
-Whole-database validation without rebuilding:
-
-```bash
-python -m stockballdb.validate_v1
-```
-
-## 12.3 Failure policy
-
-Fail fast. On any stage failure, later stages do not run. Already committed successful stages are preserved. Final status is `PARTIAL` / `FAILED`, never `V1 READY`.
-
-`build_v1` is an idempotent full ensure/build — not a destructive reset.
+Future systems may depend on StockBallDB. StockBallDB must not depend on them. Research discoveries do not retroactively rewrite history to improve an experiment.
 
 ---
 
-# 13. Update Workflow
-
-StockBallDB must support the fact that financial history continues to grow.
-
-After the initial historical build, the normal update process should conceptually be:
-
-```text
-Determine latest trusted coverage
-      ↓
-Determine required new period
-      ↓
-Acquire new source data
-      ↓
-Preserve source information
-      ↓
-Normalize
-      ↓
-Derive
-      ↓
-Validate
-      ↓
-Insert / update PostgreSQL
-      ↓
-Update coverage information
-```
-
-Updates should normally process only the required range rather than rebuilding the entire historical database unnecessarily.
-
-However, the architecture should still allow a complete rebuild when required.
-
----
-
-# 14. Historical Corrections
-
-External providers may revise historical data.
-
-Therefore StockBallDB must distinguish between:
-
-```text
-New Data
-```
-
-and:
-
-```text
-Changed Historical Data
-```
-
-The update process should eventually provide a mechanism to detect meaningful historical changes where practical.
-
-Historical corrections must not silently alter trusted data without traceability.
-
-The exact correction strategy may vary by source and will be implemented when the relevant acquisition pipelines are built.
-
----
-
-# 15. Coverage
-
-StockBallDB should know what data it actually possesses.
-
-Coverage should eventually be inspectable by dimensions such as:
-
-* asset;
-* dataset;
-* start date;
-* end date;
-* expected observations;
-* actual observations;
-* missing observations;
-* validation state.
-
-The absence of data should be distinguishable from:
-
-* provider failure;
-* pipeline failure;
-* genuine historical non-existence;
-* intentionally unsupported coverage.
-
----
-
-# 16. Failure Philosophy
-
-StockBallDB should fail loudly when trust cannot be established.
-
-Prefer:
-
-```text
-Incomplete data detected
-Pipeline stopped
-Reason recorded
-```
-
-over:
-
-```text
-Pipeline completed
-Unknown data silently missing
-```
-
-Failures should provide enough information to identify:
-
-* which stage failed;
-* which dataset or asset was affected;
-* what condition caused the failure;
-* what action is required.
-
-A partially successful pipeline must not be reported as completely successful.
-
----
-
-# 17. Logging
-
-Major workflow stages should produce concise operational logs.
-
-Examples:
-
-```text
-StockBallDB starting
-Acquisition started
-Records received
-Normalization completed
-Derivation completed
-Validation passed
-Database write completed
-Coverage updated
-Pipeline completed
-```
-
-Warnings and failures should be clearly distinguishable from normal informational messages.
-
-Logging exists to make the pipeline understandable, not to produce unnecessary noise.
-
----
-
-# 18. Reproducibility
-
-StockBallDB distinguishes three claims:
-
-## Structural reproducibility — SUPPORTED
-
-Under locked V1 code/configuration, StockBallDB can reproduce:
-
-* schema;
-* definitions;
-* transformation rules;
-* source mappings;
-* PIT conventions;
-* universe;
-* build dependency order.
-
-## Current-source rebuild — SUPPORTED
-
-StockBallDB can rebuild the database using the **current** responses from its locked providers (`python -m stockballdb.build_v1`).
-
-## Exact historical snapshot reproduction — NOT GUARANTEED IN V1
-
-StockBallDB cannot currently guarantee that rebuilding months later will recreate identical historical rows/bytes because:
-
-* Tiingo adjusted history can restate;
-* some FRED/current-source values can revise;
-* Federal Reserve HTML is live;
-* no durable raw source archive exists for every upstream pull.
-
-Do **not** describe V1 as byte-for-byte reproducible.
-
-Reproduction should not depend on undocumented manual steps, one specific computer, Cursor, DBeaver, an existing personal database, or hidden local files other than credentials/configuration.
-
----
-
-# 19. Migration Workflow
-
-Database structure changes must be handled through Alembic migrations.
-
-Conceptually:
-
-```text
-Schema Definition Changes
-        ↓
-Alembic Migration
-        ↓
-Review
-        ↓
-Apply Migration
-        ↓
-Updated Database
-```
-
-Manual structural changes made through DBeaver or another database client should not become the authoritative schema history.
-
-The migration history is the executable record of how the StockBallDB schema evolved.
-
----
-
-# 20. Development Phases
-
-StockBallDB should be built incrementally.
-
-Each phase should:
-
-1. have a clearly defined scope;
-2. implement only the required functionality;
-3. verify that functionality;
-4. update documentation where necessary;
-5. stop before beginning the next phase.
-
-A reasonable high-level progression is:
-
-```text
-Phase 0
-Project Foundation
-
-Phase 1
-trading_days — schema, generate, validate (NYSE spine from 1957)
-
-Phase 2A
-daily_market_data — 14 Tiingo ETFs (observed OHLCV + corp actions)
-
-Phase 2B
-daily_market_data derived fields (locked bases; populate return_1d / gap_pct / …)
-
-Phase 2C
-market_outcomes — retrospective forward labels from daily_market_data
-
-Phase 2D
-asset_regimes — point-in-time asset state from daily_market_data
-
-Phase 2E
-macro_conditions — FRED/ALFRED macro context (pmi deferred)
-
-Phase 2F
-scheduled_events — occurrence calendar (fomc, cpi, employment_situation, election)
-
-Phase 2G
-calendar_context — holiday/session/week/transitions + retrospective event context
-
-Phase 3A
-V1 integration investigation (approved)
-
-Phase 3B
-V1 reproduction — `build_v1` / `validate_v1` orchestrator (this document §12)
-
-Later
-Incremental updates, experiments, Inspector (post-V1)
-```
-
-Exact later-phase boundaries may change as implementation teaches us more.
-
-Do not prematurely lock detailed implementation plans for phases that have not yet been designed.
-
----
-
-# 21. StockBallDB Inspector
-
-A future StockBallDB interface may provide operational visibility into the database.
-
-Possible views include:
-
-* Control Center;
-* Data Explorer;
-* Day Inspector;
-* Coverage Explorer;
-* Provenance Explorer;
-* Validation Center.
-
-The Inspector is an interface **to StockBallDB**, not a research or trading application.
-
-It may answer questions such as:
-
-> What data exists?
-
-> What happened on this historical date?
-
-> Where did this value come from?
-
-> Is this dataset complete?
-
-> When was this data last updated?
-
-> Did validation pass?
-
-It should not answer:
-
-> Should I buy?
-
-> What will happen tomorrow?
-
-> Which strategy should I trade?
-
-Those belong outside StockBallDB.
-
----
-
-# 22. Boundary With Future Research Systems
-
-StockBallDB ends at trusted historical data.
-
-The conceptual boundary is:
-
-```text
-External Sources
-      ↓
-StockBallDB
-      ↓
-Trusted Historical Dataset
-=============================
-      BOUNDARY
-=============================
-Future Research / Experiment System
-      ↓
-Experiments
-      ↓
-Models
-      ↓
-Predictions
-      ↓
-Strategies
-      ↓
-Decision Support / Trading
-```
-
-Future systems may depend heavily on StockBallDB.
-
-StockBallDB must not depend on them.
-
-Research discoveries must not retroactively alter the historical database simply because they improve an experimental result.
-
----
-
-# 23. Guiding Rule
-
-When deciding whether something belongs in StockBallDB, ask:
+## 13. Guiding rule
 
 > **Is this required to acquire, preserve, normalize, derive, validate, explain, update, or inspect trustworthy historical data?**
 
-If yes, it may belong in StockBallDB.
-
-If its purpose is primarily to:
-
-* test a hypothesis;
-* discover an edge;
-* predict future movement;
-* rank opportunities;
-* construct a strategy;
-* generate a trade decision;
-
-it belongs outside StockBallDB.
+If yes, it may belong in StockBallDB. Hypothesis testing, edge discovery, prediction, ranking, strategy, and trade decisions belong **outside**.
 
 ---
 
-# 24. Current Principle
-
-Build only what the current phase requires.
+## 14. Current principle
 
 Keep the pipeline:
 
 **simple → explicit → deterministic → validated → reproducible → auditable.**
 
-StockBallDB should become boring infrastructure that future research can trust.
+Orchestrate existing stage capabilities; do not reimplement providers, validators, or snapshot store in every new command.
