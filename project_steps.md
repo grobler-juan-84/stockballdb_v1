@@ -359,3 +359,7 @@ Merged durable content from retired phase contracts into permanent docs; created
 ## Step 90 — V1 state cleanup on canonical docs
 
 Updated schema/sources/definitions/Tech_stack headers and stale planning language to current V1 state (implemented schema, sources, definitions, stack). Left genuine future/unresolved items. No new MD files; no commit.
+
+## Step 91 — Add StockBallDB V1 status document
+
+Created docs/StockBallDB_V1_status.md as RELEASE CANDIDATE status (scope, infrastructure, certified baseline, boundaries, unresolved items, remaining closeout). Linked from docs index and README.
