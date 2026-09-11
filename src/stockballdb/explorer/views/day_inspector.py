@@ -29,7 +29,7 @@ def render() -> None:
             key="di_symbol",
         )
         symbol = None if sym_choice == "(all)" else sym_choice
-        inspect = c_go.button("Inspect", type="primary", use_container_width=True)
+        inspect = c_go.button("Inspect", type="primary", width="stretch")
 
     if not inspect and "di_result" not in st.session_state:
         st.info("Choose a date (and optional symbol), then click **Inspect**.")

@@ -102,7 +102,7 @@ def render() -> None:
             )
         )
 
-        run_clicked = c_run.button("Run Query", type="primary", use_container_width=True)
+        run_clicked = c_run.button("Run Query", type="primary", width="stretch")
 
     # Second row: table-specific filters
     event_type = None
@@ -187,7 +187,7 @@ def render() -> None:
     with panel():
         p_rows, p_prev, p_info, p_next, p_export = st.columns([1.1, 1.0, 2.2, 1.0, 1.3], gap="small")
         p_rows.caption(f"Show {result.page_size} rows")
-        if p_prev.button("Previous", disabled=result.page <= 1, use_container_width=True):
+        if p_prev.button("Previous", disabled=result.page <= 1, width="stretch"):
             new_page = max(1, result.page - 1)
             st.session_state["de_page_num"] = new_page
             st.session_state["de_result"] = (
@@ -206,7 +206,7 @@ def render() -> None:
             f"Page <strong>{result.page}</strong> of {total_pages}</div>",
             unsafe_allow_html=True,
         )
-        if p_next.button("Next", disabled=result.page >= total_pages, use_container_width=True):
+        if p_next.button("Next", disabled=result.page >= total_pages, width="stretch"):
             new_page = result.page + 1
             st.session_state["de_page_num"] = new_page
             st.session_state["de_result"] = (
@@ -220,7 +220,7 @@ def render() -> None:
                 ),
             )
             st.rerun()
-        if p_export.button("Export CSV", use_container_width=True):
+        if p_export.button("Export CSV", width="stretch"):
             st.session_state["de_do_export"] = True
 
     if st.session_state.pop("de_do_export", False):

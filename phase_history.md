@@ -471,6 +471,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - **Phase 11D fix:** `adj_open`/`adj_high`/`adj_low`/`adj_close` display rounded to 2 decimals on screen only.
 - Pushed Phase 11D work to `origin/main` (`e6d4013..d3350e1`).
 - Read-only size check: primary DB ~166 MB; largest `daily_market_data` 67 MB.
+- Explorer maintenance: replaced deprecated Streamlit `use_container_width` with `width="stretch"` across Explorer UI/views.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

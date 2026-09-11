@@ -16,10 +16,10 @@ def render() -> None:
 
     with panel():
         b1, b2, b3, b4 = st.columns(4, gap="small")
-        run_health = b1.button("Run Health", type="primary", use_container_width=True)
-        run_v1 = b2.button("Run validate_v1", use_container_width=True)
-        run_fp = b3.button("Compute Fingerprint", use_container_width=True)
-        run_ver = b4.button("Verify Latest Manifest", use_container_width=True)
+        run_health = b1.button("Run Health", type="primary", width="stretch")
+        run_v1 = b2.button("Run validate_v1", width="stretch")
+        run_fp = b3.button("Compute Fingerprint", width="stretch")
+        run_ver = b4.button("Verify Latest Manifest", width="stretch")
 
     if run_health:
         try:

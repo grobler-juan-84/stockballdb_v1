@@ -113,7 +113,7 @@ def render_app_header(pages: list[Any] | None = None) -> None:
                     with col:
                         label = getattr(page, "title", None) or str(page)
                         icon = getattr(page, "icon", None)
-                        st.page_link(page, label=label, icon=icon, use_container_width=True)
+                        st.page_link(page, label=label, icon=icon, width="stretch")
 
         with status_col:
             s1, s2 = st.columns([3.2, 0.9], gap="small")
@@ -132,7 +132,7 @@ def render_app_header(pages: list[Any] | None = None) -> None:
                     "↻",
                     key="sbdb_header_refresh",
                     help="Refresh status & caches",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     st.session_state.refresh_nonce = nonce + 1
                     st.cache_data.clear()

@@ -106,7 +106,7 @@ def render() -> None:
     fp_col, man_col = st.columns([1.2, 1.8])
     with fp_col:
         section_heading("Fingerprint")
-        if st.button("Compute database fingerprint", use_container_width=True):
+        if st.button("Compute database fingerprint", width="stretch"):
             st.session_state["compute_fp"] = True
         if st.session_state.get("compute_fp"):
             try:

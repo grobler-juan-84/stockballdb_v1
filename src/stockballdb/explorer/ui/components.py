@@ -68,7 +68,7 @@ def kv_table(data: dict[str, Any] | None, *, title: str | None = None) -> None:
     from stockballdb.explorer.formatting import format_cell
 
     rows = [{"field": str(k), "value": format_cell(v)} for k, v in data.items()]
-    st.dataframe(rows, use_container_width=True, hide_index=True, height=min(420, 38 + 35 * len(rows)))
+    st.dataframe(rows, width="stretch", hide_index=True, height=min(420, 38 + 35 * len(rows)))
 
 
 def result_banner(parts: Sequence[str]) -> None:
@@ -107,7 +107,7 @@ def result_strip(
 
 def dataframe_dense(data: Any, *, height: int = 520, column_config: dict | None = None) -> None:
     kwargs: dict[str, Any] = {
-        "use_container_width": True,
+        "width": "stretch",
         "height": height,
         "hide_index": True,
     }

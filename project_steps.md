@@ -327,3 +327,7 @@ Pushed local `main` to `origin/main` (`e6d4013..d3350e1`): Phase 11D Passes 1–
 ## Step 82 — Report primary PostgreSQL sizes (read-only)
 
 Queried `pg_database_size` / `pg_total_relation_size` on primary `stockballdb`: total **166 MB** (~165.9 MiB); largest tables `daily_market_data` 67 MB, `asset_regimes` 41 MB, `market_outcomes` 36 MB. No DB mutation.
+
+## Step 83 — Fix Streamlit use_container_width deprecations
+
+Replaced all Explorer `use_container_width=True` with `width="stretch"` (chrome, components, Control Center, Data Explorer, Day Inspector, Validation Center). No `False` usages found. Explorer tests **70 passed**.
