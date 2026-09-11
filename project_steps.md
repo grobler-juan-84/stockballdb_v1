@@ -331,3 +331,7 @@ Queried `pg_database_size` / `pg_total_relation_size` on primary `stockballdb`: 
 ## Step 83 — Fix Streamlit use_container_width deprecations
 
 Replaced all Explorer `use_container_width=True` with `width="stretch"` (chrome, components, Control Center, Data Explorer, Day Inspector, Validation Center). No `False` usages found. Explorer tests **70 passed**.
+
+## Step 84 — Documentation consolidation audit (Step 1 only)
+
+Inspected all 20 `docs/StockBallDB_*.md` files plus README references against the consolidation table. Produced a migration report (source → destination, preserve vs drop, contradictions, out-of-table `phase11d`). No documentation files rewritten or deleted; awaiting approval before Step 2 consolidate.

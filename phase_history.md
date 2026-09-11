@@ -472,6 +472,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Pushed Phase 11D work to `origin/main` (`e6d4013..d3350e1`).
 - Read-only size check: primary DB ~166 MB; largest `daily_market_data` 67 MB.
 - Explorer maintenance: replaced deprecated Streamlit `use_container_width` with `width="stretch"` across Explorer UI/views.
+- Documentation consolidation: Step 1 audit complete against proposed permanent-doc map; no merges/deletes yet (awaiting approval).
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 
