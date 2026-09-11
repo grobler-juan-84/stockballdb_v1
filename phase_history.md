@@ -208,7 +208,7 @@ Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit 
 **Status:** COMPLETE
 
 - Audited V1 macro implementation (`macro/*`, model, tests) against manifesto/schema/sources/definitions.
-- Locked observed-input contract in `StockBallDB_phase4a_macro_contract.md` (9 fields + matrix, PIT/alignment, percentage-point units, reproducibility).
+- Locked observed-input contract in `sources.md / definitions.md (macro PIT lock; phase contract retired)` (9 fields + matrix, PIT/alignment, percentage-point units, reproducibility).
 - **LOCKED:** CPIAUCSL, CPILFESL, UNRATE, ICSA, DFF, DGS2, DGS10, WALCL, BAA10Y.
 - **UNRESOLVED:** `pmi` (no column); regime thresholds out of Phase 4A scope.
 - No population/ingestion changes; pytest **84/84** (reconfirmed post-doc update).
@@ -268,7 +268,7 @@ Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit 
 **Status:** COMPLETE
 
 - Audited implemented `scheduled_events` schema/code vs legacy planning sketches; repo authoritative (no `actual`/`consensus`/`surprise`/`importance` columns).
-- Locked Phase 6A contract in `docs/StockBallDB_phase6a_scheduled_events_contract.md`: FOMC/CPI/Employment/Election **LOCKED**; jobless claims **PROVISIONALLY LOCKED**; GDP and others **DEFERRED**; PIT/timezone/trading-day rules. No ingestion. pytest **90/90** (reconfirmed post-doc update).
+- Locked Phase 6A contract in `docs/StockBallDB_schema.md / sources.md / definitions.md (scheduled events; phase contract retired)`: FOMC/CPI/Employment/Election **LOCKED**; jobless claims **PROVISIONALLY LOCKED**; GDP and others **DEFERRED**; PIT/timezone/trading-day rules. No ingestion. pytest **90/90** (reconfirmed post-doc update).
 
 ### End-of-phase summary
 
@@ -296,7 +296,7 @@ Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit 
 **Status:** COMPLETE
 
 - Audited all 19 `calendar_context` columns vs derive/validate/tests/validate_v1; repository authoritative.
-- Locked Phase 7A contract in `docs/StockBallDB_phase7a_calendar_context_contract.md`: trading_days vs calendar_context boundary, effective-session semantics, calendar-date (not session-availability) event context, history floors, ISO week definition, PIT classification.
+- Locked Phase 7A contract in `docs/StockBallDB_definitions.md / schema.md (calendar_context; phase contract retired)`: trading_days vs calendar_context boundary, effective-session semantics, calendar-date (not session-availability) event context, history floors, ISO week definition, PIT classification.
 - `days_until_next_*` **REJECTED** for V1; no schema migration recommended for 7B. Two focused regression tests added. pytest **92/92 PASS**.
 
 ### End-of-phase summary
@@ -324,7 +324,7 @@ Package/project version stamped **1.0.0**; annotated Git tag `v1.0.0` on commit 
 **Status:** COMPLETE
 
 - Audited all seven tables (models, builders, validators, live PostgreSQL); inventory + validation matrix + provider mapping.
-- Locked Phase 8A contract in `docs/StockBallDB_phase8a_validation_provenance_contract.md`: HEALTHY/HEALTHY WITH WARNINGS/UNHEALTHY states, freshness semantics, missingness taxonomy, provenance gaps, Phase 8 vs 9 boundary, Phase 8B backlog (MUST: `health` CLI, build manifest, freshness/gap audits).
+- Locked Phase 8A contract in `docs/StockBallDB_validation.md (phase contract retired)`: HEALTHY/HEALTHY WITH WARNINGS/UNHEALTHY states, freshness semantics, missingness taxonomy, provenance gaps, Phase 8 vs 9 boundary, Phase 8B backlog (MUST: `health` CLI, build manifest, freshness/gap audits).
 - Live audit `scripts/phase8a_health_audit.py`: **HEALTHY**; `validate_v1` PASS; pytest **92/92 PASS**.
 
 ### End-of-phase summary
@@ -400,7 +400,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 **Status:** COMPLETE
 
 - Audited all operational CLI entry points, `build_v1` stage DAG, provider incrementality, derived recompute semantics, transactions/failures, health/validation gates, snapshots/manifests.
-- Locked Phase 10A contract in `docs/StockBallDB_phase10a_operational_workflow_contract.md`: unified `update` stage model, `run_as_of` boundary, FULL-REFETCH-BY-DESIGN for all mutable sources, fingerprint change detection, advisory-lock concurrency, recovery-by-rerun, 10B backlog.
+- Locked Phase 10A contract in `docs/StockBallDB_workflow.md / operational_update.md (phase contract retired)`: unified `update` stage model, `run_as_of` boundary, FULL-REFETCH-BY-DESIGN for all mutable sources, fingerprint change detection, advisory-lock concurrency, recovery-by-rerun, 10B backlog.
 - pytest **120/120 PASS**; validate_v1 **PASS**; health **HEALTHY**; no runtime or schema changes.
 
 ### End-of-phase summary
@@ -437,7 +437,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Inventoried seven canonical tables: keys, indexes, filters, NULL patterns, live row counts (Phase 10C baseline).
 - Locked Explorer boundary: read-only inspection only — no research, trading, mutation, or operational triggers.
 - Locked technology: **Streamlit** (`python -m stockballdb.explorer`); six-area navigation (Control Center, Data Explorer, Day Inspector, Coverage, Provenance, Validation).
-- Contract: `docs/StockBallDB_phase11a_explorer_contract.md` with 11B MUST/SHOULD/DEFER and 11C certification matrix.
+- Contract: `docs/StockBallDB_explorer.md (phase contract retired)` with 11B MUST/SHOULD/DEFER and 11C certification matrix.
 - pytest **142/142 PASS**; validate_v1 **PASS**; health **HEALTHY**; fingerprint unchanged.
 
 ### End-of-phase summary
@@ -463,7 +463,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Phase 11C closeout (2026-09-10): full six-surface manual browser certification complete; formal gates PASS; primary fingerprint unchanged vs certification baseline; Explorer read-only audit PASS.
 - Pushed Phase 11C closeout commits to `origin/main` (`4403cb9..17d70fc`).
 - Planning started for **Phase 11D — Explorer Desktop UI Refresh** (presentation-only).
-- **Phase 11D implemented (2026-09-10):** desktop-first shell (`layout=wide`, top nav, header status), `explorer/ui` helpers, all six views recomposed; contract `docs/StockBallDB_phase11d_explorer_desktop_ui_contract.md`. Gates: pytest **213 passed / 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH** `sha256:5055ae10...`. Backend/health/query semantics unchanged. **Manual UX certification pending.**
+- **Phase 11D implemented (2026-09-10):** desktop-first shell (`layout=wide`, top nav, header status), `explorer/ui` helpers, all six views recomposed; contract `docs/StockBallDB_explorer.md (desktop UI; phase contract retired)`. Gates: pytest **213 passed / 2 skipped**; validate_v1 **PASS**; health **HEALTHY**; fingerprint **MATCH** `sha256:5055ae10...`. Backend/health/query semantics unchanged. **Manual UX certification pending.**
 - **Phase 11D Pass 2 polish:** unified navy shell with `st.page_link` nav (`navigation` hidden, same `url_path`s), page headers, bordered toolbars, result strip, shared CSS/theme denser toward mockup. pytest **214 passed / 2 skipped**; fingerprint **MATCH**. Still **MANUAL CERTIFICATION PENDING**.
 - **Phase 11D Pass 3:** full-bleed shell + active cyan pill nav styling; presentation-only CSS/chrome polish.
 - **Phase 11D Pass 4:** flush top sticky shell, mockup deep navy `#0a1628`, soft blue active pill; kill residual Streamlit top chrome.
@@ -477,6 +477,9 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Docs: added permanent `StockBallDB_validation.md` (validation/health/provenance/certification baseline; no phase backlog).
 - Docs: full rewrite of `StockBallDB_workflow.md` as current-state V1 lifecycle/dependency workflow (exact rebuild + Explorer; Phase 10A architecture folded in; phase novel deferred to git).
 - Docs: rewrote `StockBallDB_explorer.md` as the single permanent Explorer reference (11C certified; 11D presentation implemented, manual UX cert pending).
+- Documentation consolidation COMPLETE: phase contracts 4A-11A (+11D) merged into permanent docs and deleted; index rewritten as front door; certified baseline recorded in validation.md.
+- Docs V1-state cleanup: schema/sources/definitions/Tech_stack rewritten away from “Initial/sandbox/eventually” planning language; unresolved XAU/DXY/PMI and future hosting preserved.
+- Added `docs/StockBallDB_V1_status.md` (RELEASE CANDIDATE — pending final baseline declaration); linked from index/README.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

@@ -74,7 +74,17 @@ python -m stockballdb.validate_v1
 
 ## Documentation
 
-- Reproduction workflow (authoritative): [docs/StockBallDB_workflow.md](docs/StockBallDB_workflow.md) §12
-- Full docs index: [docs/StockBallDB_index.md](docs/StockBallDB_index.md)
+- Docs index: [docs/StockBallDB_index.md](docs/StockBallDB_index.md)
+- V1 status: [docs/StockBallDB_V1_status.md](docs/StockBallDB_V1_status.md)
+- Lifecycle workflow: [docs/StockBallDB_workflow.md](docs/StockBallDB_workflow.md)
+- Operational update: [docs/StockBallDB_operational_update.md](docs/StockBallDB_operational_update.md)
+- Snapshots & exact rebuild: [docs/StockBallDB_snapshots_and_rebuilds.md](docs/StockBallDB_snapshots_and_rebuilds.md)
+- Validation & health: [docs/StockBallDB_validation.md](docs/StockBallDB_validation.md)
+- Explorer (read-only): [docs/StockBallDB_explorer.md](docs/StockBallDB_explorer.md)
 
 Individual table builders (`build_trading_days`, …) remain available for development; prefer `build_v1` for full reproduction.
+
+```bash
+python -m stockballdb.update
+python -m stockballdb.explorer
+```
