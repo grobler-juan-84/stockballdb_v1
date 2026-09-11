@@ -339,3 +339,11 @@ Inspected all 20 `docs/StockBallDB_*.md` files plus README references against th
 ## Step 85 â€” Canonical snapshots & rebuilds doc
 
 Replaced `docs/StockBallDB_snapshots_and_rebuilds.md` with one concise canonical snapshot/rebuild document (identity, storage, BUILD LATEST / REBUILD EXACT, manifests, fingerprint, operators, historical vs current certified fingerprints). Dropped planning/backlog narrative; linked validation/workflow/operational_update/sources.
+
+## Step 86 — Rewrite StockBallDB_workflow.md (current V1)
+
+Replaced `docs/StockBallDB_workflow.md` with a current-state lifecycle/dependency workflow: pipeline stages, dependency graph, FULL-REFETCH-BY-DESIGN, build_v1 vs update, gates, exact rebuild via snapshots, Explorer pointer; removed phase novel as primary content.
+
+## Step 86 — Canonical validation permanent doc
+
+Wrote `docs/StockBallDB_validation.md` consolidating durable validate_v1/health/severity/fingerprint/provenance/certification knowledge from Phase 8A plus the current certified baseline. No phase planning or dated audit tables as current truth.
