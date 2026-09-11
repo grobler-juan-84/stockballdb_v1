@@ -375,3 +375,7 @@ Created disposable PostgreSQL database stockballdb_test and set STOCKBALLDB_TEST
 ## Step 94 — Final V1 certification PASSED
 
 Safety precheck PASS (primary stockballdb vs test stockballdb_test). Pytest 220 passed / 2 skipped / 0 failed. validate_v1 PASS; health HEALTHY (3 INFO); snapshots latest 91/0/0 and all-referenced 455/0/0 PASS; exact_rebuild_capable true; fingerprint MATCH sha256:5055ae10... before and after pytest; Alembic a8f3c2d1b4e5. Updated StockBallDB_V1_status.md to V1 COMPLETE — CERTIFIED BASELINE (2026-09-11); fixed snapshots CLI wording; synced validation.md baseline. No commit/tag/push.
+
+## Step 95 — Push docs consolidation and V1 certification to GitHub
+
+Pushed local main to origin/main (f721034..4c2ff3f), including documentation consolidation, V1 COMPLETE certification status, and related process-log updates. Branch up to date with origin.

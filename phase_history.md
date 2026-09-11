@@ -483,6 +483,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Final V1 certification attempt: read-only gates PASS on primary; **blocked** by missing `STOCKBALLDB_TEST_DATABASE_URL` (pytest not run). Status remains RELEASE CANDIDATE.
 - Configured disposable `stockballdb_test` + `STOCKBALLDB_TEST_DATABASE_URL` in local `.env`; isolation from primary verified. Ready for certification rerun (pytest still not run).
 - **V1 CERTIFIED (2026-09-11):** pytest 220 passed / 2 skipped; validate_v1 PASS; health HEALTHY (3 INFO); snapshots PASS; fingerprint `sha256:5055ae10...` unchanged; status set to **V1 COMPLETE — CERTIFIED BASELINE**. No tag/push/commit yet.
+- Pushed docs consolidation + V1 certification to `origin/main` (`f721034..4c2ff3f`).
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 
