@@ -473,6 +473,7 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Read-only size check: primary DB ~166 MB; largest `daily_market_data` 67 MB.
 - Explorer maintenance: replaced deprecated Streamlit `use_container_width` with `width="stretch"` across Explorer UI/views.
 - Documentation consolidation: Step 1 audit complete against proposed permanent-doc map; no merges/deletes yet (awaiting approval).
+- Docs: rewrote `StockBallDB_snapshots_and_rebuilds.md` as the single canonical snapshot/rebuild reference (durable facts only; historical vs current certified fingerprints noted).
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

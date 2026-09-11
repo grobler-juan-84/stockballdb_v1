@@ -335,3 +335,7 @@ Replaced all Explorer `use_container_width=True` with `width="stretch"` (chrome,
 ## Step 84 — Documentation consolidation audit (Step 1 only)
 
 Inspected all 20 `docs/StockBallDB_*.md` files plus README references against the consolidation table. Produced a migration report (source → destination, preserve vs drop, contradictions, out-of-table `phase11d`). No documentation files rewritten or deleted; awaiting approval before Step 2 consolidate.
+
+## Step 85 — Canonical snapshots & rebuilds doc
+
+Replaced `docs/StockBallDB_snapshots_and_rebuilds.md` with one concise canonical snapshot/rebuild document (identity, storage, BUILD LATEST / REBUILD EXACT, manifests, fingerprint, operators, historical vs current certified fingerprints). Dropped planning/backlog narrative; linked validation/workflow/operational_update/sources.
