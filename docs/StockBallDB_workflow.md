@@ -13,7 +13,7 @@ This document describes **how data moves through the system** and how build / up
 | Universe | `StockBallDB_universe.md` |
 | Operator update commands | `StockBallDB_operational_update.md` |
 | Snapshots / exact rebuild | `StockBallDB_snapshots_and_rebuilds.md` |
-| Update contract (audit lock) | `StockBallDB_phase10a_operational_workflow_contract.md` |
+| Validation / health / fingerprint | `StockBallDB_validation.md` |
 | Read-only inspection UI | `StockBallDB_explorer.md` |
 
 Phase novel (0→2G and later) is archived in **git history**; this doc stays current-state only.
@@ -145,7 +145,7 @@ Operational refresh is **not** append-only incremental ingestion for mutable HTT
 * Forward horizons (1/3/5/10/20d) fill NULLs on **prior** dates when new sessions arrive
 * `volatility_regime` / SMA windows need long lookbacks (up to ~252 / 200 sessions)
 
-No mutable HTTP source is treated as incremental-safe without revision risk. Detail: Phase 10A contract §§4–6.
+No mutable HTTP source is treated as incremental-safe without revision risk. Operator detail: `StockBallDB_operational_update.md`.
 
 ---
 

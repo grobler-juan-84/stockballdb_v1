@@ -1,10 +1,8 @@
 # StockBallDB — Sources
 
-**Version:** 0.02
-**Status:** Initial Source Plan
-**Last Updated:** 2026-08-24
+**Status:** Canonical V1 source map
 
-> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md) · [definitions](StockBallDB_definitions.md) · [snapshots_and_rebuilds](StockBallDB_snapshots_and_rebuilds.md)
 
 ## Purpose
 
@@ -121,9 +119,9 @@ Provider pricing, limits, and access policies can change. Values recorded here d
 **Tier:** Free tier available
 **Status:** Primary
 
-Tiingo is the initial provider for daily ETF market data.
+Tiingo is the **primary** provider for daily ETF market data.
 
-Initial coverage:
+V1 ETF coverage:
 
 ```text
 SPY   QQQ   IWM
@@ -204,7 +202,7 @@ Verified against live Tiingo EOD JSON (`GET /tiingo/daily/{ticker}/prices`) on 2
 | `divCash`      | `dividend_cash`   |
 | `splitFactor`  | `split_factor`    |
 
-**Request note:** omitting `startDate` returns only the latest bar. Phase 2A requests `startDate=1957-01-01` so each ETF returns its full available history (actual first observation is ETF-dependent).
+**Request note:** omitting `startDate` returns only the latest bar. Acquisition requests `startDate=1957-01-01` so each ETF returns its full available history (actual first observation is ETF-dependent).
 
 **Auth:** `Authorization: Token <TIINGO_API_KEY>`.
 
@@ -307,7 +305,7 @@ Store
 
 ## Tier
 
-The initial free tier is expected to be sufficient for StockBallDB's small Version 1 ETF universe.
+The free tier is expected to remain sufficient for StockBallDB's small Version 1 ETF universe.
 
 The active ETF universe currently contains 14 Tiingo-sourced ETFs, leaving substantial room relative to the free tier for future expansion.
 
@@ -352,7 +350,7 @@ If Tiingo is replaced later, the canonical StockBallDB schema should remain unch
 **Tier:** Free
 **Status:** Primary
 
-FRED is the preferred initial provider for much of `macro_conditions`.
+FRED is the **primary** provider for much of `macro_conditions`.
 
 Expected categories include:
 
@@ -396,7 +394,7 @@ Validate
 Store
 ```
 
-Each StockBallDB macro field should eventually map to an explicitly approved FRED series ID.
+Each implemented StockBallDB macro field maps to an explicitly approved FRED series ID (see map below). Unresolved fields (e.g. `pmi`) remain omitted until a suitable source is locked.
 
 ```text
 StockBallDB field        → FRED series
@@ -409,12 +407,20 @@ fed_funds_rate           → DFF
 treasury_2y_yield        → DGS2
 treasury_10y_yield       → DGS10
 fed_balance_sheet        → WALCL
-credit_spread            → BAA10Y (LOCKED Phase 4A; current FRED daily; see caveats)
+credit_spread            → BAA10Y (current FRED daily; see caveats in definitions)
 ```
 
-`pmi` — **UNRESOLVED** (no column in V1). ISM PMI removed from FRED; no alternative meets free reproducible automatable requirements. See `StockBallDB_phase4a_macro_contract.md` §6.
+`pmi` — **UNRESOLVED** (no column in V1). ISM PMI removed from FRED; no alternative meets free reproducible automatable requirements.
 
-**Phase 4A authoritative contract:** `StockBallDB_phase4a_macro_contract.md` — field matrix, PIT rules, alignment, units, unresolved items.
+**Macro alignment (locked):**
+
+| Field | Alignment | Forward-fill |
+| --- | --- | --- |
+| inflation / core / unemployment / claims | `pre_open` (release calendar date → same TD if open else next TD) | Yes — latest knowable reading |
+| fed funds / Treasuries / credit spread | `observation_date` (value only if obs date is a trading day) | **No** |
+| WALCL (`fed_balance_sheet`) | Wed obs → Thu release → `after_close`: first TD **strictly after** release calendar date | Yes |
+
+**Missing-data (all macro fields):** no backward-fill before first availability; no interpolation; NULL when no observation and forward-fill disabled. Daily rates use current FRED history in V1 (not ALFRED). `credit_spread` = BAA10Y with caveats (no ALFRED; FRED-precomputed; history from ~1986).
 
 `yield_curve_10y_2y` is derived in StockBallDB as `treasury_10y_yield - treasury_2y_yield`.
 
@@ -494,7 +500,7 @@ ALFRED should be preferred whenever using today's revised history would introduc
 **Access:** Local generation via pinned `pandas_market_calendars` (`NYSE`)
 **Authentication:** None
 **Tier:** Free (Python package)
-**Status:** Primary / Locked for Phase 1
+**Status:** Primary / Locked
 
 The StockBallDB trading calendar must not depend on the existence of a particular ETF such as SPY.
 
@@ -514,7 +520,7 @@ Upsert into trading_days (idempotent)
 Validate (spot closures/sessions + structural checks)
 ```
 
-NYSE holiday rules, historical rule changes, exceptional full closures, and early-close sessions are taken from the pinned library. Shortened sessions remain valid `trading_days` rows; early-close and holiday-adjacency flags live in `calendar_context` (Phase 2G). Same authority — no second calendar source.
+NYSE holiday rules, historical rule changes, exceptional full closures, and early-close sessions are taken from the pinned library. Shortened sessions remain valid `trading_days` rows; early-close and holiday-adjacency flags live in `calendar_context`. Same authority — no second calendar source.
 
 The trading-day spine remains independent from Tiingo or any other market-price provider.
 
@@ -523,24 +529,24 @@ The trading-day spine remains independent from Tiingo or any other market-price 
 # 5. WTI Crude Oil
 
 **Identifier:** `WTI`  
-**Phase 5A status:** **LOCKED**
+**Status:** **IMPLEMENTED**
 
 **Canonical definition:** Daily WTI **spot** crude at Cushing, Oklahoma (FOB cash/reference market) — not NYMEX CL futures, not USO.
 
 **Source:** FRED **DCOILWTICO** (U.S. EIA spot prices; dollars per barrel).  
-**Fallback (equivalent):** EIA API `PET.RWTC.D` via `EIA_API_KEY` if needed.
+**Fallback (equivalent series):** EIA API `PET.RWTC.D` via `EIA_API_KEY` if needed (optional; not required when FRED succeeds).
 
-**Coverage:** from **1986-01-02**; pre-inception NULL on `trading_days` spine.  
-**Date semantics:** observation date; align to `trading_days` only when obs date is a trading day; no forward-fill.
+**Coverage:** from **1986-01-02**; pre-inception absent on `trading_days` spine (no fabricated rows).  
+**Date semantics:** observation date; align to `trading_days` only when obs date is a trading day; **no forward-fill**. Negative prices allowed when reported.
 
-Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §4.
+**Storage:** close-only `daily_market_data` row — see [schema](StockBallDB_schema.md) / [definitions](StockBallDB_definitions.md).
 
 ---
 
 # 6. Spot Gold
 
 **Identifier:** `XAU/USD`  
-**Phase 5A status:** **UNRESOLVED** (definition locked; source not locked)
+**Status:** **UNRESOLVED** (definition locked; source not locked; **not ingested**)
 
 **Canonical definition:** USD **spot gold** per troy ounce — institutional benchmark (target: **LBMA Gold Price PM fix**), not GLD/COMEX futures.
 
@@ -548,22 +554,18 @@ Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §4.
 
 ETF proxies (GLD) and futures substitutes are **not** acceptable as canonical XAU/USD.
 
-Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §5.
-
 ---
 
 # 7. U.S. Dollar Index
 
 **Identifier:** `DXY`  
-**Phase 5A status:** **UNRESOLVED**
+**Status:** **UNRESOLVED** (**not ingested**)
 
 **Canonical definition:** ICE **U.S. Dollar Index (USDX)** — not Fed trade-weighted indexes (**DTWEXBGS** / **DTWEXAFEGS**), not UUP ETF.
 
 **Source:** ICE Data Indices (commercial license). No acceptable free FRED substitute that equals DXY.
 
 Do not label DTWEX* series as `DXY`.
-
-Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §6.
 
 ---
 
@@ -573,7 +575,7 @@ Authoritative detail: `StockBallDB_phase5a_market_context_contract.md` §6.
 **Primary source:** Federal Reserve
 **Access:** Public HTML historical materials / calendars
 **Tier:** Free
-**Status:** Locked (Phase 2F)
+**Status:** Locked
 
 Acquisition:
 
@@ -588,6 +590,8 @@ Multi-day meetings → one event on the **final** day.
 
 Unscheduled/emergency Fed actions are **deferred** (not V1 `scheduled_events`).
 
+**Source hierarchy for events:** agency primary materials > ALFRED first-print dates > official PDFs. Reject scraped third-party calendars as authoritative.
+
 ---
 
 # 9. Economic Releases
@@ -595,7 +599,7 @@ Unscheduled/emergency Fed actions are **deferred** (not V1 `scheduled_events`).
 **Preferred source:** BLS via ALFRED first-print dates (FRED API)
 **Access:** `FRED_API_KEY`
 **Tier:** Free
-**Status:** Locked (Phase 2F) for CPI and Employment Situation occurrence dates
+**Status:** Locked for CPI and Employment Situation occurrence dates
 
 | Event type | Series for first-print dates | FRED release id (context) | Notes |
 | --- | --- | --- | --- |
@@ -604,15 +608,15 @@ Unscheduled/emergency Fed actions are **deferred** (not V1 `scheduled_events`).
 
 Store occurrence facts only. Macro **values** remain in `macro_conditions`.
 
-Consensus expectations and surprise values are **deferred** (no free reproducible market-consensus history approved for V1).
+**Rejected as `scheduled_events` columns:** `actual`, `previous`, `consensus`, `surprise`, `importance`.
+
+Jobless claims as a **scheduled event type** remains provisional / not in V1 event vocabulary; GDP and other releases **deferred** (may need `event_subtype`).
 
 BLS `08:30` ET / `pre_open`: applied from **1990-01-01**; earlier releases keep `pre_open` with `event_time_et = NULL`.
 
-**Elections:** statutory federal Election Day (2 U.S.C. §7 / USA.gov / FEC) — presidential (`year % 4 == 0`) and midterm (`year % 4 == 2`) only. `release_session = unknown`, `event_time_et = NULL`.
+**Elections:** statutory federal Election Day (2 U.S.C. §7 / USA.gov / FEC) — presidential (`year % 4 == 0`) and midterm (`year % 4 == 2`) only. `release_session = unknown`, `event_time_et = NULL`. Elections appear in both `scheduled_events` and calendar flags (different grains).
 
 **Earnings:** deferred from V1 (ETF universe; no approved scheduled-date + consensus pipeline).
-
-Phase 6A contract (`StockBallDB_phase6a_scheduled_events_contract.md`): **`actual`**, **`consensus`**, **`surprise`**, and **`importance`** are **rejected** — not in schema. Jobless claims **provisionally locked** for Phase 6B; GDP and other releases **deferred**.
 
 ---
 
@@ -623,7 +627,7 @@ Phase 6A contract (`StockBallDB_phase6a_scheduled_events_contract.md`): **`actua
 **Secondary source:** FRED
 **Tier:** Public historical data available
 
-VIX is not part of the initial Version 1 universe but is a likely future addition.
+VIX is not part of the Version 1 universe but is a possible future addition.
 
 Because Cboe creates and maintains the VIX methodology, Cboe should be considered the preferred authoritative source.
 
@@ -770,7 +774,7 @@ Moving from a free source or tier to a paid provider should ideally require only
 
 ## Locked
 
-* **Tiingo** — initial ETF provider for raw OHLCV, adjusted OHLCV, dividend cash, and split factors.
+* **Tiingo** — primary ETF provider for raw OHLCV, adjusted OHLCV, dividend cash, and split factors.
 * **Tiingo acquisition** — required V1 daily ETF observations should be collected together during the same acquisition stage rather than split across separate workflow stages.
 * **Raw and adjusted market observations** — both are preserved.
 * **Corporate-action observations** — dividend cash and split factors are preserved separately from adjusted prices.
@@ -780,37 +784,33 @@ Moving from a free source or tier to a paid provider should ideally require only
 * **Federal Reserve** — preferred authority for Federal Reserve events.
 * **StockBallDB** — calculates deterministic derived fields internally.
 * **API credentials** — environment configuration only; never committed to Git.
-* **`scheduled_events` V1** — occurrence calendar for `fomc`, `cpi`, `employment_situation`, `election` only (Phase 2F). Earnings, unscheduled Fed actions, consensus/surprise deferred. No `event_date` FK to `trading_days`.
-* **WTI** — FRED `DCOILWTICO` (EIA Cushing spot, USD/bbl, from 1986-01-02); Phase 5A — see `StockBallDB_phase5a_market_context_contract.md`
+* **`scheduled_events` V1** — occurrence calendar for `fomc`, `cpi`, `employment_situation`, `election` only. Earnings, unscheduled Fed actions, consensus/surprise deferred. No `event_date` FK to `trading_days`. Rejected columns: `actual` / `previous` / `consensus` / `surprise` / `importance`.
+* **WTI** — FRED `DCOILWTICO` (EIA Cushing spot, USD/bbl, from 1986-01-02); implemented close-only in `daily_market_data`.
 
 ## Provisional
 
 * *(none)*
 
-## Unresolved (Phase 5A)
+## Unresolved
 
-* **XAU/USD** — definition locked (LBMA PM fix target); source UNRESOLVED (IBA license; FRED LBMA removed 2022)
-* **DXY** — definition locked (ICE USDX); source UNRESOLVED (commercial ICE Data; do not substitute DTWEXBGS)
+* **XAU/USD** — definition locked (LBMA PM fix target); source UNRESOLVED (IBA license; FRED LBMA removed 2022); **not ingested**
+* **DXY** — definition locked (ICE USDX); source UNRESOLVED (commercial ICE Data; do not substitute DTWEXBGS); **not ingested**
+* **`pmi`** — UNRESOLVED; column omitted from `macro_conditions`
 
-## Requires Research (other)
+## Notes
 
-* **`macro_conditions` Phase 4A contract** — locked; `pmi` **UNRESOLVED**
-* Fallback provider for ETF market data
-* Exact source and acquisition method for each `scheduled_events` category — **locked** (Phase 2F)
-* Exact canonical handling of Tiingo no-dividend and no-split observations — **locked** (0.0 / 1.0 interpretation; storage unchanged)
-* Exact raw-versus-adjusted price basis for StockBallDB derived market fields — **locked** (Phase 2B definitions)
-* Forward `market_outcomes` use retrospectively adjusted OHLC by design (Phase 2C) — not point-in-time available on `date`
-* `asset_regimes` derived only from `daily_market_data` through date `t` (Phase 2D); `asset_type` from StockBallDB universe map
+* Fallback provider for ETF market data — not locked
+* Exact raw-versus-adjusted price basis for derived market fields — locked in definitions
+* Forward `market_outcomes` use retrospectively adjusted OHLC by design — not point-in-time available on `date`
+* `asset_regimes` derived only from `daily_market_data` through date `t`; `asset_type` from StockBallDB universe map
 
 ---
 
 # Evolution
 
-This document is a source map, not a permanent provider contract.
+This document is the canonical V1 source map. It is not a permanent forever-provider contract.
 
 Sources may change when better data becomes available, providers alter access, historical weaknesses are discovered, or StockBallDB expands.
-
-The initial table-population phase should also be used to test these source decisions against real provider data. Findings may justify adding, removing, or changing fields before the V1 schema is considered mature.
 
 Provider changes must preserve the principles established in the manifesto:
 

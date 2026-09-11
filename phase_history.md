@@ -480,6 +480,9 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 - Documentation consolidation COMPLETE: phase contracts 4A-11A (+11D) merged into permanent docs and deleted; index rewritten as front door; certified baseline recorded in validation.md.
 - Docs V1-state cleanup: schema/sources/definitions/Tech_stack rewritten away from “Initial/sandbox/eventually” planning language; unresolved XAU/DXY/PMI and future hosting preserved.
 - Added `docs/StockBallDB_V1_status.md` (RELEASE CANDIDATE — pending final baseline declaration); linked from index/README.
+- Final V1 certification attempt: read-only gates PASS on primary; **blocked** by missing `STOCKBALLDB_TEST_DATABASE_URL` (pytest not run). Status remains RELEASE CANDIDATE.
+- Configured disposable `stockballdb_test` + `STOCKBALLDB_TEST_DATABASE_URL` in local `.env`; isolation from primary verified. Ready for certification rerun (pytest still not run).
+- **V1 CERTIFIED (2026-09-11):** pytest 220 passed / 2 skipped; validate_v1 PASS; health HEALTHY (3 INFO); snapshots PASS; fingerprint `sha256:5055ae10...` unchanged; status set to **V1 COMPLETE — CERTIFIED BASELINE**. No tag/push/commit yet.
 
 ### End-of-phase summary (Phase 11A–11C functional certification)
 

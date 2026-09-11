@@ -1,10 +1,8 @@
 # StockBallDB — Tech Stack
 
-**Version:** 0.02
-**Status:** Initial Tech Stack
-**Last Updated:** 2026-08-24
+**Status:** Canonical V1 tech stack
 
-> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md) · [sources](StockBallDB_sources.md) · [definitions](StockBallDB_definitions.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [workflow](StockBallDB_workflow.md) · [validation](StockBallDB_validation.md) · [explorer](StockBallDB_explorer.md) · [snapshots_and_rebuilds](StockBallDB_snapshots_and_rebuilds.md)
 
 ## Purpose
 
@@ -31,11 +29,12 @@ The technology stack serves the database. It should not introduce unnecessary in
 | HTTP                | **requests**                              | REST API acquisition                                              | Locked  |
 | Configuration       | **python-dotenv / environment variables** | Local configuration and API credentials                           | Locked  |
 | Testing             | **pytest**                                | Automated pipeline and calculation testing                        | Locked  |
+| Inspection UI       | **Streamlit**                             | Local read-only Explorer (`python -m stockballdb.explorer`)       | Locked  |
 | Version control     | **Git**                                   | Repository history and reproducibility                            | Locked  |
 | Repository          | **GitHub**                                | Remote project repository                                         | Locked  |
 | Development         | **Cursor**                                | Primary development environment                                   | Current |
 | Database inspection | **DBeaver**                               | Manual database inspection / debugging                            | Current |
-| Hosting             | **Local PostgreSQL**                      | Initial sandbox database                                          | Current |
+| Hosting             | **Local PostgreSQL**                      | Current development / operator database                           | Current |
 | Future hosting      | **Supabase / hosted PostgreSQL**          | Potential shared database environment                             | Future  |
 
 ---
@@ -283,7 +282,7 @@ Example:
 ```text
 TIINGO_API_KEY=
 FRED_API_KEY=
-EIA_API_KEY=
+EIA_API_KEY=          # optional WTI fallback (PET.RWTC.D); FRED DCOILWTICO is primary
 DATABASE_URL=
 ```
 
@@ -478,7 +477,7 @@ The database is not the primary source of truth for how StockBallDB is construct
 **Role:** Remote project repository
 **Status:** Locked
 
-GitHub provides the remote repository from which StockBallDB should eventually be reproducible.
+GitHub provides the remote repository used to clone, build, update, and reproduce StockBallDB.
 
 The target is:
 
@@ -554,35 +553,25 @@ StockBallDB must remain reproducible without Cursor.
 
 ---
 
-# 17. Local Sandbox
+# 17. Local PostgreSQL Environment
 
-The first StockBallDB environment intentionally runs locally.
+StockBallDB V1 runs on local PostgreSQL by default.
 
 ```text
 External Sources
        ↓
-Python Pipeline
+Python Pipeline (build_v1 / update / rebuild_exact)
        ↓
 Local PostgreSQL
        ↓
-Validation
+Validation / health / fingerprint
        ↓
-StockBallDB
+StockBallDB (+ optional read-only Explorer)
 ```
 
-The sandbox exists to determine:
+Local PostgreSQL is the current operator environment, not an unfinished sandbox whose workflow is still being invented. Build, update, snapshot capture, exact rebuild, validation, and Explorer are implemented.
 
-* what data can actually be obtained;
-* what historical coverage exists;
-* where provider weaknesses occur;
-* which definitions work;
-* which fields need changing;
-* which validation rules are necessary;
-* how the final build process should operate.
-
-Schema and pipeline changes during this stage are expected.
-
-They must nevertheless remain documented and reproducible.
+Schema and pipeline changes remain allowed when justified, but must stay documented, migrated, and reproducible.
 
 ---
 
@@ -594,7 +583,7 @@ They must nevertheless remain documented and reproducible.
 
 StockBallDB does not currently require hosted infrastructure.
 
-Once the database and build pipeline are mature, a hosted PostgreSQL environment may become useful for:
+A hosted PostgreSQL environment may become useful later for:
 
 * access from multiple computers;
 * remote research;
@@ -618,7 +607,7 @@ Python dependencies must be explicitly recorded and reproducible.
 
 The project should maintain a version-controlled dependency definition.
 
-The exact packaging convention may remain lightweight during the sandbox stage, but another machine must eventually be able to install an equivalent Python environment without guessing which packages are required.
+Python dependencies are recorded in version-controlled project files (`requirements.txt` / package metadata). Another machine must be able to install an equivalent Python environment without guessing packages.
 
 Avoid adding dependencies when Python, PostgreSQL, pandas, or existing project libraries already solve the problem adequately.
 
@@ -647,7 +636,7 @@ Logging becomes particularly important for automated updates and full rebuilds.
 
 The logs should make failures diagnosable without requiring inspection of the pipeline source code.
 
-Exact logging implementation may remain simple initially using Python's standard `logging` module.
+Exact logging implementation uses Python's standard `logging` module and may stay deliberately simple.
 
 ---
 
@@ -668,7 +657,7 @@ deterministic derivation
 explicit date ranges
 ```
 
-This is particularly important for future automated updates.
+This is particularly important for operational `update` runs and full rebuilds.
 
 ---
 
@@ -736,13 +725,14 @@ A technology should be introduced when an actual limitation justifies it.
 ## Locked
 
 * **PostgreSQL** — canonical database architecture.
-* **Local PostgreSQL** — initial sandbox.
+* **Local PostgreSQL** — current V1 operator database environment.
 * **Python** — pipeline and orchestration language.
 * **pandas** — primary tabular processing library.
 * **SQLAlchemy** — Python/PostgreSQL interface.
 * **Alembic** — schema migrations.
 * **requests** — REST API acquisition.
 * **pytest** — automated testing.
+* **Streamlit** — local read-only Explorer UI.
 * **Git** — version control.
 * **GitHub** — remote repository.
 * **Environment variables / `.env`** — configuration and credentials.
@@ -751,17 +741,16 @@ A technology should be introduced when an actual limitation justifies it.
 ## Current Tooling
 
 * **Cursor** — development environment.
-* **DBeaver** — database inspection.
+* **DBeaver** — database inspection (optional; Explorer covers routine inspection).
 
 ## Future / Provisional
 
-* **Supabase / hosted PostgreSQL** — future remote database environment.
-* Exact Python version.
-* Exact dependency-locking convention.
+* **Supabase / hosted PostgreSQL** — possible remote database environment.
+* Stricter pinned Python / lockfile convention beyond current requirements.
 * CI automation such as GitHub Actions.
-* Automated scheduled updates.
+* Cron / scheduled triggering of `python -m stockballdb.update` (the update command itself is implemented).
 * Backup strategy.
-* Pipeline execution interface.
+* Additional operator interfaces beyond CLI + Explorer.
 
 ## Explicitly Not Required Yet
 

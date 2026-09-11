@@ -95,7 +95,7 @@ Streamlit binds to **localhost** only. Use **Refresh** to invalidate session-cac
 | **Control Center** | At-a-glance health, fingerprint (on demand), Alembic/git provenance, latest operational run and Manifest 1.1, table/symbol coverage summary, provider freshness, snapshot verify status for latest manifest. Status language reused from the package: `HEALTHY` / `HEALTHY WITH WARNINGS` / `UNHEALTHY`; `PASS` / `FAIL`; `SUCCESS_UPDATED` / `SUCCESS_NO_CHANGE` / `FAILED`. No tickers, heatmaps, or signal scores. |
 | **Data Explorer** | Browse all seven canonical tables with server-side filters, allowlisted sort, pagination, definitions tooltips, and optional bounded CSV export. |
 | **Day Inspector** | Cross-table factual view for one calendar date (+ optional symbol focus). Separate bounded queries — not one mega-join. Supports trading days and non-trading event dates without fabricating `trading_days` rows. |
-| **Coverage Explorer** | Table/symbol coverage, freshness/lag, gap findings, and missingness classification reused from Phase 8 health logic. |
+| **Coverage Explorer** | Table/symbol coverage, freshness/lag, gap findings, and missingness classification reused from health tooling. |
 | **Provenance Explorer** | Dataset/build-level provenance: manifests, run reports, snapshot metadata and verification, fingerprints, `exact_rebuild_capable`. No secrets, credentials, or database/provider URLs. |
 | **Validation Center** | On-demand display of validate_v1, health findings, coverage/freshness/gaps, snapshot verify, and database/table fingerprints. No second validation engine. Manual run buttons only — no background polling daemon. |
 
@@ -182,7 +182,7 @@ Formatting is presentation-only. Stored canonical values remain authoritative.
 | Hashes | Truncated with copy-full option |
 | Booleans | Yes / No |
 
-Field meaning, units, and PIT notes: [StockBallDB_definitions.md](StockBallDB_definitions.md) (and phase contracts where documented).
+Field meaning, units, and PIT notes: [StockBallDB_definitions.md](StockBallDB_definitions.md).
 
 ---
 
@@ -239,6 +239,16 @@ Phase 11D is a **presentation-only** refresh after Phase 11C functional certific
 
 Six surfaces remain functionally unchanged. Prefer presentation-layer changes; do not silently alter certified health/query/validation semantics.
 
+Mockups are **visual direction only**, not functional requirements.
+
+**Prohibited additions** (presentation refresh must not introduce):
+
+- Query Explorer / arbitrary filter builders / raw SQL
+- Saved presets or column-visibility product systems
+- Split-ticker research layouts or new research metrics
+- New SQL aggregations invented only to mimic mockup stats
+- Write controls, update/rebuild triggers, or strategy/backtest UI
+
 **Phase 11D status:** presentation refresh **implemented**. Functional certification remains **Phase 11C**. Phase 11D **manual UX certification is pending** (implementation complete ≠ 11D certified).
 
 ---
@@ -282,8 +292,3 @@ Six surfaces manually certified at 11C: Control Center, Data Explorer, Day Inspe
 | Snapshots & rebuilds | [StockBallDB_snapshots_and_rebuilds.md](StockBallDB_snapshots_and_rebuilds.md) |
 | Operational update | [StockBallDB_operational_update.md](StockBallDB_operational_update.md) |
 | Schema | [StockBallDB_schema.md](StockBallDB_schema.md) |
-
-Historical phase contracts (audit trail; Explorer behavior is owned by this document):
-
-- [StockBallDB_phase11a_explorer_contract.md](StockBallDB_phase11a_explorer_contract.md) — original Explorer contract + 11C certification record
-- [StockBallDB_phase11d_explorer_desktop_ui_contract.md](StockBallDB_phase11d_explorer_desktop_ui_contract.md) — desktop UI refresh contract

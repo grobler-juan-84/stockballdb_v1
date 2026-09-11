@@ -1,19 +1,18 @@
 # StockBallDB — Universe
 
-**Version 0.01**  
-**Date:** 2026-08-23
-
-> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [schema](StockBallDB_schema.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [schema](StockBallDB_schema.md) · [sources](StockBallDB_sources.md)
 
 ## Purpose
 
-Defines the assets and market indicators currently in StockBallDB scope. Version 1 is a starting point, not a permanent boundary. Expansion rules and historical-integrity principles live in the [manifesto](StockBallDB_manifesto.md).
+Defines the assets and market indicators in StockBallDB V1 scope. Expansion rules and historical-integrity principles live in the [manifesto](StockBallDB_manifesto.md).
 
-Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, and the U.S. dollar — small enough to build pipelines and validation first, broad enough for useful market context.
+Coverage goal: broad U.S. equities, major U.S. equity sectors, selected commodities / FX context — small enough to keep pipelines trustworthy, broad enough for useful market context.
 
-## Initial Universe (17)
+## Implemented market symbols (V1)
 
-### Broad U.S. Equity Market
+**Currently ingested into `daily_market_data`:** **14 ETFs + WTI** (15 symbols).
+
+### Broad U.S. Equity Market (ETF)
 
 | Ticker  | Asset                          |
 | ------- | ------------------------------ |
@@ -21,7 +20,7 @@ Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, a
 | **QQQ** | Invesco QQQ Trust — Nasdaq-100 |
 | **IWM** | iShares Russell 2000 ETF       |
 
-### U.S. Equity Sectors
+### U.S. Equity Sectors (ETF)
 
 | Ticker   | Sector                 |
 | -------- | ---------------------- |
@@ -37,29 +36,33 @@ Initial coverage: broad U.S. equities, major U.S. equity sectors, commodities, a
 | **XLY**  | Consumer Discretionary |
 | **XLRE** | Real Estate            |
 
-### Additional Market Context
+### Additional market context
 
-| Identifier  | Asset / Indicator                 |
-| ----------- | --------------------------------- |
-| **WTI**     | West Texas Intermediate Crude Oil | **LOCKED** — FRED DCOILWTICO (spot Cushing) |
-| **XAU/USD** | Spot Gold (LBMA PM fix target)    | **UNRESOLVED** — source/licensing |
-| **DXY**     | U.S. Dollar Index (ICE USDX)      | **UNRESOLVED** — source requires ICE license |
+| Identifier  | Status | Notes |
+| ----------- | ------ | ----- |
+| **WTI**     | **IMPLEMENTED** | West Texas Intermediate spot (FRED `DCOILWTICO`, Cushing). Stored as close-only rows in `daily_market_data`. |
+| **XAU/USD** | **UNRESOLVED** | Definition target: LBMA PM gold fix. **Not ingested.** Blocked on licensed source access. Do not substitute GLD or GC futures as canonical XAU/USD. |
+| **DXY**     | **UNRESOLVED** | Definition target: ICE U.S. Dollar Index (USDX). **Not ingested.** Requires ICE license. **Do not substitute** Fed trade-weighted indexes (`DTWEXBGS` / `DTWEXAFEGS`) or UUP ETF as DXY. |
 
-Phase 5A authoritative contract: [StockBallDB_phase5a_market_context_contract.md](StockBallDB_phase5a_market_context_contract.md).
+Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP).
 
-Prefer the underlying asset or index over an ETF proxy when reliable history exists (e.g. spot gold not GLD, WTI not USO, DXY not UUP). **Do not substitute** DTWEXBGS for DXY.
+Market-context rows share `daily_market_data` with ETFs — there is **no** separate context table. See [schema](StockBallDB_schema.md) and [sources](StockBallDB_sources.md).
 
-## Future Expansion
+## Other V1 datasets (not “symbols”)
+
+| Dataset | Scope |
+| ------- | ----- |
+| Macro conditions | Locked FRED/ALFRED series in `macro_conditions` (`pmi` unresolved / omitted) |
+| Scheduled events | `fomc`, `cpi`, `employment_situation`, `election` |
+| Trading calendar | NYSE sessions via pinned `pandas_market_calendars` from 1957 |
+
+## Future expansion
 
 Illustrative candidates only — not commitments. Each addition needs a plausible research reason and must meet manifesto standards.
 
-* VIX  
-* U.S. Treasury yields; Treasury securities or bond ETFs  
-* Credit spreads  
-* International / emerging-market equity indices or ETFs  
-* Additional commodities, currencies, and currency indices  
-* Bitcoin and other major digital assets (where historically appropriate)  
-* Broader or longer-history equity indices; individual securities if research requires them  
-* Further macro and market indicators  
+* VIX
+* Additional yields / credit / international equity context
+* Additional commodities, currencies
+* Broader or longer-history equity indices; individual securities if research requires them
 
 > **Start focused. Build reliably. Expand deliberately.**

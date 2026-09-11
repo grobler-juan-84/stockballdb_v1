@@ -218,7 +218,7 @@ that derived tables follow deterministic transforms from canonical inputs
 | Concern | Where it lives |
 | --- | --- |
 | Provider + series ID | code (`universe.py`, `macro/series.py`, providers) + [sources](StockBallDB_sources.md) |
-| Normalization / PIT | code + [definitions](StockBallDB_definitions.md) + domain contracts |
+| Normalization / PIT | code + [definitions](StockBallDB_definitions.md) + [sources](StockBallDB_sources.md) |
 | Event `source` enum | `scheduled_events.source` per row |
 | Build/retrieval timestamps, row counts, alembic head, calendar pin, validation/health | `build_reports/manifest_*.json` and `run_*.json` |
 | Environment / dependency fingerprint | manifest / health provenance payload |
@@ -318,23 +318,27 @@ Orchestrated build path: `build_v1` then validate/health. Incremental path: `upd
 
 ## 13. Current Certified Baseline
 
+**Status:** V1 COMPLETE — CERTIFIED BASELINE (2026-09-11). Authoritative status narrative: [StockBallDB_V1_status.md](StockBallDB_V1_status.md).
+
 | Check | Result |
 | --- | --- |
 | `validate_v1` | PASS |
 | `health` | HEALTHY |
-| `pytest` | 220 passed, 2 skipped |
-| Explorer tests | 70 passed |
+| `pytest` | 220 passed, 2 skipped, 0 failed |
+| Explorer tests | 70 (within full suite) |
 | Explorer manual certification | Phase 11C completed |
 | Database fingerprint | `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca` |
-| Explorer mutation | Did **not** mutate the canonical database |
+| Explorer / pytest mutation | Did **not** mutate the canonical database (fingerprint before = after) |
 | Alembic head | `a8f3c2d1b4e5` |
-| `trading_days` | 1957-01-02 through 2026-08-31 |
+| `trading_days` | 1957-01-02 through 2026-08-31 (17,533 rows) |
 | `daily_market_data` / `market_outcomes` / `asset_regimes` | 99,633 rows each |
 | `macro_conditions` / `calendar_context` | 17,533 rows each |
 | `scheduled_events` | 2,641 rows |
-| Current market symbols | 14 ETFs + WTI |
+| Current market symbols | 14 ETFs + WTI (15) |
 | Known health INFO | ETF lag 1 session; WTI lag 3 sessions; WTI provider gaps 39 sessions (max consecutive 2) |
-| Snapshot verification | 91 checked, 0 missing, 0 corrupt |
+| Snapshot verification (latest manifest) | 91 checked, 0 missing, 0 corrupt |
+| Snapshot verification (all referenced) | 455 checked, 0 missing, 0 corrupt |
+| Exact rebuild capable | True |
 | Explorer launch | `python -m stockballdb.explorer` |
 
 Re-certify after schema changes, universe changes, rebuilds, or any write path that can alter canonical tables. Update this section only when a new baseline is intentionally certified.

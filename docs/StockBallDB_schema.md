@@ -1,10 +1,9 @@
 # StockBallDB — Schema
 
-**Version:** 1
-**Status:** Initial Schema
-**Last Updated:** 2026-08-24
+**Status:** Canonical V1 schema  
+**Alembic head:** `a8f3c2d1b4e5`
 
-> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [sources](StockBallDB_sources.md) · [definitions](StockBallDB_definitions.md) · [workflow](StockBallDB_workflow.md) · [validation](StockBallDB_validation.md)
 
 ## Purpose
 
@@ -14,9 +13,10 @@ Structural design of StockBallDB: tables, responsibilities, relationships, keys,
 | ---------------------------------- | ------------------------------------- |
 | Philosophy and rules               | [manifesto](StockBallDB_manifesto.md) |
 | Asset / indicator scope            | [universe](StockBallDB_universe.md)   |
-| Providers                          | `StockBallDB_sources.md`              |
-| Build / update / derive / validate | `StockBallDB_workflow.md`             |
-| Field formulas                     | `StockBallDB_definitions.md`          |
+| Providers                          | [sources](StockBallDB_sources.md)         |
+| Build / update / derive / validate | [workflow](StockBallDB_workflow.md)       |
+| Field formulas                     | [definitions](StockBallDB_definitions.md) |
+| Validation / health / fingerprint  | [validation](StockBallDB_validation.md)   |
 
 PostgreSQL migrations in Git are the authoritative implementation.
 
@@ -90,7 +90,7 @@ Stores the core daily market observations for each asset.
 
 For Tiingo-sourced ETFs, raw prices, adjusted prices, volume, adjusted volume, dividends, and split information are collected together during the same acquisition step.
 
-Phase 2A loads the 14 Tiingo ETFs. Phase 5B added **WTI** (`DCOILWTICO`) as a close-only row: `close` holds the spot level; `open`/`high`/`low`/`volume`/all `adj_*`/corp-action columns are **NULL** (never copied from `close`). Migration `a8f3c2d1b4e5` relaxes NOT NULL and adds a row-shape CHECK enforcing full-OHLC ETF rows vs close-only context rows. Dates must exist in `trading_days`. Pre-inception history is simply absent (no fabricated rows).
+V1 loads **14 Tiingo ETFs** plus **WTI** (`DCOILWTICO`) as a close-only row: `close` holds the spot level; `open`/`high`/`low`/`volume`/all `adj_*`/corp-action columns are **NULL** (never copied from `close`). Migration `a8f3c2d1b4e5` relaxes NOT NULL and adds a row-shape CHECK enforcing full-OHLC ETF rows vs close-only context rows. Dates must exist in `trading_days`. Pre-inception history is simply absent (no fabricated rows).
 
 ### Observed — Raw Market Data
 
@@ -133,7 +133,7 @@ range_pct            NUMERIC NULL  -- RAW session
 drawdown_from_high   NUMERIC NULL  -- ADJUSTED expanding max
 ```
 
-Formulas locked in `StockBallDB_definitions.md` (Phase 2B). Adjusted-based derived fields are retrospectively normalized economic history.
+Formulas locked in `StockBallDB_definitions.md`. Adjusted-based derived fields are retrospectively normalized economic history.
 
 ---
 
@@ -153,7 +153,7 @@ max_up_5d, max_down_5d, max_up_20d, max_down_20d           NUMERIC NULL  -- sign
 positive_1d, positive_5d, positive_20d                     BOOLEAN NULL
 ```
 
-Formulas locked in `StockBallDB_definitions.md` (Phase 2C).
+Formulas locked in `StockBallDB_definitions.md`.
 
 ---
 
@@ -165,7 +165,7 @@ Formulas locked in `StockBallDB_definitions.md` (Phase 2C).
 
 Asset state on a trading day using only same-symbol observations with `date ≤ t`. Does **not** use `market_outcomes`.
 
-Derived exclusively from canonical `daily_market_data`. Adjusted-derived fields are retrospectively normalized economic history (Phase 2B nuance).
+Derived exclusively from canonical `daily_market_data`. Adjusted-derived fields are retrospectively normalized economic history.
 
 ```text
 asset_type                                              TEXT NOT NULL  -- V1: "etf"
@@ -181,7 +181,7 @@ momentum_regime                                         TEXT NULL  -- positive|n
 volatility_regime                                       TEXT NULL  -- low|normal|high
 ```
 
-Formulas locked in `StockBallDB_definitions.md` (Phase 2D).
+Formulas locked in `StockBallDB_definitions.md`.
 
 ---
 
@@ -208,7 +208,7 @@ inflation_regime                        TEXT NULL     -- low|normal|high
 rate_regime                             TEXT NULL     -- easing|stable|tightening
 ```
 
-Formulas and series IDs locked in `StockBallDB_definitions.md` / `StockBallDB_sources.md` / `StockBallDB_phase4a_macro_contract.md` (Phase 4A).
+Formulas and series IDs: [StockBallDB_definitions.md](StockBallDB_definitions.md) / [StockBallDB_sources.md](StockBallDB_sources.md).
 
 ---
 
@@ -234,9 +234,11 @@ source               TEXT
 ```
 
 **V1 scope:** scheduled FOMC decision days; BLS CPI & Employment Situation releases; U.S. presidential + midterm Election Days.  
-**Deferred:** earnings; unscheduled Fed actions; consensus/surprise; `event_window` (→ `calendar_context`).
+**Deferred / rejected:** earnings; unscheduled Fed actions; columns `actual` / `previous` / `consensus` / `surprise` / `importance`; forward `event_window` features (→ `calendar_context` owns retrospective distances only).
 
-Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md` (Phase 2F). Phase 6A PIT contract: `StockBallDB_phase6a_scheduled_events_contract.md`.
+**Event definition (V1):** historically reconstructible, systematically knowable official/institutional occurrence — objective context only. Exclude news, disasters, earnings (V1), emergency Fed, consensus, surprise, importance, and market reactions.
+
+Definitions and sources: [StockBallDB_definitions.md](StockBallDB_definitions.md) / [StockBallDB_sources.md](StockBallDB_sources.md).
 
 ---
 
@@ -248,7 +250,7 @@ Definitions and sources: `StockBallDB_definitions.md` / `StockBallDB_sources.md`
 
 Deterministic trading-day context: holiday/session geometry, ISO week counts, narrow month/quarter/year transitions, and retrospective event-distance context from `scheduled_events`.
 
-Phase 7A PIT/boundary contract: `StockBallDB_phase7a_calendar_context_contract.md`. Not a research-window catalog. Forward `days_to_next_*`, tax/payday, election periods, and earnings windows are **out of V1**.
+**19 columns** in V1 (see field list below). Forward `days_to_next_*` / `days_until_next_*`, tax/payday, election periods, and earnings windows are **out of V1**. Ownership split: spine intrinsical fields remain on `trading_days`; context relationships live here.
 
 ```text
 date                                         DATE PK FK → trading_days.date
@@ -279,7 +281,7 @@ is_election_day                              BOOLEAN NOT NULL
 days_since_last_election                     SMALLINT NULL
 ```
 
-Definitions locked in `StockBallDB_definitions.md` (Phase 2G).
+Definitions locked in `StockBallDB_definitions.md`.
 
 ---
 
@@ -381,17 +383,15 @@ Replacing a provider should ideally require acquisition and normalization change
 
 ## Evolution
 
-Version 1 is a starting schema.
+The seven-table V1 schema is **implemented and in use**.
 
-The initial population of the seven tables is also an experimental schema-validation phase. Real data may expose fields that should be added, removed, renamed, separated, or redefined.
-
-Schema changes must be:
+Further schema changes must still be:
 
 1. deliberate;
 2. documented;
 3. version controlled;
 4. implemented through PostgreSQL migrations;
 5. reflected in definitions and acquisition logic where applicable;
-6. reproducible during a full database rebuild.
+6. reproducible during a full database rebuild (including exact rebuild where Manifest 1.1 + snapshots apply).
 
-The schema should evolve from evidence obtained while building and validating StockBallDB rather than assumptions about future experiments.
+The schema should evolve from evidence obtained while operating and validating StockBallDB, not from assumptions about future experiments, strategies, or trading systems.

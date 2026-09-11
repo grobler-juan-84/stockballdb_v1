@@ -1,10 +1,8 @@
 # StockBallDB — Definitions
 
-**Version:** 0.02
-**Status:** Initial Definitions
-**Last Updated:** 2026-08-24
+**Status:** Canonical V1 field definitions
 
-> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md)
+> Companion docs: [index](StockBallDB_index.md) · [manifesto](StockBallDB_manifesto.md) · [universe](StockBallDB_universe.md) · [schema](StockBallDB_schema.md) · [sources](StockBallDB_sources.md) · [validation](StockBallDB_validation.md)
 
 ## Purpose
 
@@ -17,7 +15,7 @@ Its purpose is to prevent ambiguity and ensure that derived values can be reprod
 
 Definitions should be explicit enough that two independent implementations using the same underlying observations produce equivalent results.
 
-Where a definition has not yet been finalized, it is marked **TBD** rather than assumed.
+Unresolved assets or omitted fields (for example XAU/USD, DXY, PMI) are documented as unresolved or out of V1 rather than given invented formulas.
 
 ---
 
@@ -84,7 +82,7 @@ Example:
 -0.05 = -5%
 ```
 
-**Exception — `macro_conditions` rate fields:** FRED-native **percentage points** (`3.0` = 3%, not `0.03`). See `StockBallDB_definitions.md` §5 and `StockBallDB_phase4a_macro_contract.md` (Phase 4A lock).
+**Exception — `macro_conditions` rate fields:** FRED-native **percentage points** (`3.0` = 3%, not `0.03`). See §5 below.
 
 ## Trading-Day Windows
 
@@ -380,21 +378,19 @@ Uses retrospectively normalized `adj_close`. Populated on every row with usable 
 
 ---
 
-## Phase 5 — Additional market context (`WTI`, `XAU/USD`, `DXY`)
-
-**Phase 5A contract:** `StockBallDB_phase5a_market_context_contract.md`
+## Additional market context (`WTI`, `XAU/USD`, `DXY`)
 
 These symbols share `daily_market_data` grain but often provide **one daily level**, not full OHLCV.
 
-**Storage (Phase 5B):** canonical level in **`close`** (native units); `open`/`high`/`low`/`volume`/`adj_*`/`dividend_cash`/`split_factor` = **NULL**. Do not duplicate the level across OHLC fields.
+**Storage:** canonical level in **`close`** (native units); `open`/`high`/`low`/`volume`/`adj_*`/`dividend_cash`/`split_factor` = **NULL**. Do not duplicate the level across OHLC fields. Never fabricate OHLC from close. Negative prices allowed when the provider reports them (WTI).
 
 | Symbol | Definition | Units | Status |
 | --- | --- | --- | --- |
-| `WTI` | EIA Cushing WTI **spot** (FRED DCOILWTICO) | USD/barrel | **LOCKED** |
-| `XAU/USD` | USD gold per troy oz (LBMA PM fix target) | USD/troy oz | **UNRESOLVED** source |
-| `DXY` | ICE U.S. Dollar Index | index points | **UNRESOLVED** source |
+| `WTI` | EIA Cushing WTI **spot** (FRED DCOILWTICO) | USD/barrel | **IMPLEMENTED** (from 1986-01-02; no forward-fill) |
+| `XAU/USD` | USD gold per troy oz (LBMA PM fix target) | USD/troy oz | **UNRESOLVED** source — not ingested |
+| `DXY` | ICE U.S. Dollar Index | index points | **UNRESOLVED** source — not ingested |
 
-**Derived fields (close-only path, Phase 5B):** `return_1d` and `drawdown_from_high` from `close`; `gap_pct`/`intraday_return`/`range_pct` NULL when OHLC absent.
+**Derived fields (close-only path):** `return_1d` and `drawdown_from_high` from `close`; `gap_pct`/`intraday_return`/`range_pct` NULL when OHLC absent.
 
 ---
 
@@ -404,7 +400,7 @@ These symbols share `daily_market_data` grain but often provide **one daily leve
 
 These values were **NOT information available on `date`**. They may be joined to historical dates for research/labeling, but must never be treated as contemporaneous inputs.
 
-Calculations use retrospectively normalized adjusted OHLC from canonical `daily_market_data` (same Phase 2B integrity distinction).
+Calculations use retrospectively normalized adjusted OHLC from canonical `daily_market_data` (same raw-vs-adjusted integrity distinction).
 
 **Grain:** `date × symbol`  
 **Horizon indexing:** `t+N` = the Nth subsequent `daily_market_data` row for the **same symbol**, ordered by `date` ascending — not calendar arithmetic and not a bare `trading_days` offset when a bar is missing.
@@ -468,7 +464,7 @@ PostgreSQL `BOOLEAN` (nullable).
 
 It must **not** use `market_outcomes` or any future observations.
 
-Adjusted OHLC is retrospectively normalized economic history under Tiingo's current adjustment methodology. Adjusted-derived regime measures are historically continuous economic series, not necessarily values published in that adjusted form on date `t` (same Phase 2B distinction).
+Adjusted OHLC is retrospectively normalized economic history under Tiingo's current adjustment methodology. Adjusted-derived regime measures are historically continuous economic series, not necessarily values published in that adjusted form on date `t` (same raw-vs-adjusted distinction).
 
 **Grain:** `date × symbol`  
 **Indexing:** `t-N` = Nth previous same-symbol observation by `date` ascending.
@@ -550,7 +546,7 @@ Uses canonical `daily_market_data.return_1d`. Explicit `ddof = 1`. First `return
 
 ## `drawdown_pct`
 
-Identical to Phase 2B `daily_market_data.drawdown_from_high`:
+Identical to `daily_market_data.drawdown_from_high`:
 
 ```text
 historical_high_t = MAX(adj_close through t)
@@ -619,13 +615,15 @@ Semantic equal-frequency categories. Never use future volatility, full-sample ra
 
 One row per `trading_days.date`. Values on date `t` use only information publicly available by `t`.
 
-**Phase 4A contract:** `StockBallDB_phase4a_macro_contract.md` (authoritative source/PIT/alignment lock).
+**Overriding PIT rule:** for historical trading date `t`, every `macro_conditions` value must represent information knowable **no later than** `t`. Never copy a future release backward, use today's revised history where ALFRED is required, or treat reference month as availability month.
 
 **PMI:** **UNRESOLVED** — deferred from V1; column omitted (no satisfactory freely reproducible source).
 
-## Units (Phase 4A lock)
+## Units
 
 Macro **rate/spread/YoY** fields use **percentage points** (`3.0` = 3%), not decimal `0.03`. Jobless claims = persons; WALCL = millions USD.
+
+CPI / core CPI store **computed YoY %** from PIT **index levels** via ALFRED: `(index_t / index_t-12 - 1) × 100` — not an opaque pre-computed FRED YoY series.
 
 ## Series map (locked)
 
@@ -639,7 +637,7 @@ Macro **rate/spread/YoY** fields use **percentage points** (`3.0` = 3%), not dec
 | `treasury_2y_yield` | DGS2 | %; no history before 1976-06-01 |
 | `treasury_10y_yield` | DGS10 | % |
 | `fed_balance_sheet` | WALCL | Total Fed assets, millions USD |
-| `credit_spread` | BAA10Y | Baa − 10Y Treasury, %; current FRED only (see Phase 4A caveats) |
+| `credit_spread` | BAA10Y | Moody's Baa − 10Y Treasury spread as published by FRED (% pp); current FRED daily only (no ALFRED in V1); history from ~1986. Do **not** recompute as manual `BAA − DGS10` in StockBallDB. |
 
 ## Availability & forward-fill
 
@@ -660,7 +658,7 @@ Percentage points (`1.00` = 100 bp). NULL if either leg NULL. Derived in StockBa
 
 ## `inflation_regime` / `rate_regime`
 
-**Phase 4A scope:** observed inputs only — regime definitions are **not re-locked** in Phase 4A. Below documents existing V1 behavior for reference; deliberate redesign is a future phase.
+Observed macro inputs are locked above. Regime thresholds below document **existing V1 behavior**.
 
 ### `inflation_regime`
 
@@ -712,9 +710,9 @@ Examples: `fomc:2020-04-29:NA:MARKET`, `cpi:2020-03-11:2020-02:MARKET`,
 | `employment_situation` | BLS Employment Situation **news-release occurrence** (not ICSA/jobless claims). |
 | `election` | U.S. presidential or midterm **general Election Day** only. |
 
-**Deferred:** `earnings`; unscheduled Fed actions; consensus expectations; surprise values; `importance` ratings.
+**Deferred / rejected as event columns:** `earnings`; unscheduled Fed actions; `actual` / `previous` / `consensus` / `surprise` / `importance` (macro **values** live in `macro_conditions`, not here).
 
-Phase 6A PIT contract: `StockBallDB_phase6a_scheduled_events_contract.md` — occurrence vs reference period, timezone rules, schedule-revision limits, Phase 6B readiness.
+Occurrence vs reference period, timezone, and schedule-revision rules: this section + [StockBallDB_sources.md](StockBallDB_sources.md).
 
 Do not use ambiguous `jobs`.
 
@@ -734,6 +732,8 @@ V1: always `NULL` (market-wide). Never fan out one macro/Fed/election event acro
 
 ## `release_session` / `event_time_et`
 
+Times are **America/New_York** (Eastern, including DST). Never assert a naked clock time without that timezone contract.
+
 | Type | Session | Time |
 | --- | --- | --- |
 | CPI / Employment Situation from 1990-01-01 | `pre_open` | `08:30` ET when convention is treated as justified; else time `NULL` |
@@ -741,6 +741,8 @@ V1: always `NULL` (market-wide). Never fan out one macro/Fed/election event acro
 | FOMC from 2013-03-20 | `during_session` | `14:00` ET (Fed 2013-03-13 standardization) |
 | FOMC before 2013-03-20 | `unknown` | `NULL` (do not infer modern convention) |
 | Election | `unknown` | `NULL` (all-day statutory event) |
+
+**Application uniqueness:** at most one row per `(event_type, event_date, reference_period, symbol)` (encoded in `event_id`).
 
 ## Coverage semantics
 
@@ -757,9 +759,11 @@ No “no-event” rows. Within validated coverage for a type, absence ⇒ no qua
 
 One row per `trading_days.date` (exact 1:1). Deterministic trading-day context derived from `trading_days`, pinned NYSE calendar metadata, and `scheduled_events`.
 
-**Phase 7A contract:** `StockBallDB_phase7a_calendar_context_contract.md` — authoritative audit, boundary, effective-session rules, PIT classification.
+**Ownership:** intrinsic spine fields stay on `trading_days`; context relationships live here — do not duplicate weekday/month/ordinals.
 
-**Not in V1:** `days_to_next_*`, `days_to_tax_deadline`, `is_payday_period`, `is_election_period`, earnings windows, broad pre/post event windows.
+**Not in V1:** `days_to_next_*` / `days_until_next_*` (PIT-unsafe), `days_to_tax_deadline`, `is_payday_period`, `is_election_period`, earnings windows, broad pre/post event windows, research constructs (Monday effect, Santa Claus, impact scores).
+
+**`release_session` is not used** by `calendar_context` for macro availability — session-availability belongs in macro PIT alignment.
 
 ## Holiday / session
 
@@ -807,12 +811,17 @@ if event_date is a trading day:
 else:
   effective_session = first trading day strictly after event_date
 
+# Deduplicate: multiple off-calendar events that share the same effective_session
+# collapse to one anchor before indexing.
+
 days_since = index(date) - index(effective_session)   # 0 on effective session
 ```
 
 `NULL` before the first known event of that type. No future events. No `release_session` remapping.
 
-Forward `days_to_next_*` deferred: Phase 2F is an occurrence calendar, not complete advance-schedule PIT knowledge.
+Calendar month/quarter/year **end flags** mean the last **trading session** of that calendar period — not the calendar period’s last civil date when that date is a weekend/holiday.
+
+Forward `days_to_next_*` are **rejected** (PIT-unsafe): StockBallDB stores an occurrence calendar, not complete advance-schedule knowability.
 
 ---
 
@@ -911,8 +920,6 @@ Therefore, material definition changes must be:
 2. documented;
 3. version controlled;
 4. reflected in the relevant pipeline;
-5. reproducible during a full database rebuild.
-
-During the initial schema-population phase, definitions marked **TBD** should be resolved using actual source data and documented decisions rather than silently assumed.
+5. reproducible during a full database rebuild (including exact rebuild where Manifest 1.1 + snapshots apply).
 
 > **A field name tells us what a value is called. This document tells us exactly what that value means.**

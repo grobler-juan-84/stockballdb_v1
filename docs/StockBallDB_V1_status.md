@@ -1,8 +1,9 @@
 # StockBallDB — V1 Status
 
 **Version:** V1  
-**Status:** RELEASE CANDIDATE — pending final baseline declaration  
-**Purpose:** Concise statement of what StockBallDB V1 contains, what has been completed, and what remains intentionally outside or unresolved.
+**Status:** V1 COMPLETE — CERTIFIED BASELINE  
+**Certification date:** 2026-09-11  
+**Purpose:** Concise statement of what StockBallDB V1 contains, what has been completed, what V1 guarantees, known limitations, and what remains intentionally outside or unresolved.
 
 ---
 
@@ -18,11 +19,11 @@ The objective was to prove that StockBallDB can reliably:
 
 historical market and market-context data while maintaining explicit definitions, provenance, point-in-time discipline, and reproducibility.
 
-That foundation is now implemented.
+That foundation is now implemented and **certified**.
 
 ---
 
-## 2. Current V1 Database
+## 2. What V1 Contains
 
 StockBallDB contains seven canonical PostgreSQL tables:
 
@@ -34,9 +35,9 @@ StockBallDB contains seven canonical PostgreSQL tables:
 * `scheduled_events`
 * `calendar_context`
 
-The implemented market universe contains:
+The certified market universe contains **15 symbols**:
 
-* 14 U.S. equity ETFs
+* 14 U.S. equity ETFs: SPY, QQQ, IWM, XLB, XLC, XLE, XLF, XLI, XLK, XLP, XLU, XLV, XLY, XLRE
 * WTI spot crude oil
 
 The database also contains:
@@ -58,24 +59,24 @@ Their absence is not a V1 defect.
 
 ---
 
-## 3. V1 Infrastructure Completed
+## 3. What V1 Guarantees
 
-V1 includes:
+V1 includes and certifies:
 
 * PostgreSQL canonical storage
-* Alembic-controlled schema migrations
+* Alembic-controlled schema migrations (head `a8f3c2d1b4e5`)
 * Python acquisition and normalization pipelines
 * deterministic derivation
 * point-in-time macro handling
 * immutable content-addressed source snapshots
 * Manifest 1.1 build provenance
-* exact offline rebuild capability
+* exact offline rebuild capability (`exact_rebuild_capable: true`)
 * deterministic database fingerprints
-* whole-database validation
+* whole-database validation (`validate_v1`)
 * health and coverage reporting
-* operational database updates
+* operational database updates (`python -m stockballdb.update`)
 * provider revision handling through full-refetch-by-design
-* separated disposable test database for mutating integration tests
+* separated disposable test database for mutating integration tests (`STOCKBALLDB_TEST_DATABASE_URL`)
 * read-only local StockBallDB Explorer
 * automated pytest coverage
 * documented sources, definitions, schema, workflow, validation, and operational procedures
@@ -84,44 +85,61 @@ The repository is the reproducible recipe; preserved snapshots retain mutable so
 
 ---
 
-## 4. Current Certified Baseline
+## 4. Certified Baseline (2026-09-11)
 
-Current certification records:
+| Check | Result |
+| ----- | ------ |
+| Full pytest suite | **220 passed, 2 skipped, 0 failed** |
+| Explorer tests (within suite) | 70 collected/executed as part of suite |
+| `validate_v1` | **PASS** (`V1 VALID`) |
+| `health` | **HEALTHY** (WARNING/ERROR/FATAL = 0) |
+| Snapshot verification (latest successful manifest) | **PASS** — checked 91, missing 0, corrupt 0, invalid metadata 0 |
+| Snapshot verification (all referenced) | **PASS** — checked 455, missing 0, corrupt 0, invalid metadata 0 |
+| Exact rebuild capability | **True** (`exact_rebuild_capable`) |
+| Database fingerprint | `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca` |
+| Alembic head | `a8f3c2d1b4e5` (script head = DB revision) |
+| Explorer functional certification | Phase 11C completed (prior); primary fingerprint unchanged through this certification |
+| Primary mutation by pytest | **None** (fingerprint before = after) |
 
-| Check                             | Result                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| `validate_v1`                     | PASS                                                                      |
-| `health`                          | HEALTHY                                                                   |
-| Full pytest suite                 | 220 passed, 2 skipped                                                     |
-| Explorer tests                    | 70 passed                                                                 |
-| Explorer functional certification | Phase 11C completed                                                       |
-| Database fingerprint              | `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca` |
-| Snapshot verification             | 91 checked, 0 missing, 0 corrupt                                          |
-| Alembic head                      | `a8f3c2d1b4e5`                                                            |
-| Exact rebuild capability          | Supported                                                                 |
-| Explorer database mutation        | None                                                                      |
+### Health INFO findings (not failures)
 
-Current canonical coverage:
+| Code | Finding |
+| ---- | ------- |
+| `ETF_EXPECTED_LAG` | ETF expected lag: **1** trading session |
+| `WTI_EXPECTED_LAG` | WTI expected lag: **3** trading sessions |
+| `WTI_PROVIDER_GAP` | WTI provider gaps: **39** sessions, max consecutive **2** |
 
-| Dataset             | Coverage / Rows                       |
-| ------------------- | ------------------------------------- |
-| `trading_days`      | 1957-01-02 → 2026-08-31 — 17,533 rows |
-| `daily_market_data` | 99,633 rows                           |
-| `market_outcomes`   | 99,633 rows                           |
-| `asset_regimes`     | 99,633 rows                           |
-| `macro_conditions`  | 17,533 rows                           |
-| `calendar_context`  | 17,533 rows                           |
-| `scheduled_events`  | 2,641 rows                            |
+These are classified by the health system as INFO and are **not** integrity failures.
 
-Known health information includes expected ETF/provider publication lag and documented WTI provider gaps. These are classified by the health system and are not currently integrity failures.
+### Canonical coverage
+
+| Dataset | Coverage / Rows |
+| ------- | --------------- |
+| `trading_days` | 1957-01-02 → 2026-08-31 — **17,533** rows |
+| `daily_market_data` | 1986-01-02 → 2026-08-28 — **99,633** rows |
+| `market_outcomes` | 1986-01-02 → 2026-08-28 — **99,633** rows |
+| `asset_regimes` | 1986-01-02 → 2026-08-28 — **99,633** rows |
+| `macro_conditions` | 1957-01-02 → 2026-08-31 — **17,533** rows |
+| `calendar_context` | 1957-01-02 → 2026-08-31 — **17,533** rows |
+| `scheduled_events` | 1957-01-08 → 2026-08-12 — **2,641** rows |
+
+### Latest successful update / run
+
+| Field | Value |
+| ----- | ----- |
+| Run ID | `20260831T145447-9be32508` |
+| Status | `SUCCESS_UPDATED` |
+| `run_as_of` | `2026-08-31` |
+| Manifest | `build_reports/manifest_20260831T145447-9be32508.json` |
+| Fingerprint after | `sha256:5055ae10f216ff33141eb137fc396ce29481e896c3ea828983e4ca8b12291aca` |
 
 ---
 
-## 5. V1 Boundaries
+## 5. V1 Boundaries (explicitly outside)
 
 StockBallDB V1 ends at trusted historical data.
 
-It does not perform:
+It does **not** perform:
 
 * hypothesis discovery
 * experiments
@@ -139,18 +157,19 @@ StockBallDB itself must remain experiment-agnostic.
 
 ---
 
-## 6. Intentionally Unresolved / Deferred
+## 6. Known Limitations / Deferred (not defects)
 
-The following do not prevent V1 completion:
+The following do **not** prevent V1 completion:
 
 * XAU/USD — canonical definition established; acceptable source unresolved
 * DXY — canonical definition established; acceptable source unresolved
 * PMI — acceptable reproducible source unresolved
 * future universe expansion
 * hosted PostgreSQL / Supabase
-* automated scheduled updates
+* automated scheduled triggering of `update` (the update command itself is implemented)
 * additional datasets and indicators
 * research and experimentation systems
+* Phase 11D Explorer desktop presentation: implemented; manual UX certification still pending (functional/read-only Explorer already certified in 11C)
 
 StockBallDB is intended to grow after V1. V1 completion does not mean the database is permanently finished.
 
@@ -158,33 +177,13 @@ It means the foundation is sufficiently trustworthy, reproducible, maintainable,
 
 ---
 
-## 7. Remaining V1 Closeout
+## 7. Post-certification rule
 
-Before declaring the V1 baseline final:
+Subsequent material database, schema, universe, or provenance changes are **post-V1 evolution**.
 
-1. Normalize stale version/status headers in surviving canonical documentation.
-2. Confirm the test-database separation and repair decisions are documented.
-3. Run the final V1 certification procedure against the canonical database.
-4. Record the resulting fingerprint, validation, health, tests, snapshot status, and coverage as the final V1 baseline.
-5. Tag / commit the final V1 baseline in Git.
+Future development begins from this certified baseline. Do not reopen V1 as unfinished implementation work without a deliberate version decision.
 
-After these gates pass, change this document to:
-
-**Status: V1 COMPLETE — CERTIFIED BASELINE**
-
-and treat subsequent material database changes as post-V1 evolution.
-
----
-
-## 8. Completion Definition
-
-V1 is complete when we can credibly say:
-
-> StockBallDB has a validated, reproducible, updatable, provenance-aware historical database; its canonical data can be rebuilt and independently inspected; its operational and test environments are safely separated; and future exploration can build on it without changing its responsibility into a research or trading system.
-
-At that point, V2 can begin from a stable foundation.
-
-V2 should focus on:
+V2 (when started) should focus on:
 
 **view → filter → explore → inspect**
 
@@ -192,11 +191,17 @@ V2 should focus on:
 
 ---
 
+## 8. Completion Definition (satisfied)
+
+> StockBallDB has a validated, reproducible, updatable, provenance-aware historical database; its canonical data can be rebuilt and independently inspected; its operational and test environments are safely separated; and future exploration can build on it without changing its responsibility into a research or trading system.
+
+---
+
 ## Related documents
 
 | Topic | Document |
 | ----- | -------- |
-| Validation & current certification detail | [StockBallDB_validation.md](StockBallDB_validation.md) |
+| Validation & certification detail | [StockBallDB_validation.md](StockBallDB_validation.md) |
 | Lifecycle / build vs update | [StockBallDB_workflow.md](StockBallDB_workflow.md) |
 | Operational update & test-DB boundary | [StockBallDB_operational_update.md](StockBallDB_operational_update.md) |
 | Snapshots & exact rebuild | [StockBallDB_snapshots_and_rebuilds.md](StockBallDB_snapshots_and_rebuilds.md) |

@@ -47,6 +47,14 @@ Two-char shard prefix avoids huge flat directories. Relative paths in manifests 
 
 **Atomic write:** temp path → verify SHA-256 → rename to content-addressed final path → write sidecar only after payload verified. Failed retrieval must not leave a valid-looking final object.
 
+**Sidecar `.meta.json` (required fields include):** `snapshot_id`, `sha256`, `provider`, `source_identifier`, `source_type`, `retrieved_at`, `content_type`, `byte_size`, `encoding`, `request_identity`, `payload_path` (plus pagination metadata when applicable).
+
+**Pre-normalize checks:** hash OK; payload readable; content-type/structure plausible; not an error page; `request_identity` matches the intended request.
+
+**Not a canonical snapshot:** failed HTTP (4xx/5xx/timeout) and obvious error HTML — diagnostic only; do not treat as authoritative payload. Empty Tiingo `200` JSON list is a **build FAIL**, not an empty successful snapshot.
+
+**Retention:** snapshots referenced by a successful Manifest 1.1 are retained indefinitely (immutable). Do not prune objects still referenced by capable manifests.
+
 **Secrets:** never in sidecars or manifests (no API keys, Authorization headers, authenticated URLs, DB credentials). Sanitize `request_identity` and reuse secret-scan patterns.
 
 ---
@@ -191,13 +199,13 @@ Stored on successful 1.1 manifests; REBUILD EXACT must match.
 ```text
 python -m stockballdb.build_v1
 python -m stockballdb.build_wti
-python -m stockballdb.snapshots verify
-python -m stockballdb.snapshots verify --manifest build_reports/manifest_<id>.json
+python -m stockballdb.snapshots
+python -m stockballdb.snapshots --manifest build_reports/manifest_<id>.json
 python -m stockballdb.fingerprint
 python -m stockballdb.rebuild_exact --manifest build_reports/manifest_<id>.json --database-url ...
 ```
 
-`snapshots verify` exits non-zero on missing, corrupt, or invalid metadata.
+`python -m stockballdb.snapshots` exits non-zero on missing, corrupt, or invalid metadata.
 
 ---
 

@@ -363,3 +363,15 @@ Updated schema/sources/definitions/Tech_stack headers and stale planning languag
 ## Step 91 — Add StockBallDB V1 status document
 
 Created docs/StockBallDB_V1_status.md as RELEASE CANDIDATE status (scope, infrastructure, certified baseline, boundaries, unresolved items, remaining closeout). Linked from docs index and README.
+
+## Step 92 — Final V1 certification attempt (blocked)
+
+Ran read-only primary gates: Alembic head MATCH a8f3c2d1b4e5; validate_v1 PASS; health HEALTHY (3 INFO: ETF lag 1, WTI lag 3, WTI gaps 39/max 2); fingerprint MATCH sha256:5055ae10...; latest-manifest snapshot verify 91/0/0 PASS; exact_rebuild_capable true. Did NOT run pytest: STOCKBALLDB_TEST_DATABASE_URL unset. Left StockBallDB_V1_status.md as RELEASE CANDIDATE. No commit/tag/push.
+
+## Step 93 — Configure isolated STOCKBALLDB_TEST_DATABASE_URL
+
+Created disposable PostgreSQL database stockballdb_test and set STOCKBALLDB_TEST_DATABASE_URL in local .env. Verified host/port/db isolation from primary stockballdb (and rebuild DB). Test DB empty (0 public tables). No pytest; no primary mutation; no commit.
+
+## Step 94 — Final V1 certification PASSED
+
+Safety precheck PASS (primary stockballdb vs test stockballdb_test). Pytest 220 passed / 2 skipped / 0 failed. validate_v1 PASS; health HEALTHY (3 INFO); snapshots latest 91/0/0 and all-referenced 455/0/0 PASS; exact_rebuild_capable true; fingerprint MATCH sha256:5055ae10... before and after pytest; Alembic a8f3c2d1b4e5. Updated StockBallDB_V1_status.md to V1 COMPLETE — CERTIFIED BASELINE (2026-09-11); fixed snapshots CLI wording; synced validation.md baseline. No commit/tag/push.
