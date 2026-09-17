@@ -4,13 +4,22 @@ StockBallDB is a **historical financial and market-context database**: acquisiti
 
 It is **not** an experiment, strategy, prediction, or trading-decision system.
 
-Start here when you need the right document. Git history is the archive of how V1 was built; these docs describe **how StockBallDB works now**.
+Start here when you need the right document. Git history is the archive of how V1 was built; these docs describe **how StockBallDB works now**, plus V2 planning authorities.
 
-## Canonical documents
+## Documentation model
+
+StockBallDB uses a **Canonical + historical + V2 working** documentation model:
+
+| Layer | Role |
+| ----- | ---- |
+| **Canonical** | Current-system authorities. Change only when the implemented system changes. |
+| **Historical / version** | Certified baselines preserved as history (do not rewrite). |
+| **V2 working / governance** | Scope, decisions, progress, and deferred ideas during V2 development. |
+
+## Canonical documents (current system)
 
 | Document | Responsibility |
 | -------- | -------------- |
-| [StockBallDB_V1_status.md](StockBallDB_V1_status.md) | V1 scope, completed foundation, certified baseline snapshot, boundaries, remaining closeout |
 | [StockBallDB_manifesto.md](StockBallDB_manifesto.md) | Purpose, boundaries, PIT philosophy, provenance, reproducibility, architectural principles |
 | [StockBallDB_universe.md](StockBallDB_universe.md) | Implemented symbols and unresolved candidates (XAU/USD, DXY) |
 | [StockBallDB_schema.md](StockBallDB_schema.md) | Seven canonical tables, grains, keys, row-shape constraints |
@@ -23,11 +32,32 @@ Start here when you need the right document. Git history is the archive of how V
 | [StockBallDB_operational_update.md](StockBallDB_operational_update.md) | Safe `python -m stockballdb.update`, locks, gates, recovery |
 | [StockBallDB_explorer.md](StockBallDB_explorer.md) | Read-only Explorer: architecture, six pages, safety, certification |
 
+## Historical / version documents
+
+| Document | Responsibility |
+| -------- | -------------- |
+| [StockBallDB_V1_status.md](StockBallDB_V1_status.md) | **Certified V1 baseline** — V1 scope, completed foundation, certification snapshot, boundaries, deferred items |
+
+A future `StockBallDB_V2_status.md` will be created only when V2 reaches certification.
+
+## V2 working / governance documents
+
+| Document | Responsibility |
+| -------- | -------------- |
+| [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) | **Authoritative V2 scope** — inspection/management boundary vs research/experiment |
+| [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) | **V2 decision log** — locked/proposed decisions, rationale, consequences |
+| [StockBallDB_V2_progress.md](StockBallDB_V2_progress.md) | **Current V2 progress / status** — roadmap, completed, next |
+| [StockBallDB_future.md](StockBallDB_future.md) | **Deferred beyond V2** — research/experiment and other parked ideas (not promised) |
+
 ## Routing
 
 | Need | Open |
 | ---- | ---- |
-| V1 status / what is in or out of V1 | V1_status |
+| V1 certified baseline / what is in or out of V1 | V1_status |
+| V2 scope / what V2 may and may not do | V2_scope |
+| V2 decisions (locked vs proposed) | V2_decisions |
+| Where V2 stands / roadmap / next task | V2_progress |
+| Deferred research or post-V2 ideas | future |
 | Why StockBallDB exists / operating rules | manifesto |
 | Which symbols are implemented vs unresolved | universe |
 | Table layout, keys, constraints | schema |
@@ -38,4 +68,4 @@ Start here when you need the right document. Git history is the archive of how V
 | Health, validate_v1, fingerprint, certification | validation |
 | Snapshots and exact rebuild | snapshots_and_rebuilds |
 | Day-to-day update operations | operational_update |
-| Local read-only inspection UI | explorer |
+| Local read-only inspection UI (V1 Explorer) | explorer |

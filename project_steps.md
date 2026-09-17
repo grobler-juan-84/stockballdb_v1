@@ -379,3 +379,7 @@ Safety precheck PASS (primary stockballdb vs test stockballdb_test). Pytest 220 
 ## Step 95 — Push docs consolidation and V1 certification to GitHub
 
 Pushed local main to origin/main (f721034..4c2ff3f), including documentation consolidation, V1 COMPLETE certification status, and related process-log updates. Branch up to date with origin.
+
+## Step 96 — Establish StockBallDB V2 documentation structure
+
+Created V2 working docs: `StockBallDB_V2_scope.md` (locked scope), `StockBallDB_V2_decisions.md` (three locked decisions), `StockBallDB_V2_progress.md` (roadmap), and `StockBallDB_future.md` (deferred parking). Updated `StockBallDB_index.md` for Canonical + historical + V2 working model. Documentation only — no application/code/database changes.

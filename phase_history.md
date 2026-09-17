@@ -491,3 +491,10 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 **Problems:** Mid-11C spine drift from mutating pytest against primary (restored via update `20260831T145447-9be32508`); mitigated by `STOCKBALLDB_TEST_DATABASE_URL` guard. Stale health limitation text still says “No raw snapshot archive (Phase 9)” — non-blocking docs debt.
 **Remember:** Prefer adapting Explorer to certified health APIs; Streamlit date_input needs explicit min/max; Explorer mocks must match real signatures. Phase 11D is a presentation refinement after 11C — do not confuse UI polish with functional re-certification until 11D manual cert completes.
 
+## Phase 12 — StockBallDB V2 Planning
+
+**Status:** IN PROGRESS — V2 documentation structure established; architecture not yet chosen
+
+- Locked V2 scope and created V2 working docs (`V2_scope`, `V2_decisions`, `V2_progress`, `future`); index updated for Canonical + historical + V2 working model.
+- Next major planning task: choose V2 application architecture (no stack locked yet).
+
