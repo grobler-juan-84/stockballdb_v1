@@ -391,3 +391,7 @@ Recorded eight locked architecture decisions in `StockBallDB_V2_decisions.md` (P
 ## Step 98 — Design V2 backend/application architecture
 
 Created `docs/StockBallDB_V2_architecture.md` (façade, Layer A/B/C, read vs maintenance, universe service, maintenance adapters, package sketch, diagrams). Locked corresponding application-architecture decisions; updated scope, progress, and index. Documentation only — no `stockballdb.app` package or code changes.
+
+## Step 99 — Lock React frontend and localhost HTTP communication architecture
+
+Locked React as V2/V3 forward-facing UI (Streamlit retained as V1); locked localhost-only HTTP JSON transport over `stockballdb.app`; documented alternatives, read/maintenance flows, contracts, frontend tiers, and open packaging choices in `StockBallDB_V2_architecture.md` / decisions / progress / scope. Documentation only — no React, transport server, or façade implementation.

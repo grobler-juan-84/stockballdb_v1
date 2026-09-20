@@ -1,33 +1,46 @@
 # StockBallDB — V2 Architecture
 
-**Status:** Working architecture baseline (backend / application layer)  
-**Authority:** Detailed V2 application architecture; lockable decisions also recorded in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md)  
+**Status:** Working architecture baseline (backend / application / React communication)  
+**Authority:** Detailed V2 application + frontend communication architecture; lockable decisions also recorded in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md)  
 **Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 progress](StockBallDB_V2_progress.md) · [V1 status](StockBallDB_V1_status.md) · [explorer](StockBallDB_explorer.md) · [workflow](StockBallDB_workflow.md)
 
-This document designs the **V2 backend / application architecture** around the certified V1 system. It is not an implementation plan for UI technology, universe file format, GitHub auth, backup format, or packaging.
+This document designs the **V2 backend / application architecture** and the **React ↔ Python communication architecture** around the certified V1 system. It is not an implementation plan for universe file format, GitHub auth, backup format, desktop packaging (Electron vs Tauri), endpoint schemas, or UI styling.
 
-**No V2 application packages are created yet.** Package paths below are proposed targets.
+**No V2 application packages, React app, or transport server are created yet.** Paths below are proposed targets.
 
 ---
 
 ## 1. Design verdict
 
-V2 should introduce a **thin in-process application façade** between any future UI and existing StockBallDB capabilities.
+V2 adds a **thin in-process Python application façade** and, for the React UI, a **thin localhost-only HTTP transport** on top of that façade.
 
 ```text
-V2 UI (technology undecided)
-  → stockballdb.app  (NEW: use-case façade; read vs maintenance)
-    → existing V1 domain / explorer / orchestration capabilities
-      → PostgreSQL / providers / snapshots / filesystem / (later) GitHub universe transport
+V1 (preserved):
+  Streamlit Explorer → existing V1 services/core → PostgreSQL
+
+V2:
+  React UI
+    → frontend application client
+      → localhost-only HTTP JSON transport  (NEW: thin; not the business layer)
+        → stockballdb.app façade  (NEW: use-case layer; read vs maintenance)
+          → existing V1 domain / data / orchestration
+            → PostgreSQL / providers / snapshots / filesystem / (later) GitHub universe transport
+
+V3 / StockBallAPP (future):
+  React UI (same boundary)
+    → same transport + expanded application façade
+      → StockBallDB core + future research capabilities
 ```
 
-This matches V1 reality:
+Principles:
 
-* Explorer already has Streamlit-independent `explorer/services`, allowlisted `queries` + `registry`, and dedicated read-only DB access.
-* Build/update/rebuild/validate/health/fingerprint already expose callable Python APIs.
-* The main gaps for V2 are: a coherent **application boundary**, **read vs mutate safety**, a **portable universe service**, and **maintenance adapters** suitable for a desktop UI — not a rewrite of pipelines or schema.
+* Evolve V1; do not rewrite core pipelines/schema.
+* React is the forward-facing V2/V3 UI; Streamlit remains the certified V1 Explorer (legacy/reference/diagnostic).
+* Business logic lives in `stockballdb.app`, not in React and not in HTTP handlers.
+* Transport exists because React is a separate language/process — not because StockBallDB is becoming SaaS.
+* Do not build enterprise job platforms, auth systems, or cloud APIs for V2.
 
-Do **not** introduce an HTTP API or local server merely because a non-Streamlit UI might be chosen later. Transport is a later decision; the logical boundary is an in-process Python application layer.
+Earlier planning deferred HTTP while the UI technology was open. **React creates a real process boundary**; the cleanest fit is now a **local HTTP JSON API wrapping the façade**, bound to localhost only.
 
 ---
 
@@ -294,12 +307,17 @@ Remains the offline, snapshot/manifest-driven reproduction path (`run_rebuild_ex
 
 ---
 
-## 11. UI independence
+## 11. UI and transport relationship
 
-* Backend boundary = **in-process Python application façade**.
-* UI technology (Streamlit / React / Electron / Tauri / etc.) remains **open**.
-* Do not add HTTP/RPC now.
-* If a future UI needs out-of-process access, add transport **on top of** the same façade — do not fork business logic into the UI.
+* **Business boundary** = in-process Python `stockballdb.app` façade (unchanged).
+* **Forward-facing UI** = React (locked for V2 and intended for V3/StockBallAPP).
+* **V1 Streamlit Explorer** remains available; do not delete or rewrite it merely for V2.
+* **Transport** = thin **localhost-only HTTP JSON API** that calls the façade. Handlers must not contain domain logic.
+* Packaging (Electron vs Tauri vs other) remains open; any shell should start/stop the local Python process and host or load the React UI.
+
+```text
+React  →  Application Client (TS)  →  localhost HTTP  →  transport adapters  →  stockballdb.app  →  V1 core
+```
 
 ---
 
@@ -308,33 +326,46 @@ Remains the offline, snapshot/manifest-driven reproduction path (`run_rebuild_ex
 Minimal evolutionary layout (proposed — **do not create yet**):
 
 ```text
-src/stockballdb/app/                 # NEW — Layer A
+src/stockballdb/app/                 # NEW — Layer A (use-cases)
   read/
-    catalog.py                       # symbols/fields/metadata
-    explore.py                       # browse/filter/compare
-    day.py                           # day inspect
-    status.py                        # health/validate/fingerprint/coverage/provenance (read)
+    catalog.py
+    explore.py
+    day.py
+    status.py
   maintenance/
-    build.py                         # Fresh Build adapter
-    update.py                        # Update adapter
-    rebuild.py                       # Exact Rebuild adapter
-    backup.py                        # Backup/Restore boundary (later impl)
+    build.py
+    update.py
+    rebuild.py
+    backup.py
   universe/
-    service.py                       # definition load/compare/sync façade
-  connections.py                     # read vs write policy helpers
-  results.py                         # shared result/error types
+    service.py
+  connections.py
+  results.py                         # structured results / error types (transport-agnostic)
+
+src/stockballdb/transport/           # NEW — thin local HTTP adapters (not business logic)
+  http/                              # localhost ASGI app wrapping app.* 
+    ...                              # framework choice open (FastAPI likely)
+
+frontend/                            # NEW — React app root name open
+  src/
+    features/                        # pages/workflows
+    components/                      # shared UI
+    client/                          # application client → HTTP
+    app/                             # shell / routing
 ```
 
 | Item | Classification |
 | ---- | -------------- |
 | `models/*`, domain pipelines, providers, `v1/stages`, `validate_v1`, `health`, `fingerprint`, `snapshots`, `rebuild_exact`, `update/orchestrator` | **Keep unchanged** (extend only when required) |
-| `explorer/queries`, `registry`, `explorer/db`, `explorer/services/*` | **Wrap/adapt** as read foundation; extend queries for multi-symbol as needed |
-| `market_data/universe.py` | **Wrap/adapt** → eventually fed by portable definition |
-| `explorer/views`, `explorer/ui`, `explorer/app` | V1 presentation; **not** the long-term façade (may remain until UI replacement) |
+| `explorer/queries`, `registry`, `explorer/db`, `explorer/services/*` | **Wrap/adapt** as read foundation |
+| `market_data/universe.py` | **Wrap/adapt** → portable definition later |
+| `explorer/views`, `explorer/ui`, `explorer/app` | **Keep** as V1 Streamlit Explorer |
 | `stockballdb/app/*` | **New V2 capability** (façade) |
+| `stockballdb/transport/*` | **New V2 capability** (thin local HTTP) |
+| React `frontend/` | **New V2 capability** |
 | Portable universe file + GitHub transport | **New V2 capability** (format/transport open) |
 | Backup/Restore implementation | **New V2 capability** (format open) |
-| Moving domain code into new packages / renaming V1 | **Possible later refactor** — not required to start V2 |
+| Moving domain code / renaming V1 | **Possible later refactor** |
 
 ---
 
@@ -343,18 +374,22 @@ src/stockballdb/app/                 # NEW — Layer A
 Desired:
 
 ```text
-UI → app (Layer A) → domain/data services (Layer B) → infrastructure (Layer C)
+React (presentation)
+  → frontend client (Tier 3)
+    → localhost HTTP transport
+      → stockballdb.app (Layer A)
+        → domain/data (Layer B)
+          → infrastructure (Layer C)
 ```
 
 Rules:
 
-* Infrastructure never imports UI or `app`.
-* Domain/data packages should not import Streamlit or `app`.
-* `app` may import existing V1 modules.
-* Existing V1 is not perfectly layered today (orchestrators talk to infrastructure directly). **Do not mass-refactor** for purity; new code should follow the direction above.
-* Avoid unnecessary ports/adapters/interfaces for a personal local app — thin functions/modules are enough.
-
-Useful inversion: UI depends on façade abstractions, not on PostgreSQL or Tiingo. Unnecessary inversion: abstracting every domain function behind interfaces with no second implementation.
+* Infrastructure never imports UI, React, or transport.
+* Domain/data packages should not import Streamlit, React, transport, or `app`.
+* `app` must not import React or HTTP framework types (keep façade transport-agnostic).
+* Transport may import `app` and map HTTP ↔ result DTOs.
+* React imports only the frontend client — never Python modules, SQL, or env files directly.
+* Avoid unnecessary abstraction for a personal local app.
 
 ---
 
@@ -364,61 +399,61 @@ Useful inversion: UI depends on façade abstractions, not on PostgreSQL or Tiing
 
 ```text
 User
-  → UI (undecided)
-    → app.read (Catalog / Explore / Day / Status)
-      → explorer services + queries + registry  (or evolved equivalents)
-        → read-only PostgreSQL connection
-      → (Status also) validate_v1 / health / fingerprint / artifacts filesystem
+  → React feature (Explorer / Day / Status / …)
+    → frontend application client
+      → localhost HTTP (read routes)
+        → stockballdb.app.read (Catalog / Explore / Day / Status)
+          → explorer services + queries + registry
+            → read-only PostgreSQL
+          → validate_v1 / health / fingerprint / artifacts (Status)
 ```
 
 ### B. V2 Update path
 
 ```text
 User
-  → UI
-    → app.maintenance.update
-      → optional app.universe status/sync check  (definition only)
-      → update.orchestrator.run_update  (adapter)
-        → v1 UPDATE_STAGES → providers / snapshots / domain pipelines
-          → PostgreSQL (write engine)
-        → validate_v1 → health → fingerprint → manifest / run report
+  → React Maintenance feature
+    → frontend client
+      → localhost HTTP (maintenance start / status)
+        → app.maintenance.update
+          → optional app.universe check/sync (definition only)
+          → update.orchestrator.run_update
+            → providers / snapshots / domain pipelines
+              → PostgreSQL (write)
+            → validate / health / fingerprint / manifest
 ```
 
 ### C. V2 Fresh Build path
 
 ```text
 Fresh installation
-  → configure machine settings + obtain universe definition
-    → app.maintenance.build  (Fresh Build adapter)
-      → build_v1.run_build_v1 / BUILD_STAGES
-        → migrate → acquire → derive → persist
-          → PostgreSQL
-        → validate / health / fingerprint / manifest
+  → configure settings + universe definition
+    → React (or first-run flow) → HTTP → app.maintenance.build
+      → build_v1 / BUILD_STAGES → PostgreSQL
+      → validate / health / fingerprint / manifest
 ```
 
 ### D. Exact Rebuild path (preserved)
 
 ```text
-User / operator
-  → app.maintenance.rebuild
-    → rebuild_exact.run_rebuild_exact
-      → verify manifest snapshots → offline replay
-        → migrate → truncate → BUILD_STAGES from snapshots
-          → validate / health / fingerprint match
+User → React → HTTP → app.maintenance.rebuild → rebuild_exact.run_rebuild_exact
+  → verify snapshots → offline replay → fingerprint match
 ```
-
-Isolated from Fresh Build and Backup/Restore.
 
 ### E. Backup / Restore path (boundary only)
 
 ```text
-User
-  → app.maintenance.backup | restore
-    → (future) infrastructure backup helper
-      → local PostgreSQL data directory / dump / archive  [format TBD]
+User → React → HTTP → app.maintenance.backup|restore → (future) backup helper → local PostgreSQL [format TBD]
 ```
 
-Distinct from Fresh Build, Update, and Exact Rebuild.
+### F. Process model (local)
+
+```text
+[Desktop shell — packaging TBD]
+   ├── React UI (static build or dev server)
+   └── Python local service (transport + app + V1)
+          └── PostgreSQL (local)
+```
 
 ---
 
@@ -426,26 +461,223 @@ Distinct from Fresh Build, Update, and Exact Rebuild.
 
 | Requirement | Satisfied? |
 | ----------- | ---------- |
-| Evolution not rewrite | Yes — façade + adapters |
+| Evolution not rewrite | Yes — façade + thin transport + React |
 | PostgreSQL retained | Yes |
-| Local-first / personal desktop | Yes — in-process; no SaaS |
-| Portability / reconstructability | Yes — Fresh Build + Update + Backup + Exact Rebuild boundaries |
-| GitHub-distributed universe | Yes at architecture level; format/transport open |
-| Fresh Build / Update / Backup / Exact Rebuild | Yes as distinct Maintenance operations |
-| Read-only exploration safety | Yes — explicit read vs maintenance connection policy |
-| Multi-symbol Explorer / Day Inspector | Yes as Explore/Day façade contracts; query extensions later |
-| Maintenance UI | Yes — Maintenance façade |
-| Future UI independence | Yes — no Streamlit in `app`; no premature HTTP |
-| Modularity | Yes — small façade services over existing V1 |
+| Local-first / personal desktop | Yes — localhost-only; no SaaS |
+| Portability / reconstructability | Yes — Maintenance operations preserved |
+| GitHub-distributed universe | Yes at architecture level; format open |
+| Fresh Build / Update / Backup / Exact Rebuild | Yes via Maintenance façade + HTTP |
+| Read-only exploration safety | Yes — read routes → read façade only |
+| Multi-symbol Explorer / Day Inspector | Yes — Explore/Day contracts + React features |
+| Maintenance UI | Yes |
+| UI independence of core | Yes — React ↔ HTTP ↔ app |
+| V3 React longevity | Yes — same boundary; expand façade later |
+| Modularity | Yes |
 
-**Not satisfied by architecture alone (needs later work):** portable universe file + sync implementation; Fresh Build UX; Backup format; multi-symbol query extensions; UI/packaging choice.
+**Still later work:** implement façade/transport/React; universe format; backup format; packaging; progress channel details.
 
 ---
 
 ## 16. Architecture decisions vs open items
 
-See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) for locked entries corresponding to this document.
+See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
 
-**Ready to lock (structural):** application façade; Layer A/B/C mapping; read vs maintenance safety; Explore query foundation reuse; Maintenance adapters over existing orchestrators; narrow universe service; in-process boundary (no HTTP required now); package sketch as evolutionary target.
+**Locked (structural):** façade; layers; read vs maintenance; explorer query foundation; maintenance adapters; narrow universe service; **React as V2/V3 UI**; **localhost HTTP JSON transport over app**; frontend tier direction; Streamlit retained as V1.
 
-**Remain open:** UI framework; desktop packaging; universe file format; GitHub auth/API; backup format; progress/cancellation mechanism; exact Explore query shapes for multi-symbol compare; whether V1 Streamlit Explorer is extended or replaced; transport if ever out-of-process.
+**Open:** Electron vs Tauri; exact ASGI framework (FastAPI likely); endpoint names/schemas; DTO field lists; React Query/Zustand/etc.; data-grid library; styling; packaging/install; SSE vs poll for progress; cancellation; performance protocols (Arrow/etc.).
+
+---
+
+## 17. React ↔ Python communication
+
+### 17.1 Recommendation
+
+**Localhost-only HTTP JSON API** as a thin transport over `stockballdb.app`.
+
+| Concern | Choice |
+| ------- | ------ |
+| Protocol | HTTP/1.1 (+ optional SSE later for progress) |
+| Payload | JSON |
+| Bind | `127.0.0.1` only by default |
+| Auth | None required for V2 personal local use (OS user boundary); do not expose beyond localhost |
+| Business logic | Only in `stockballdb.app` |
+| Transport role | Map HTTP ↔ façade calls; validate request shapes; return structured errors |
+
+Likely Python implementation: lightweight ASGI stack such as **FastAPI** — preferred but **not locked** as the only allowed framework.
+
+### 17.2 Alternatives evaluated
+
+| Approach | Verdict | Why |
+| -------- | ------- | --- |
+| **Localhost HTTP JSON over `app`** | **Accepted** | Fits React; structured contracts; testable; Windows-friendly; works with any desktop shell; supports V3 expansion; keeps façade clean |
+| Desktop-shell IPC only (Electron/Tauri IPC as primary protocol) | Rejected as primary | Couples app protocol to packaging choice not yet locked; weaker independent frontend/backend dev; still need structured contracts |
+| Subprocess stdin/stdout JSON lines | Rejected as primary | Poor fit for concurrent Explorer reads, connection lifecycle, and long maintenance progress |
+| WebSocket for all traffic | Rejected as primary | Unnecessary for request/response reads; may supplement progress later |
+| gRPC / binary RPC | Rejected | Overengineered for personal local JSON-shaped Explorer |
+| In-browser Python (Pyodide) | Rejected | Cannot own local PostgreSQL/providers/snapshots |
+| Public/cloud HTTP API | Rejected | Violates local-first; not a V2 requirement |
+
+### 17.3 Local process / runtime model
+
+* Python process hosts transport + `app` + V1 libraries.
+* React is a separate UI process (dev server in development; bundled web UI in packaging).
+* Desktop shell (TBD) typically **starts the Python local service as a child process** and opens the UI against `http://127.0.0.1:<port>`.
+* Separately installed system Python is acceptable in early development; bundling is a packaging decision.
+* PostgreSQL remains a local database service as today.
+
+### 17.4 Read-operation flow
+
+```text
+React Explore/Day/Status
+  → GET/POST localhost read routes (explicit operation contracts)
+    → transport → app.read.*
+      → read-only DB / filesystem inspection
+    ← JSON page/result DTOs
+```
+
+Supports (architecturally): list instruments/fields; browse/filter/sort/paginate; multi-symbol queries; shared date ranges; day inspect; coverage; provenance; health/validate/fingerprint viewing.
+
+Exact routes/schemas: **open**.
+
+### 17.5 Maintenance-operation flow
+
+```text
+React Maintenance
+  → POST start operation (update | fresh build | rebuild | backup | restore | universe sync)
+    → transport → app.maintenance.* / app.universe.*
+      → existing orchestrators (advisory lock preserved where already present)
+  → GET operation status (and optional SSE progress stream later)
+    ← structured progress / warnings / completion / failure
+```
+
+Architectural expectations:
+
+* Start returns an operation identity (or equivalent status handle).
+* Conflicting maintenance operations rely on existing locks + façade refusal — not unrestricted parallel mutators.
+* Progress reporting is desirable; **mechanism open** (poll first is acceptable; SSE later).
+* Cancellation only if underlying V1 path can be made safe — **not required** initially.
+* No arbitrary command execution or raw SQL from React.
+
+### 17.6 Data contracts
+
+* `stockballdb.app.results` (and related façade return types) are the **transport-agnostic** source of truth.
+* Transport may expose thin JSON DTOs that serialize those results (1:1 where practical).
+* Do not make `app` import HTTP request models or React types.
+* Prefer explicit JSON-compatible types: ISO dates, nulls, enums as strings, nested objects/arrays.
+* Frontend TypeScript types should mirror contracts — generation optional later, not required to start.
+
+### 17.7 Large / tabular data
+
+* **Start with paginated JSON** for Explorer workloads (multi-symbol, selected columns, filters, sort).
+* Reconsider binary/columnar protocols (Arrow/etc.) only if measured payload size or parse cost becomes a real bottleneck.
+* Do not introduce Parquet/Arrow in V2 architecture by default.
+
+### 17.8 Error boundary
+
+Transport returns **structured application errors**, not raw Python tracebacks, to React.
+
+Useful categories (conceptual):
+
+| Category | Examples |
+| -------- | -------- |
+| validation / bad request | invalid filters, unknown symbol, bad date range |
+| dependency unavailable | database down, missing credentials when required |
+| provider failure | Tiingo/FRED errors during maintenance |
+| maintenance conflict | update lock held |
+| operation failure | stage/validate/health failure |
+| health warnings | non-fatal findings (may appear in Status results, not only errors) |
+| internal | unexpected faults (log locally; generic message to UI) |
+
+Detailed logs remain on the local machine for diagnostics.
+
+### 17.9 Development workflow (pre-packaging)
+
+```text
+local PostgreSQL
+  + Python local service (transport + app) on 127.0.0.1
+  + React dev server
+```
+
+Frontend development does not wait for Electron/Tauri packaging.
+
+### 17.10 Desktop packaging relationship
+
+Electron or Tauri (or similar) can:
+
+1. spawn/monitor the Python local service;
+2. serve or load the React build;
+3. keep traffic on localhost.
+
+**Electron vs Tauri remains open** — the HTTP boundary deliberately avoids forcing that choice.
+
+---
+
+## 18. React frontend architecture
+
+### 18.1 Intent
+
+V2 React is the start of the long-term StockBallAPP UI, not disposable prototype chrome. Keep V2 feature scope inside StockBallDB boundaries; keep structure extensible for V3 research features later.
+
+### 18.2 Feature-based layout (conceptual)
+
+```text
+features/
+  dashboard/          # overview / control-style status
+  explorer/           # multi-instrument explore/compare
+  day-inspector/      # date drilldown
+  maintenance/        # build/update/rebuild/backup
+  universe/           # definition status/sync
+  status/             # validation/health/provenance
+components/           # shared: instrument selector, field selector, grid, dates, progress
+client/               # Tier 3 — talks to localhost API
+app/                  # shell, routing
+```
+
+Shared building blocks (conceptual): instrument/ticker selector (+ add/reorder), field selector, data grid, date controls, status/progress UI. **Styling undecided.**
+
+### 18.3 Three-tier UI philosophy
+
+| Tier | Responsibility |
+| ---- | -------------- |
+| **1 — Pages / features** | Workflow composition (Explorer page, Maintenance page, …) |
+| **2 — Reusable components** | Selectors, grids, dialogs, progress panels |
+| **3 — Application client / state boundary** | HTTP calls, query/mutation lifecycle, mapping DTOs → UI state |
+
+Do not put fetch/HTTP details inside presentational grid cells. Do not put PostgreSQL knowledge in Tier 1.
+
+### 18.4 State management (conceptual)
+
+| State kind | Where it should live |
+| ---------- | -------------------- |
+| Backend/server data (query results, health, manifests) | Fetched via client; cache library optional later |
+| Explorer configuration (symbols, fields, dates, sort, filters, column order) | Feature-level state (URL and/or feature store) |
+| Selected day / navigation | Feature/router state |
+| Maintenance operation status | Client + maintenance feature state |
+| Ephemeral UI (open dialog, hover) | Local component state |
+
+**Architecture decision:** separate server state from Explorer configuration from local UI state.  
+**Library choice** (TanStack Query, Zustand, Context-only, etc.): **can wait** — likely implementation choice, not locked.
+
+### 18.5 Explorer longevity
+
+Communication + Explore façade must support:
+
+* repeatable instrument groups;
+* add instruments without a hard three-symbol cap;
+* per-instrument field selection;
+* shared date context;
+* ordering of instruments/columns;
+* filtering, sorting, pagination;
+* navigation into Day Inspector.
+
+UI details remain open; backend/client contracts must not assume a fixed three-column compare toy.
+
+### 18.6 V3 / StockBallAPP compatibility
+
+The same pattern scales:
+
+```text
+React feature → client → localhost HTTP → expanded app.* use-cases → core
+```
+
+Future research/experiment endpoints would be **new façade operations** (and routes), not a new frontend/backend architecture. V2 must not implement those operations.

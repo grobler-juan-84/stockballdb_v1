@@ -149,8 +149,8 @@ Certified V1 facts remain owned by the existing canonical documents and [StockBa
 
 **Foundation / portability / universe-distribution architecture decisions are locked** in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
 
-**Backend / application architecture is locked** in [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) and the corresponding decision-log entries: thin in-process façade; Layer A/B/C responsibilities; read vs maintenance safety; Explorer query stack as read foundation; maintenance adapters over existing orchestrators; narrow universe service; façade service boundaries.
+**Backend / application architecture is locked** in [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md): thin in-process `stockballdb.app` façade; Layer A/B/C; read vs maintenance safety; Explorer query foundation; maintenance adapters; narrow universe service.
 
-**Not yet locked:** UI framework, desktop packaging, universe file format, GitHub sync/auth mechanism, backup/restore format, progress/cancellation mechanism, Fresh Build UX details, and any out-of-process transport.
+**Frontend / communication architecture is locked:** React is the V2 (and intended V3/StockBallAPP) forward-facing UI; V1 Streamlit Explorer is retained; React talks only through a **localhost-only HTTP JSON transport** wrapping the façade.
 
-Do not treat undecided stack options (for example React, Streamlit, Electron, or Tauri) as final V2 UI decisions.
+**Not yet locked:** desktop packaging (Electron vs Tauri), exact ASGI framework, endpoint/DTO schemas, React state/data-grid/styling libraries, universe file format, GitHub sync/auth, backup/restore format, progress/cancellation mechanism, Fresh Build UX details.

@@ -493,10 +493,11 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 12 — StockBallDB V2 Planning
 
-**Status:** IN PROGRESS — foundation + backend/application architecture locked; UI/packaging still open
+**Status:** IN PROGRESS — foundation, backend façade, and React/communication architecture locked; packaging still open
 
 - Locked V2 scope and created V2 working docs (`V2_scope`, `V2_decisions`, `V2_progress`, `future`); index updated for Canonical + historical + V2 working model.
 - Locked foundation architecture decisions (PostgreSQL, local-first, reconstructability/transferability portability, PIT, portable universe + GitHub SoT, universe-sync vs DB-update separation, preserve V1).
-- Inspected V1 architecture (evidence for design); designed V2 backend/application architecture in `StockBallDB_V2_architecture.md` and locked façade/layer/read-vs-maintenance/universe/maintenance-adapter decisions.
-- Next: choose UI/packaging, or begin implementing the planned `stockballdb.app` façade (not created yet). Universe format, GitHub transport, backup format remain open.
+- Inspected V1 architecture; designed V2 backend/application architecture in `StockBallDB_V2_architecture.md` (façade, layers, read vs maintenance).
+- Locked React as forward-facing V2/V3 UI; Streamlit retained as V1 Explorer; locked localhost-only HTTP JSON transport over `stockballdb.app`; frontend tiers documented.
+- Next: implement `stockballdb.app` + thin transport (and React scaffolding); Electron vs Tauri, universe format, backup format remain open. No application code created yet in planning steps.
 

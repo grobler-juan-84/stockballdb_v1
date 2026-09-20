@@ -329,17 +329,16 @@ Detailed rationale and diagrams: [StockBallDB_V2_architecture.md](StockBallDB_V2
 | Date | 2026-09-20 |
 | Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
 
-**Decision:** V2 introduces a thin in-process Python application façade (`stockballdb.app` as the planned package) between any UI and existing StockBallDB capabilities. The UI requests use-cases; it does not own PostgreSQL schema, provider clients, stage DAGs, snapshot internals, or env-var layout. No HTTP/local API server is required by this decision.
+**Decision:** V2 introduces a thin in-process Python application façade (`stockballdb.app` as the planned package) between any UI and existing StockBallDB capabilities. The UI requests use-cases; it does not own PostgreSQL schema, provider clients, stage DAGs, snapshot internals, or env-var layout. The façade itself remains in-process and transport-agnostic.
 
 **Why:** V1 already exposes callable domain APIs and Streamlit-independent explorer services. A façade gives UI independence and maintenance safety without rewriting certified pipelines.
 
 **Alternatives considered:**
 
 * UI calls V1 modules directly forever — rejected; couples presentation to internals and weakens read/mutate boundaries.
-* Introduce HTTP API now for hypothetical React — rejected as premature.
 * Rewrite domain into a new service framework — rejected; violates evolution rule.
 
-**Consequences:** Implement façade modules later; keep V1 packages in place; transport remains an open later decision.
+**Consequences:** Implement façade modules later; keep V1 packages in place. When the UI is out-of-process (React), a thin transport may sit **above** the façade — see locked React/HTTP decisions. Earlier wording that deferred HTTP applied while UI technology was still open.
 
 ---
 
@@ -436,3 +435,94 @@ Detailed rationale and diagrams: [StockBallDB_V2_architecture.md](StockBallDB_V2
 **Why:** Matches distinct use-cases and keeps read vs mutate separable.
 
 **Consequences:** Implementation may adjust file names slightly, but the responsibility split is locked.
+
+---
+
+## Locked frontend / communication architecture decisions
+
+Detailed rationale: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) §§17–18.
+
+### Decision: React is the V2 forward-facing UI
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** StockBallDB V2 uses React for its new application UI. The certified V1 Streamlit Explorer remains available as a legacy/reference/diagnostic interface and must not be removed or rewritten merely because V2 adopts React.
+
+**Why:** React supports the richer Explorer/maintenance UX planned for V2 and provides a durable path into V3/StockBallAPP without treating the V2 UI as disposable.
+
+**Alternatives considered:**
+
+* Continue Streamlit as the only V2 UI — rejected as the forward-facing direction.
+* Replace/delete Streamlit immediately — rejected; V1 Explorer remains certified.
+
+**Consequences:** New V2 UI work targets React. Streamlit stays in the V1 tree until an explicit later retirement decision.
+
+---
+
+### Decision: V2 React architecture continues into V3 / StockBallAPP
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** The V2 React frontend and its communication boundary are intended to extend into V3/StockBallAPP rather than be replaced. V3 is expected to remain React-based. V2 must not implement research/experiment features, but must not choose a throwaway UI architecture.
+
+**Why:** Establishing the long-lived frontend/backend boundary now avoids a second rewrite when StockBallAPP grows.
+
+**Consequences:** Prefer clean feature/client separation and stable contracts; avoid prototype-only shortcuts that force a V3 redesign.
+
+---
+
+### Decision: React communicates only through the application/transport boundary
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** React must not access PostgreSQL, SQLAlchemy models, V1 pipeline internals, providers, snapshots, environment variables, or orchestrators directly. It communicates via the frontend application client → transport → `stockballdb.app` only.
+
+**Why:** Preserves read/maintenance safety and keeps the certified core independent of UI technology.
+
+**Consequences:** No raw SQL console in React; no shelling out to arbitrary Python from the UI.
+
+---
+
+### Decision: Localhost-only HTTP JSON transport over the façade
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** React ↔ Python communication uses a **localhost-only HTTP JSON API** that thinly wraps `stockballdb.app`. The API binds to `127.0.0.1` by default and is not a public/SaaS service. Domain logic remains in the façade, not in HTTP handlers. Optional SSE (or similar) may later carry maintenance progress; request/response JSON remains the primary read model.
+
+**Why:** React is a separate process/language. Local HTTP gives structured contracts, testability, Windows desktop suitability, packaging flexibility, and V3 longevity without enterprise complexity. Subprocess pipes and packaging-only IPC were rejected as the primary protocol.
+
+**Alternatives considered:** See architecture §17.2.
+
+**Consequences:** Implement a thin `stockballdb.transport` (name flexible) later. Exact ASGI framework (FastAPI likely), ports, endpoints, and progress channel remain open. No cloud deployment or user-account auth required for V2 local use.
+
+---
+
+### Decision: React frontend tier / dependency direction
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Organize the React app as feature pages → reusable components → application client (HTTP/state boundary). Dependency direction: presentation depends on the client; the client depends on localhost contracts; nothing in the frontend depends on Python internals.
+
+**Why:** Matches modular UI practice and keeps Explorer/maintenance features extensible for V3.
+
+**Consequences:** Feature-based folders; shared selectors/grids; state libraries remain an open implementation choice.

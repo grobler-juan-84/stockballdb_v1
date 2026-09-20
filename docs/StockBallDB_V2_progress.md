@@ -19,16 +19,17 @@ This is not a diary. Prefer short milestone / status entries.
 
 | Item | State |
 | ---- | ----- |
-| Overall | V2 planning — foundation + backend/application architecture locked |
-| Scope | **Locked** — [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) |
-| Documentation model | **Chosen** — Canonical + historical + V2 working |
-| Foundation / portability / universe architecture | **Locked** |
-| Backend / application architecture | **Locked** — [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
-| UI / packaging | **Not locked** |
-| Implementation | **Not started** (`stockballdb.app` not created yet) |
+| Overall | V2 planning — foundation, backend façade, and React/communication architecture locked |
+| Scope | **Locked** |
+| Foundation / portability / universe | **Locked** |
+| Backend / application façade | **Locked** |
+| Forward-facing UI | **Locked — React** (Streamlit retained as V1) |
+| React ↔ Python transport | **Locked — localhost-only HTTP JSON over `stockballdb.app`** |
+| Desktop packaging (Electron/Tauri/etc.) | **Not locked** |
+| Implementation | **Not started** (no `app`, transport, or React tree yet) |
 | V2 certification | Not applicable yet |
 
-**Immediate next major planning task:** Choose V2 **UI / packaging** architecture (Streamlit vs other; desktop packaging), or begin implementing the locked application façade if UI choice is deferred deliberately.
+**Immediate next major planning or implementation task:** Begin implementing `stockballdb.app` (read façade first) and/or thin localhost transport contracts — or choose desktop packaging when needed. Do not implement React UI before basic façade/transport contracts exist unless scaffolding only.
 
 ---
 
@@ -37,8 +38,8 @@ This is not a diary. Prefer short milestone / status entries.
 | # | Milestone | Status |
 | - | --------- | ------ |
 | 1 | Lock V2 scope and establish V2 documentation | **Complete** |
-| 2 | Choose V2 application architecture | **Partial** — foundation + backend/app façade locked; UI/packaging still open |
-| 3 | Design backend / application layer | **Complete** (design/docs only) |
+| 2 | Choose V2 application architecture | **Complete** for foundation + backend + React/communication; packaging still open |
+| 3 | Design backend / application layer | **Complete** (design/docs) |
 | 4 | Build read / query layer | Not started |
 | 5 | Build Data Explorer V2 | Not started |
 | 6 | Build Day Inspector | Not started |
@@ -55,47 +56,46 @@ This is not a diary. Prefer short milestone / status entries.
 
 ## Completed
 
-* Locked V2 scope boundary (inspection / management vs research / experiment).
-* Established V2 working documentation and index routing.
-* Locked foundation architecture decisions (PostgreSQL, local-first, portability, PIT, portable universe, GitHub SoT, etc.).
-* Inspected V1 codebase (architecture map used as evidence; report in chat, not a committed artifact).
-* Designed and documented V2 backend/application architecture: thin in-process façade, Layer A/B/C, read vs maintenance safety, universe service boundary, maintenance adapters, package sketch.
+* Locked V2 scope and working documentation model.
+* Locked foundation architecture (PostgreSQL, local-first, portability, PIT, universe/GitHub direction, preserve V1).
+* Inspected V1 architecture; designed backend façade (`stockballdb.app`).
+* Locked React as V2/V3 forward-facing UI; Streamlit remains V1 Explorer.
+* Locked localhost-only HTTP JSON transport over the façade; documented frontend tiers, contracts, maintenance flow, and open packaging choices.
 
 ---
 
 ## In progress
 
-* None (architecture design documentation complete for this step).
+* None (communication architecture documentation complete for this step).
 
 ---
 
 ## Next
 
-1. Choose V2 UI / packaging approach (still open), **or** start implementing `stockballdb.app` read façade against existing explorer query stack.
-2. Before universe sync implementation: choose universe file format after deeper format design (transport/auth still open).
-3. Do not implement Fresh Build / Backup / GitHub sync until those designs are ready.
+1. Implement `stockballdb.app` read services (wrap existing explorer query stack).
+2. Add thin localhost transport over those services (framework choice open; FastAPI likely).
+3. Scaffold React application client + Explorer feature against read contracts.
+4. Desktop packaging (Electron vs Tauri) when needed — still open.
+5. Universe file format / GitHub sync and Backup format remain later designs.
 
 ---
 
 ## Decided (pointers)
 
-Full entries: [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md); detail: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md).
+See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) and [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md).
 
-Foundation locks plus:
+Notable frontend/communication locks:
 
-* Thin in-process application façade — Locked
-* Layer A / B / C responsibility model — Locked
-* Read vs maintenance safety boundary — Locked
-* Reuse Explorer query stack as V2 read foundation — Locked
-* Maintenance via adapters over existing orchestrators — Locked
-* Narrow universe service in the application layer — Locked
-* Façade service module boundaries — Locked
+* React is the V2 forward-facing UI — Locked
+* V2 React continues into V3/StockBallAPP — Locked
+* React only via application/transport boundary — Locked
+* Localhost-only HTTP JSON transport over façade — Locked
+* React frontend tier / dependency direction — Locked
 
 ---
 
 ## Notes
 
-* V1 remains the certified baseline: [StockBallDB_V1_status.md](StockBallDB_V1_status.md).
-* Deferred research ideas: [StockBallDB_future.md](StockBallDB_future.md).
-* Existing V1 Explorer remains documented in [StockBallDB_explorer.md](StockBallDB_explorer.md); V2 application packages are not created yet.
-* Fresh Build, backup/restore, and GitHub universe sync remain **planned**, not implemented.
+* V1 certified baseline unchanged: [StockBallDB_V1_status.md](StockBallDB_V1_status.md).
+* V1 Streamlit Explorer remains: [StockBallDB_explorer.md](StockBallDB_explorer.md).
+* No React, FastAPI, or `stockballdb.app` code created in this planning step.
