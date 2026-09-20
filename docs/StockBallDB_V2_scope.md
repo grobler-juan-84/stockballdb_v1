@@ -151,6 +151,8 @@ Certified V1 facts remain owned by the existing canonical documents and [StockBa
 
 **Backend / application architecture is locked** in [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md): thin in-process `stockballdb.app` façade; Layer A/B/C; read vs maintenance safety; Explorer query foundation; maintenance adapters; narrow universe service.
 
-**Frontend / communication architecture is locked:** React is the V2 (and intended V3/StockBallAPP) forward-facing UI; V1 Streamlit Explorer is retained; React talks only through a **localhost-only HTTP JSON transport** wrapping the façade.
+**Frontend / communication architecture is locked:** React is the V2 (and intended V3/StockBallAPP) forward-facing UI; V1 Streamlit Explorer is retained; React talks only through a **localhost-only FastAPI JSON transport** wrapping the façade.
 
-**Not yet locked:** desktop packaging (Electron vs Tauri), exact ASGI framework, endpoint/DTO schemas, React state/data-grid/styling libraries, universe file format, GitHub sync/auth, backup/restore format, progress/cancellation mechanism, Fresh Build UX details.
+**Desktop runtime is locked:** **Electron** shell; Electron owns the Python backend child process; PostgreSQL remains an independent local service; production React is a static build; browser-local mode remains valid for development.
+
+**Not yet locked:** installer/Python bundling tools, exact port/session-token mechanics, endpoint/DTO schemas, React state/data-grid/styling libraries, universe file format, GitHub sync/auth, backup/restore format, progress channel, exact quit-during-maintenance UX (integrity principle locked).

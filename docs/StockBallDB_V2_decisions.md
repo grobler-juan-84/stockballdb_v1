@@ -509,7 +509,7 @@ Detailed rationale: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture
 
 **Alternatives considered:** See architecture §17.2.
 
-**Consequences:** Implement a thin `stockballdb.transport` (name flexible) later. Exact ASGI framework (FastAPI likely), ports, endpoints, and progress channel remain open. No cloud deployment or user-account auth required for V2 local use.
+**Consequences:** Implement a thin `stockballdb.transport` (name flexible) later using **FastAPI** (now locked). Ports, endpoints, and progress channel remain open. No cloud deployment or user-account auth required for V2 local use.
 
 ---
 
@@ -526,3 +526,122 @@ Detailed rationale: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture
 **Why:** Matches modular UI practice and keeps Explorer/maintenance features extensible for V3.
 
 **Consequences:** Feature-based folders; shared selectors/grids; state libraries remain an open implementation choice.
+
+---
+
+## Locked desktop runtime / packaging decisions
+
+Detailed rationale: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) §19.
+
+### Decision: Electron is the V2 desktop shell
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** StockBallDB V2 uses **Electron** as the forward-facing desktop shell. It loads the production React build and manages the local Python backend process so the user can launch StockBallDB like a normal desktop application.
+
+**Why:** Best fit for React + spawning/managing a Python localhost service on Windows with mature tooling and acceptable complexity for a personal project. Shell size is secondary to Python/PostgreSQL weight.
+
+**Alternatives considered:**
+
+* **Tauri** — rejected as primary; size wins do not outweigh Rust toolchain cost and weaker Python-orchestration fit for this stack.
+* **Browser-only local app as sole production UX** — rejected for target “normal desktop app” launch; retained as development/fallback mode.
+
+**Consequences:** Electron project comes later. Installer/code-signing tools remain open. Dev may run without Electron.
+
+---
+
+### Decision: FastAPI is the localhost HTTP framework
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** The thin localhost transport layer is implemented with **FastAPI** (ASGI server such as uvicorn). Handlers wrap `stockballdb.app` only.
+
+**Why:** JSON/validation/typed contracts, React-friendly, SSE-capable later, low boilerplate, testable, sufficient for V3 longevity without enterprise frameworks.
+
+**Consequences:** Transport implementation targets FastAPI; endpoint schemas still open.
+
+---
+
+### Decision: Electron owns the Python backend child process
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** In production desktop mode, Electron starts the Python FastAPI backend as a child process, waits for readiness, monitors health/crashes, and shuts it down when safe. React talks only to localhost HTTP.
+
+**Why:** Delivers one-click launch without manual terminals while preserving the locked HTTP boundary.
+
+**Consequences:** Readiness handshake and port strategy are implementation details. Development may start Python independently.
+
+---
+
+### Decision: PostgreSQL remains an independent local service
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** V2 does not embed PostgreSQL inside Electron. PostgreSQL remains a separately installed local database. The app detects/connects and guides first-run/Fresh Build/restore; it does not redefine portability as copying live data directories. Application packaging and database installation are distinct.
+
+**Why:** Preserves certified canonical architecture; avoids disproportionate installer complexity in V2.
+
+**Consequences:** First-run must handle missing/unavailable DB clearly; automated PG install inside the app is out of V2 scope unless later reconsidered.
+
+---
+
+### Decision: Maintenance integrity over casual window-close termination
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Closing the desktop UI must not silently kill an active Update, Fresh Build, Exact Rebuild, Backup, Restore, or universe sync in a way that risks database integrity. Exact UX (block quit vs warn vs allow background completion) remains open; unsafe cancellation is not authorized by this decision.
+
+**Why:** V1 orchestrators are not designed as casually interruptible UI toys.
+
+**Consequences:** Shutdown design must check maintenance state before stopping the Python child.
+
+---
+
+### Decision: Application update ≠ database update
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Installing a newer StockBallDB application (Electron/React/Python code) is conceptually separate from **Update Database** (data maintenance). Terminology and product actions must not blur them. No auto-update system is locked for V2.
+
+**Why:** Prevents operator confusion and accidental conflation of code deploys with data pipelines.
+
+---
+
+### Decision: V2 desktop runtime continues into V3 / StockBallAPP
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Electron + FastAPI + `stockballdb.app` + React is the intended runtime architecture to extend into V3/StockBallAPP. V3 should add façade/UI capabilities, not replace the desktop/runtime stack again.
+
+**Why:** Avoid a third architecture rewrite when research features arrive.
+
+**Consequences:** Prefer durable process/lifecycle choices; do not treat Electron as disposable scaffolding.

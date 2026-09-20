@@ -4,9 +4,9 @@
 **Authority:** Detailed V2 application + frontend communication architecture; lockable decisions also recorded in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md)  
 **Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 progress](StockBallDB_V2_progress.md) · [V1 status](StockBallDB_V1_status.md) · [explorer](StockBallDB_explorer.md) · [workflow](StockBallDB_workflow.md)
 
-This document designs the **V2 backend / application architecture** and the **React ↔ Python communication architecture** around the certified V1 system. It is not an implementation plan for universe file format, GitHub auth, backup format, desktop packaging (Electron vs Tauri), endpoint schemas, or UI styling.
+This document designs the **V2 backend / application architecture**, **React ↔ Python communication**, and **desktop runtime / packaging architecture** around the certified V1 system. It is not an implementation plan for universe file format, GitHub auth, backup format, installer tooling, endpoint schemas, or UI styling.
 
-**No V2 application packages, React app, or transport server are created yet.** Paths below are proposed targets.
+**No V2 application packages, React app, Electron app, or transport server are created yet.** Paths below are proposed targets.
 
 ---
 
@@ -343,15 +343,14 @@ src/stockballdb/app/                 # NEW — Layer A (use-cases)
   results.py                         # structured results / error types (transport-agnostic)
 
 src/stockballdb/transport/           # NEW — thin local HTTP adapters (not business logic)
-  http/                              # localhost ASGI app wrapping app.* 
-    ...                              # framework choice open (FastAPI likely)
+  http/                              # FastAPI app wrapping app.*
+    ...
 
-frontend/                            # NEW — React app root name open
-  src/
-    features/                        # pages/workflows
-    components/                      # shared UI
-    client/                          # application client → HTTP
-    app/                             # shell / routing
+frontend/                            # NEW — React app (name open)
+  ...
+
+desktop/                             # NEW — Electron shell (name open)
+  ...                                # spawns Python; loads React production build
 ```
 
 | Item | Classification |
@@ -361,8 +360,9 @@ frontend/                            # NEW — React app root name open
 | `market_data/universe.py` | **Wrap/adapt** → portable definition later |
 | `explorer/views`, `explorer/ui`, `explorer/app` | **Keep** as V1 Streamlit Explorer |
 | `stockballdb/app/*` | **New V2 capability** (façade) |
-| `stockballdb/transport/*` | **New V2 capability** (thin local HTTP) |
+| `stockballdb/transport/*` | **New V2 capability** (FastAPI localhost HTTP) |
 | React `frontend/` | **New V2 capability** |
+| Electron `desktop/` | **New V2 capability** (shell; packaging tool open) |
 | Portable universe file + GitHub transport | **New V2 capability** (format/transport open) |
 | Backup/Restore implementation | **New V2 capability** (format open) |
 | Moving domain code / renaming V1 | **Possible later refactor** |
@@ -374,12 +374,14 @@ frontend/                            # NEW — React app root name open
 Desired:
 
 ```text
-React (presentation)
-  → frontend client (Tier 3)
-    → localhost HTTP transport
-      → stockballdb.app (Layer A)
-        → domain/data (Layer B)
-          → infrastructure (Layer C)
+Electron (desktop shell; process owner)
+  → React (presentation)
+    → frontend client (Tier 3)
+      → localhost FastAPI transport
+        → stockballdb.app (Layer A)
+          → domain/data (Layer B)
+            → infrastructure (Layer C)
+              → PostgreSQL (external local service)
 ```
 
 Rules:
@@ -446,14 +448,16 @@ User → React → HTTP → app.maintenance.rebuild → rebuild_exact.run_rebuil
 User → React → HTTP → app.maintenance.backup|restore → (future) backup helper → local PostgreSQL [format TBD]
 ```
 
-### F. Process model (local)
+### F. Process model (local / production target)
 
 ```text
-[Desktop shell — packaging TBD]
-   ├── React UI (static build or dev server)
-   └── Python local service (transport + app + V1)
-          └── PostgreSQL (local)
+StockBallDB Desktop (Electron shell)
+├── React UI (production static build loaded in Electron window)
+└── Python backend child process (FastAPI transport + stockballdb.app + V1)
+        └── connects to → local PostgreSQL (external/system service; not a child of Electron)
 ```
+
+Development may run React and Python independently without Electron (see §19).
 
 ---
 
@@ -474,7 +478,7 @@ User → React → HTTP → app.maintenance.backup|restore → (future) backup h
 | V3 React longevity | Yes — same boundary; expand façade later |
 | Modularity | Yes |
 
-**Still later work:** implement façade/transport/React; universe format; backup format; packaging; progress channel details.
+**Still later work:** implement façade/transport/React/Electron; universe format; backup format; Python bundling/installer tooling; progress channel details.
 
 ---
 
@@ -482,9 +486,9 @@ User → React → HTTP → app.maintenance.backup|restore → (future) backup h
 
 See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
 
-**Locked (structural):** façade; layers; read vs maintenance; explorer query foundation; maintenance adapters; narrow universe service; **React as V2/V3 UI**; **localhost HTTP JSON transport over app**; frontend tier direction; Streamlit retained as V1.
+**Locked (structural):** façade; layers; read vs maintenance; explorer query foundation; maintenance adapters; narrow universe service; React as V2/V3 UI; localhost HTTP JSON over app; frontend tiers; Streamlit retained as V1; **Electron desktop shell**; **FastAPI transport**; **PostgreSQL remains independent local service**; **Electron owns Python backend child lifecycle**; **V2 desktop runtime intended for V3**.
 
-**Open:** Electron vs Tauri; exact ASGI framework (FastAPI likely); endpoint names/schemas; DTO field lists; React Query/Zustand/etc.; data-grid library; styling; packaging/install; SSE vs poll for progress; cancellation; performance protocols (Arrow/etc.).
+**Open:** installer technology; Python bundling tool (PyInstaller/etc.); exact port/session-token mechanics; auto-update; exact log paths; exact quit-during-maintenance UX (safety principle locked); SSE vs poll; endpoint/DTO schemas; React state/grid/styling libraries.
 
 ---
 
@@ -502,8 +506,7 @@ See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
 | Auth | None required for V2 personal local use (OS user boundary); do not expose beyond localhost |
 | Business logic | Only in `stockballdb.app` |
 | Transport role | Map HTTP ↔ façade calls; validate request shapes; return structured errors |
-
-Likely Python implementation: lightweight ASGI stack such as **FastAPI** — preferred but **not locked** as the only allowed framework.
+| Python HTTP framework | **FastAPI** (locked) over uvicorn or equivalent ASGI server |
 
 ### 17.2 Alternatives evaluated
 
@@ -519,11 +522,11 @@ Likely Python implementation: lightweight ASGI stack such as **FastAPI** — pre
 
 ### 17.3 Local process / runtime model
 
-* Python process hosts transport + `app` + V1 libraries.
-* React is a separate UI process (dev server in development; bundled web UI in packaging).
-* Desktop shell (TBD) typically **starts the Python local service as a child process** and opens the UI against `http://127.0.0.1:<port>`.
-* Separately installed system Python is acceptable in early development; bundling is a packaging decision.
-* PostgreSQL remains a local database service as today.
+* Python process hosts FastAPI transport + `app` + V1 libraries.
+* React production assets are a static build loaded by Electron (not a permanent React-dev-server dependency).
+* **Electron** starts/stops the Python local service as a **child process**, waits for readiness, and opens the UI against `http://127.0.0.1:<port>`.
+* **PostgreSQL** remains an external local service — not owned as an Electron child process.
+* Development may use system Python without bundling; production packaging should eventually allow launch without manual Python management (bundling tool open).
 
 ### 17.4 Read-operation flow
 
@@ -594,21 +597,21 @@ Detailed logs remain on the local machine for diagnostics.
 
 ```text
 local PostgreSQL
-  + Python local service (transport + app) on 127.0.0.1
+  + Python FastAPI service (transport + app) on 127.0.0.1
   + React dev server
 ```
 
-Frontend development does not wait for Electron/Tauri packaging.
+Electron is **optional during early development**. Frontend and Python must remain runnable independently.
 
 ### 17.10 Desktop packaging relationship
 
-Electron or Tauri (or similar) can:
+**Electron** (locked shell):
 
-1. spawn/monitor the Python local service;
-2. serve or load the React build;
-3. keep traffic on localhost.
+1. loads production React static assets in a desktop window;
+2. spawns/monitors the Python FastAPI service;
+3. keeps API traffic on localhost.
 
-**Electron vs Tauri remains open** — the HTTP boundary deliberately avoids forcing that choice.
+Installer technology, code signing, and Python bundling tool remain open.
 
 ---
 
@@ -681,3 +684,191 @@ React feature → client → localhost HTTP → expanded app.* use-cases → cor
 ```
 
 Future research/experiment endpoints would be **new façade operations** (and routes), not a new frontend/backend architecture. V2 must not implement those operations.
+
+A Google AI Studio React prototype may later serve as **design / interaction reference** only. Locked StockBallDB architecture remains authoritative; prototype-generated architecture/code is not.
+
+---
+
+## 19. Desktop runtime and packaging
+
+### 19.1 Recommendation
+
+**Electron** is the V2 (and intended V3) desktop shell.
+
+Target UX: launch StockBallDB like a normal desktop application. Electron owns the window and the Python backend child process. PostgreSQL remains a separately installed local dependency.
+
+```text
+Launch StockBallDB.app / StockBallDB.exe
+  → Electron starts
+  → spawn Python FastAPI backend (child)
+  → wait for readiness on 127.0.0.1:<port>
+  → load production React build in window
+  → React ↔ localhost HTTP ↔ stockballdb.app ↔ V1 ↔ PostgreSQL
+```
+
+### 19.2 Electron vs Tauri
+
+| Concern | Electron | Tauri |
+| ------- | -------- | ----- |
+| React SPA hosting | Mature, conventional | Works via WebView |
+| Spawn/manage Python child | Common, well-documented Node child_process patterns | Possible, less conventional for Python-heavy apps |
+| Windows | Strong | Requires WebView2; fine but extra system dependency awareness |
+| App size / RAM | Larger (Chromium) | Smaller shell |
+| StockBallDB weight | Dominated by Python + PostgreSQL + data — shell size is secondary | Size win is real but not decisive here |
+| Build toolchain | Node/TypeScript (already needed for React) | Adds Rust toolchain for a personal Python project |
+| Ecosystem for “desktop + local API” | Very mature | Mature, but more friction for this stack |
+| V3 longevity | Proven for long-lived React desktops | Also viable, higher personal-project maintenance cost |
+| Security | Need normal Electron hardening (no Node in renderer; localhost API only) | Smaller attack surface in shell; API still localhost |
+
+**Verdict:** Choose **Electron** for lowest sensible long-term complexity for a React + Python + PostgreSQL personal app. Tauri’s lightness does not outweigh Rust toolchain cost or weaker fit for Python process orchestration in this project.
+
+### 19.3 Browser-only local app (control option)
+
+```text
+Python FastAPI serves API (+ optionally static React build) → user opens browser to 127.0.0.1
+```
+
+| Gains | Losses |
+| ----- | ------ |
+| Simplest possible packaging early | Not “launch like a normal desktop app” |
+| Excellent for development | User manages browser tab + service lifecycle |
+| No Electron binary | Weaker OS integration, shortcuts, single-instance UX |
+| Valid interim/dev mode | Weaker path to polished StockBallAPP desktop |
+
+**Verdict:** Keep browser-local as a **supported development / fallback mode**. Production forward-facing V2/V3 target is Electron. StockBallDB needs a shell for process ownership and normal desktop launch UX — not for replacing the HTTP boundary.
+
+### 19.4 Python backend process ownership
+
+Electron:
+
+* selects a free localhost port (or configured port strategy — exact algorithm open);
+* starts Python backend as a **child process**;
+* performs readiness handshake (e.g. health endpoint poll);
+* refuses duplicate careless multi-instance backends where practical (exact single-instance strategy open);
+* monitors crashes and surfaces errors in the UI/logs;
+* on shutdown, stops the child when safe (see maintenance safety).
+
+Python backend does **not** own Electron. PostgreSQL is **not** Electron’s child.
+
+### 19.5 FastAPI
+
+**Locked** as the Python HTTP framework for the transport layer.
+
+Why it fits StockBallDB: JSON DTOs, request validation, typed contracts, React-friendly OpenAPI, easy read routes, maintenance start endpoints, natural future SSE, localhost-only ASGI serving, strong testability, modest boilerplate, durable for V3. Not enterprise service mesh — just a thin adapter over `stockballdb.app`.
+
+### 19.6 PostgreSQL relationship
+
+| Concern | Stance |
+| ------- | ------ |
+| Canonical store | PostgreSQL (unchanged) |
+| Packaged inside Electron? | **No** for V2 |
+| Ownership | Independent local/system install |
+| App responsibility | Detect availability; load connection settings; clear startup errors; support Fresh Build / restore / validate paths |
+| Not required in V2 | Fully automated PostgreSQL installer embedded in the app |
+
+**Application packaging ≠ database installation/storage.**
+
+### 19.7 First-run model (conceptual)
+
+| State | Behavior |
+| ----- | -------- |
+| Existing valid DB | Launch normally into app |
+| No DB / new machine | Guide: configure PostgreSQL → Fresh Build **or** Restore backup (and universe sync as needed) |
+| DB unavailable | Explain connection/config failure; do not destroy data |
+| DB present but uncertain | Offer validation/status; do not silently mutate |
+
+Screens remain undesigned.
+
+### 19.8 Development vs production runtime
+
+**Development (preferred early):**
+
+```text
+React dev server  +  Python FastAPI  +  local PostgreSQL
+(Electron optional)
+```
+
+**Production:**
+
+```text
+StockBallDB Desktop (Electron)
+├── React production static assets (in window)
+└── Python backend child (bundled or embedded runtime — tool TBD)
+        └── TCP → local PostgreSQL service
+```
+
+### 19.9 Python packaging direction
+
+Architecture requires that a future user can launch without manually activating venvs or typing `uvicorn`.
+
+Direction: eventually **bundle a Python runtime/executable** with the app (e.g. PyInstaller-style or equivalent). **Tool not locked.** Early development may use system Python.
+
+### 19.10 React production assets
+
+Production uses a **built static frontend** loaded by Electron. React dev server is development-only.
+
+### 19.11 Localhost API security (architecture-level)
+
+| Control | V2 stance |
+| ------- | --------- |
+| Bind `127.0.0.1` only | **Required** |
+| No public exposure | **Required** |
+| CORS restricted to local UI origin(s) | Recommended |
+| Ephemeral/free port | Recommended; exact strategy open |
+| Local process/session token | Optional hardening; open |
+| Internet user accounts / OAuth | **Out of scope** |
+
+### 19.12 Startup / shutdown lifecycle
+
+**Startup:** Electron launch → start Python child → readiness → check DB availability/status → show React (or first-run/error).
+
+**Runtime:** React → localhost FastAPI → `stockballdb.app` → V1 core.
+
+**Shutdown:** Prefer integrity over convenience.
+
+* If **no** maintenance running: stop Python child; leave PostgreSQL running (system-managed).
+* If maintenance **is** running: **do not silently kill** the backend mid-update/build/rebuild/restore. Warn / block quit / allow “run in background until complete” — exact UX open; **safety requirement locked**.
+
+Unsafe cancellation of V1 orchestrators is not invented here.
+
+### 19.13 Maintenance-operation safety
+
+Closing the desktop window must not casually terminate Update, Fresh Build, Exact Rebuild, Backup, Restore, or universe sync in a way that risks DB corruption.
+
+Prefer: keep backend alive until operation finishes, or require explicit dangerous confirmations. Exact policy open; integrity wins.
+
+### 19.14 Logs and diagnostics
+
+| Stream | Conceptual home |
+| ------ | ---------------- |
+| Electron shell | Local app log file(s) under an app data directory (path open) |
+| Python backend | Local backend log file(s); reuse existing logging where practical |
+| Build/update reports / manifests | Existing `build_reports/` (and related) |
+| DB diagnostics | Via Status/validate/health APIs — not a new framework |
+
+User should diagnose startup/backend failures without Cursor. No new logging framework unless forced.
+
+### 19.15 Application update vs database update
+
+| Term | Meaning |
+| ---- | ------- |
+| **Update StockBallDB application** | Install newer Electron/React/Python code |
+| **Update Database** | Run StockBallDB data update / Fresh Build / related maintenance |
+
+Keep terminology and UI actions distinct. No auto-update infrastructure in V2 architecture lock.
+
+### 19.16 Portability
+
+Desktop packaging does not redefine portability. Computer B still:
+
+1. install/configure PostgreSQL,
+2. install StockBallDB application,
+3. Fresh Build **or** Backup/Restore,
+4. synchronize universe definition,
+5. continue with Normal Update / Exact Rebuild as needed.
+
+Not: copy live PostgreSQL data directory as the official portability story.
+
+### 19.17 V3 / StockBallAPP
+
+Electron + FastAPI + `stockballdb.app` + React should extend into V3. Research features expand the façade and React features — not a third desktop/runtime rewrite.

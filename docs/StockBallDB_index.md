@@ -46,7 +46,7 @@ A future `StockBallDB_V2_status.md` will be created only when V2 reaches certifi
 | -------- | -------------- |
 | [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) | **Authoritative V2 scope** — inspection/management boundary vs research/experiment |
 | [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) | **V2 decision log** — locked/proposed decisions, rationale, consequences |
-| [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) | **V2 architecture** — façade, layers, React↔Python localhost HTTP transport, frontend tiers |
+| [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) | **V2 architecture** — façade, React↔FastAPI localhost HTTP, Electron desktop runtime, frontend tiers |
 | [StockBallDB_V2_progress.md](StockBallDB_V2_progress.md) | **Current V2 progress / status** — roadmap, completed, next |
 | [StockBallDB_future.md](StockBallDB_future.md) | **Deferred beyond V2** — research/experiment and other parked ideas (not promised) |
 

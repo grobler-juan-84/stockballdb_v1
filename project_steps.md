@@ -395,3 +395,7 @@ Created `docs/StockBallDB_V2_architecture.md` (façade, Layer A/B/C, read vs mai
 ## Step 99 — Lock React frontend and localhost HTTP communication architecture
 
 Locked React as V2/V3 forward-facing UI (Streamlit retained as V1); locked localhost-only HTTP JSON transport over `stockballdb.app`; documented alternatives, read/maintenance flows, contracts, frontend tiers, and open packaging choices in `StockBallDB_V2_architecture.md` / decisions / progress / scope. Documentation only — no React, transport server, or façade implementation.
+
+## Step 100 — Lock Electron desktop runtime and FastAPI packaging architecture
+
+Locked Electron as V2/V3 desktop shell; FastAPI as transport framework; Electron owns Python child process; PostgreSQL remains independent local service; documented browser-only control option (dev/fallback), first-run, lifecycle, maintenance shutdown safety, logging, app-update vs DB-update, and portability implications. Updated architecture/decisions/progress/scope/index. Documentation only — no Electron/React/FastAPI implementation.
