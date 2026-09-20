@@ -155,4 +155,6 @@ Certified V1 facts remain owned by the existing canonical documents and [StockBa
 
 **Desktop runtime is locked:** **Electron** shell; Electron owns the Python backend child process; PostgreSQL remains an independent local service; production React is a static build; browser-local mode remains valid for development.
 
-**Not yet locked:** installer/Python bundling tools, exact port/session-token mechanics, endpoint/DTO schemas, React state/data-grid/styling libraries, universe file format, GitHub sync/auth, backup/restore format, progress channel, exact quit-during-maintenance UX (integrity principle locked).
+**Implementation roadmap is locked:** [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) — phases P1–P14; next executable phase is **P1** (`stockballdb.app` Catalog + Status).
+
+**Not yet locked:** installer/Python bundling tools, exact port/session-token mechanics, endpoint/DTO schemas, React state/data-grid/styling libraries, universe file format, GitHub sync/auth, backup/restore format, progress channel details, exact quit-during-maintenance UX (integrity principle locked).

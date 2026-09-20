@@ -645,3 +645,65 @@ Detailed rationale: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture
 **Why:** Avoid a third architecture rewrite when research features arrive.
 
 **Consequences:** Prefer durable process/lifecycle choices; do not treat Electron as disposable scaffolding.
+
+---
+
+## Locked implementation-roadmap decisions
+
+Detailed plan: [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md).
+
+### Decision: Early vertical slice before full Explorer
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) |
+
+**Decision:** Before building Explorer V2, deliver a thin end-to-end slice: React → FastAPI → `stockballdb.app` → read-only V1 path → PostgreSQL (readiness + catalog/status at minimum).
+
+**Why:** Proves the new V2 boundary early and reduces integration risk.
+
+**Consequences:** Phases P1–P3 precede deep Explorer UI work.
+
+---
+
+### Decision: Electron after proven React + FastAPI
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) |
+
+**Decision:** Implement and stabilize React + FastAPI + PostgreSQL in development before investing in Electron packaging. Electron wraps a working system (roadmap Phase 13).
+
+**Why:** Avoid debugging every early issue inside the desktop shell.
+
+---
+
+### Decision: Prototype reconciliation before deep Explorer rebuild
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) |
+
+**Decision:** When the Google AI Studio prototype is available in GitHub, run a keep/modify/discard audit before finishing Explorer V2 UI. The prototype is design/interaction reference only; locked StockBallDB architecture remains authoritative.
+
+**Why:** Preserve intended UX without copying generated architecture.
+
+---
+
+### Decision: Multi-symbol Explore façade before full Explorer UI
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) |
+
+**Decision:** Implement allowlisted multi-symbol Explore façade/API contracts (with pagination) before or as a hard prerequisite to full Explorer V2 UI.
+
+**Why:** Prevents UI-driven unbounded queries and keeps allowlisting intact.

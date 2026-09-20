@@ -1,7 +1,7 @@
 # StockBallDB — V2 Progress
 
 **Purpose:** Living, concise status record for StockBallDB V2.  
-**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 decisions](StockBallDB_V2_decisions.md) · [V2 architecture](StockBallDB_V2_architecture.md) · [future / deferred](StockBallDB_future.md) · [V1 status](StockBallDB_V1_status.md)
+**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 decisions](StockBallDB_V2_decisions.md) · [V2 architecture](StockBallDB_V2_architecture.md) · [V2 roadmap](StockBallDB_V2_roadmap.md) · [future / deferred](StockBallDB_future.md) · [V1 status](StockBallDB_V1_status.md)
 
 Use this document to answer quickly:
 
@@ -19,87 +19,58 @@ This is not a diary. Prefer short milestone / status entries.
 
 | Item | State |
 | ---- | ----- |
-| Overall | V2 planning architecture largely locked; implementation not started |
-| Scope | **Locked** |
-| Foundation / portability / universe | **Locked** |
-| Backend / application façade | **Locked** (`stockballdb.app`) |
-| Forward-facing UI | **Locked — React** (Streamlit = V1) |
-| Transport | **Locked — localhost FastAPI JSON over façade** |
-| Desktop shell | **Locked — Electron** |
-| PostgreSQL runtime | **Locked — independent local service** |
-| Installer / Python bundling tools | **Not locked** |
+| Overall | V2 **architecture + implementation roadmap locked**; coding not started |
+| Architecture | **Locked** — see architecture + decisions |
+| Roadmap | **Locked** — [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md) (P1–P14) |
 | Implementation | **Not started** |
-| V2 certification | Not applicable yet |
-
-**Immediate next task:** Begin implementing `stockballdb.app` read façade + FastAPI transport contracts, then React client scaffolding. Electron can follow once local API works. AI Studio prototype (when in repo) is UI reference only.
+| Next phase to execute | **P1 — `stockballdb.app` foundation (Catalog + Status)** |
 
 ---
 
-## Roadmap
+## High-level milestone map
 
 | # | Milestone | Status |
 | - | --------- | ------ |
-| 1 | Lock V2 scope and establish V2 documentation | **Complete** |
-| 2 | Choose V2 application architecture | **Complete** (foundation + backend + React/HTTP + Electron/FastAPI runtime) |
-| 3 | Design backend / application layer | **Complete** (design/docs) |
-| 4 | Build read / query layer | Not started |
-| 5 | Build Data Explorer V2 | Not started |
-| 6 | Build Day Inspector | Not started |
-| 7 | Build Database Overview | Not started |
-| 8 | Connect Maintenance operations | Not started |
-| 9 | Solve local PostgreSQL setup and portability | Not started |
-| 10 | Desktop packaging | Architecture locked; implementation not started |
-| 11 | Safety and destructive-operation UX | Not started |
-| 12 | V2 testing and certification | Not started |
-| 13 | Documentation cleanup / finalization | Not started |
-| 14 | Declare V2 baseline | Not started |
+| 1 | Lock V2 scope and documentation | **Complete** |
+| 2 | Lock application / React / Electron architecture | **Complete** |
+| 3 | Design backend / application layer | **Complete** |
+| — | **Implementation roadmap (P1–P14)** | **Complete** (docs) |
+| 4 | Build read / query layer | Starts at roadmap **P1–P5** |
+| 5 | Build Data Explorer V2 | Roadmap **P6** |
+| 6 | Build Day Inspector | Roadmap **P7** |
+| 7 | Build Database Overview / Status | Roadmap **P8** |
+| 8 | Connect Maintenance (Update) | Roadmap **P9** |
+| 9 | Universe + Fresh Build + Backup/Restore | Roadmap **P10–P12** |
+| 10 | Desktop packaging (Electron) | Roadmap **P13** |
+| 11 | Safety UX / certification | Roadmap **P9** principles + **P14** |
+| 12–14 | Testing / docs / V2 baseline | Roadmap **P14** |
 
 ---
 
-## Completed
+## Completed (planning)
 
-* Locked V2 scope and documentation model.
-* Locked foundation architecture (PostgreSQL, local-first, portability, PIT, universe/GitHub direction, preserve V1).
-* Designed `stockballdb.app` façade; locked React + localhost HTTP communication.
-* Locked desktop runtime: Electron shell; FastAPI transport; Electron owns Python child; PostgreSQL independent; maintenance integrity on shutdown; app-update ≠ DB-update; runtime continues to V3.
+* Scope, foundation, façade, React/FastAPI, Electron runtime decisions locked.
+* Implementation roadmap published: early vertical slice, P1–P14 gates, testing/Git/docs strategies, V2 completion definition.
 
 ---
 
 ## In progress
 
-* None (desktop/runtime architecture documentation complete for this step).
+* None — awaiting **Start Phase 1** implementation.
 
 ---
 
 ## Next
 
-1. Implement `stockballdb.app` read services.
-2. Implement FastAPI transport over those services (`127.0.0.1`).
-3. Scaffold React application client + features (AI Studio prototype as layout/interaction reference when available).
-4. Add Electron shell after API+React work independently.
-5. Later: universe format, backup format, Python bundling/installer tooling.
-
----
-
-## Decided (pointers)
-
-See [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) and [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) §19.
-
-Desktop/runtime locks:
-
-* Electron desktop shell — Locked
-* FastAPI localhost HTTP framework — Locked
-* Electron owns Python backend child — Locked
-* PostgreSQL independent local service — Locked
-* Maintenance integrity over casual quit — Locked
-* Application update ≠ database update — Locked
-* V2 desktop runtime continues into V3 — Locked
+1. **Execute roadmap Phase 1** (`stockballdb.app` Catalog + Status).
+2. Then P2 FastAPI read transport → P3 React vertical slice.
+3. Push AI Studio prototype to GitHub before deep P6; run P4 reconciliation.
+4. Electron only at P13 after React+API proven.
 
 ---
 
 ## Notes
 
-* V1 baseline: [StockBallDB_V1_status.md](StockBallDB_V1_status.md).
-* V1 Streamlit Explorer retained: [StockBallDB_explorer.md](StockBallDB_explorer.md).
-* No Electron/React/FastAPI/`app` code created in this planning step.
-* Browser-only local mode remains valid for development.
+* Detailed phase gates: [StockBallDB_V2_roadmap.md](StockBallDB_V2_roadmap.md).
+* V1 Streamlit Explorer remains until explicitly retired later.
+* No `app` / FastAPI / React / Electron code created in planning.

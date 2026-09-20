@@ -493,11 +493,10 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 12 — StockBallDB V2 Planning
 
-**Status:** IN PROGRESS — planning architecture largely locked (incl. Electron/FastAPI runtime); implementation not started
+**Status:** IN PROGRESS — architecture + implementation roadmap complete; coding not started (next: roadmap P1)
 
-- Locked V2 scope and created V2 working docs; Canonical + historical + V2 working documentation model.
-- Locked foundation architecture (PostgreSQL, local-first, portability, PIT, portable universe + GitHub SoT, preserve V1).
-- Designed `stockballdb.app` façade; locked React + localhost HTTP communication; Streamlit retained as V1.
-- Locked desktop runtime: Electron shell; FastAPI transport; Electron owns Python child; PostgreSQL independent; maintenance integrity on quit; app-update ≠ DB-update; runtime continues to V3. Browser-local remains valid for development.
-- Next: implement `stockballdb.app` + FastAPI + React (Electron after independent API works). Installer/Python bundling tools, universe format, backup format remain open. No application code in planning steps yet.
+- Locked V2 scope and working docs; Canonical + historical + V2 working model.
+- Locked foundation, `stockballdb.app` façade, React + FastAPI localhost HTTP, Electron desktop runtime (PostgreSQL independent).
+- Published `StockBallDB_V2_roadmap.md` (P1–P14): early vertical slice, Explore-before-UI, prototype reconciliation checkpoint, Electron late, certification definition.
+- Next executable work: **Phase 1** — create `stockballdb.app` Catalog + Status. No application code in planning steps yet.
 

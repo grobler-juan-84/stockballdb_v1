@@ -399,3 +399,7 @@ Locked React as V2/V3 forward-facing UI (Streamlit retained as V1); locked local
 ## Step 100 — Lock Electron desktop runtime and FastAPI packaging architecture
 
 Locked Electron as V2/V3 desktop shell; FastAPI as transport framework; Electron owns Python child process; PostgreSQL remains independent local service; documented browser-only control option (dev/fallback), first-run, lifecycle, maintenance shutdown safety, logging, app-update vs DB-update, and portability implications. Updated architecture/decisions/progress/scope/index. Documentation only — no Electron/React/FastAPI implementation.
+
+## Step 101 — Publish StockBallDB V2 implementation roadmap
+
+Created `docs/StockBallDB_V2_roadmap.md` with ordered phases P1–P14, critical path, early vertical slice, façade/FastAPI/React order, prototype checkpoint, testing/Git/docs strategies, and V2 completion definition. Locked roadmap process decisions; updated progress/index/scope. Documentation only — implementation not started; next phase to execute is P1.
