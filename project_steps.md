@@ -383,3 +383,7 @@ Pushed local main to origin/main (f721034..4c2ff3f), including documentation con
 ## Step 96 — Establish StockBallDB V2 documentation structure
 
 Created V2 working docs: `StockBallDB_V2_scope.md` (locked scope), `StockBallDB_V2_decisions.md` (three locked decisions), `StockBallDB_V2_progress.md` (roadmap), and `StockBallDB_future.md` (deferred parking). Updated `StockBallDB_index.md` for Canonical + historical + V2 working model. Documentation only — no application/code/database changes.
+
+## Step 97 — Lock V2 foundation architecture decisions
+
+Recorded eight locked architecture decisions in `StockBallDB_V2_decisions.md` (PostgreSQL retained, local-first, portability model, PIT, portable universe, GitHub universe SoT, universe vs DB update separation, preserve V1). Updated V2 scope status, progress roadmap (milestone 2 partial), and future parking for cloud/single-file ideas. Documentation/planning only — no implementation.

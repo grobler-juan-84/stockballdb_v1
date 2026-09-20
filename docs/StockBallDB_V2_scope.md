@@ -147,8 +147,8 @@ Certified V1 facts remain owned by the existing canonical documents and [StockBa
 
 ## 7. Architecture status
 
-**Architecture is not yet locked.**
+**Foundation / portability / universe-distribution architecture decisions are locked** in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) (PostgreSQL retained, local-first, reconstructability/transferability portability model, PIT preservation, portable version-controlled universe, GitHub as universe source of truth, universe-sync vs database-update separation, preserve V1).
 
-V2 technology choices (UI framework, packaging, local service shape, and related tools) remain open until recorded as locked decisions in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
+**Not yet locked:** UI framework, desktop packaging, local service / backend application shape, universe file format, GitHub sync mechanism, backup/restore format, and Fresh Build implementation details.
 
-Do not treat any undecided stack option as a final V2 architectural decision.
+Do not treat undecided stack options (for example React, Streamlit, Electron, or Tauri) as final V2 architectural decisions.

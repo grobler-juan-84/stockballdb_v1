@@ -11,7 +11,7 @@ Record:
 * consequences;
 * whether the decision is **Proposed** or **Locked**.
 
-Do not add architecture or technology decisions until they are actually made.
+Do not add undecided architecture or technology choices (for example UI framework or desktop packaging) until they are actually made.
 
 ---
 
@@ -105,3 +105,212 @@ Do not add architecture or technology decisions until they are actually made.
 * Keep all V2 planning only in chat / informal notes — rejected; durable working docs are required.
 
 **Consequences:** V2 planning lives in `StockBallDB_V2_scope.md`, this decision log, `StockBallDB_V2_progress.md`, and `StockBallDB_future.md`. Canonical docs remain authoritative for V1/current-system facts until the implemented system changes.
+
+---
+
+## Locked architecture decisions
+
+Foundation, portability, and universe-distribution decisions for V2. These do **not** lock UI framework, desktop packaging, backend service shape, universe file format, GitHub sync mechanism, backup format, or Fresh Build implementation details.
+
+### Decision: PostgreSQL remains the canonical database
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file; current stack: [StockBallDB_Tech_stack.md](StockBallDB_Tech_stack.md) |
+
+**Decision:** StockBallDB V2 continues using PostgreSQL as the canonical database. V2 will not migrate the canonical database to SQLite, DuckDB, or another engine solely for portability.
+
+**Why:** V1 is certified on PostgreSQL. The schema, migrations, constraints, pipelines, validation, fingerprints, and exact-rebuild semantics assume PostgreSQL. Changing engines for packaging convenience would discard certified foundation work.
+
+**Alternatives considered:**
+
+* SQLite or DuckDB as the canonical store for “single-file portability” — rejected for V2.
+* Dual-write / dual-engine canonical stores — rejected; one canonical database architecture.
+
+**Consequences:** Portability must be achieved without abandoning PostgreSQL (see portability decision). Existing PostgreSQL-centered V1 capabilities remain the foundation.
+
+---
+
+### Decision: V2 is local-first
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file; aligns with [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) |
+
+**Decision:** StockBallDB V2 is primarily a personal desktop / local application. The operational StockBallDB database remains local.
+
+**Why:** V2’s purpose is coherent local inspection and maintenance of the historical database. SaaS, cloud-hosted operational databases, real-time multi-device sync, and multi-user production infrastructure are out of scope for V2 requirements.
+
+**Alternatives considered:**
+
+* Cloud-hosted operational PostgreSQL / Supabase as a V2 requirement — deferred; not required for V2.
+* Real-time multi-device database synchronization — deferred.
+
+**Consequences:** Design for local operation first. Cloud hosting may be reconsidered in a later version if requirements change; park such ideas in [StockBallDB_future.md](StockBallDB_future.md) rather than stretching V2.
+
+---
+
+### Decision: Portability means reconstructability and transferability
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file |
+
+**Decision:** V2 does **not** require the live PostgreSQL database to exist as a single portable file. Portability should eventually be supported through complementary mechanisms: **Fresh Build**, **Normal Update**, **Backup / Restore**, and preserved **Exact Rebuild**.
+
+**Why:** A single-file database goal would pressure engine migration and weaken certified PostgreSQL semantics. Reconstructability and transferability preserve V1 strengths while enabling multi-machine use.
+
+#### Fresh Build
+
+A new installation should eventually be able to construct a complete usable database from an empty PostgreSQL database using the StockBallDB application/code, canonical universe definition, configured authoritative sources, required API credentials, schema/migrations, existing derivation logic, and validation:
+
+```text
+Fresh installation → configure → Build Database → fetch sources → derive → validate → usable StockBallDB
+```
+
+A fresh build is **not** necessarily an exact historical reproduction, because external providers may revise or correct historical source data.
+
+#### Normal Update
+
+Existing installations continue to use established StockBallDB update mechanisms. A desired architectural property is:
+
+```text
+Fresh Build to target date X ≈ Existing Database + Update to target date X
+```
+
+when both installations use the same StockBallDB version, universe definition, source configuration, and available source data. Operational metadata (timestamps, run IDs) need not be identical. No required percentage match is defined at this stage.
+
+#### Backup / Restore
+
+V2 should eventually provide a convenient way to back up the current local PostgreSQL StockBallDB and restore it on another computer. This is distinct from Fresh Build and Exact Rebuild. **Backup format and implementation are not decided in this step.**
+
+#### Exact Rebuild
+
+Preserve the existing V1 snapshot / manifest / exact-rebuild architecture. Exact historical reproducibility remains the stronger mechanism when StockBallDB must reproduce preserved historical source inputs rather than refetching current provider versions. **Fresh Build must not replace or weaken Exact Rebuild.**
+
+**Alternatives considered:**
+
+* Single-file portable live database — rejected as a V2 requirement.
+* Replace Exact Rebuild with Fresh Build alone — rejected.
+
+**Consequences:** Later V2 work may implement Fresh Build UX, backup/restore convenience, and setup/portability workflows without changing the certified Exact Rebuild contract. Implementation details remain open.
+
+---
+
+### Decision: Preserve StockBallDB point-in-time principles
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file; principles: [StockBallDB_manifesto.md](StockBallDB_manifesto.md) |
+
+**Decision:** Point-in-time refers to the **historical date being represented or inspected**, not merely the calendar date on which a particular database installation was built. Where StockBallDB has PIT safeguards, a Fresh Build must continue to respect those rules.
+
+**Why:** PIT discipline is core to certified V1 historical integrity. A portable rebuild that silently substitutes today’s revised history would undermine StockBallDB’s purpose.
+
+**Alternatives considered:**
+
+* Redesign PIT handling as part of V2 architecture lock — rejected; out of scope for this step.
+
+**Consequences:** Fresh Build / Update / portability work must preserve existing PIT behavior. No PIT redesign is authorized by this decision.
+
+---
+
+### Decision: Universe definition is portable and version-controlled
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file; current V1 universe authority: [StockBallDB_universe.md](StockBallDB_universe.md) |
+
+**Decision:** V2 separates **StockBallDB definition** (what StockBallDB is supposed to contain) from **local database state** (what a particular installation has currently built). The StockBallDB universe must not depend solely on the contents of one local PostgreSQL database. The working V2 direction is a small canonical, version-controlled universe definition that installations can obtain independently.
+
+**Why:** Multi-machine reconstructability requires a shared intended universe. Basing “what should exist” only on one local DB prevents separate installations from converging deliberately.
+
+**Alternatives considered:**
+
+* Treat local DB contents as the sole universe authority — rejected for V2 portability goals.
+
+**Consequences:** Later work may introduce or refine a machine-usable universe definition. **Exact file format is not decided yet** and requires inspection of the existing V1 universe implementation first. [StockBallDB_universe.md](StockBallDB_universe.md) remains the current human-readable V1 universe authority until an implemented format change is recorded.
+
+---
+
+### Decision: GitHub is the planned shared source of truth for the universe
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file |
+
+**Decision:** GitHub is the current V2 choice for distributing and versioning the canonical StockBallDB universe definition. GitHub will **not** host the operational PostgreSQL database.
+
+**Conceptual flow:**
+
+```text
+GitHub universe definition → local StockBallDB installation → source fetching / build / update → local PostgreSQL
+```
+
+**Example:** Computer A adds NVDA and MSFT to the canonical universe; the change is version-controlled/shared through GitHub; Computer B obtains the updated definition; its build/update process detects those securities as required and builds the necessary local data.
+
+**Why:** The project already uses GitHub as the remote repository. Reusing it for universe definition distribution avoids inventing a separate distribution service while keeping the operational database local.
+
+**Alternatives considered:**
+
+* Host operational database on GitHub or similar — rejected.
+* Separate proprietary universe-distribution service in V2 — not chosen; GitHub is the planned path.
+
+**Consequences:** Universe file format, GitHub API mechanism, authentication, and synchronization implementation are **deliberately not decided yet**. Those require prior inspection of the existing V1 universe implementation.
+
+---
+
+### Decision: Universe synchronization and database updating are conceptually separate
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file |
+
+**Decision:** Preserve the architectural distinction between:
+
+* **What should StockBallDB contain?** (universe definition / Update Universe)
+* **Is my local database current for that definition?** (database build/update / Update Database)
+
+V2 may eventually expose both kinds of operations. The normal Update Database workflow **may** automatically check or synchronize the canonical universe first. **No UI decision is locked here.**
+
+**Why:** Collapsing definition sync into opaque database mutation makes multi-installation behavior harder to reason about and debug.
+
+**Alternatives considered:**
+
+* Only a single undifferentiated “Update” with no conceptual separation — rejected as the architectural model (UI may still combine steps later).
+
+**Consequences:** Implementation and UX may combine the steps for convenience, but documentation and architecture must keep the two concerns distinguishable.
+
+---
+
+### Decision: Preserve V1 rather than rewrite it
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | this file; reinforces [V2 is an evolution of V1](#decision-v2-is-an-evolution-of-v1) |
+
+**Decision:** All V2 architecture work continues from the certified V1 foundation. Existing working V1 capabilities—including pipelines, validation, health checks, snapshots, exact rebuild, schema/migrations, database logic, tests, and Explorer capabilities—should be reused or extended wherever practical. V2 must not become a from-scratch rewrite merely for architectural neatness.
+
+**Why:** Reinforces the earlier evolution decision specifically for architecture and portability work now being planned.
+
+**Alternatives considered:**
+
+* Greenfield rewrite of pipelines/schema to “simplify” portability — rejected.
+
+**Consequences:** New V2 surfaces should call into or extend existing StockBallDB capabilities. Material replacement of certified subsystems requires an explicit later decision.

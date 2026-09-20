@@ -493,8 +493,9 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 12 — StockBallDB V2 Planning
 
-**Status:** IN PROGRESS — V2 documentation structure established; architecture not yet chosen
+**Status:** IN PROGRESS — foundation/portability/universe architecture locked; UI/packaging still open
 
 - Locked V2 scope and created V2 working docs (`V2_scope`, `V2_decisions`, `V2_progress`, `future`); index updated for Canonical + historical + V2 working model.
-- Next major planning task: choose V2 application architecture (no stack locked yet).
+- Locked foundation architecture decisions (PostgreSQL, local-first, reconstructability/transferability portability, PIT, portable universe + GitHub SoT, universe-sync vs DB-update separation, preserve V1). UI/framework/packaging and Fresh Build/backup/universe-format implementation remain undecided.
+- Next major planning task: choose V2 application architecture (UI / packaging / local app shape).
 

@@ -73,7 +73,8 @@ Capture additional out-of-V2 product ideas here as they arise. Keep entries shor
 
 | Idea | Notes | Status |
 | ---- | ----- | ------ |
-| _(none additional yet)_ | Use this table for later parking-lot entries | Deferred |
+| SaaS / cloud-hosted operational DB / real-time multi-device sync / multi-user production infra | Explicitly **not** a V2 requirement (local-first locked). May be reconsidered in a later version. See V2 decisions. | Deferred |
+| Single-file portable live database (e.g. SQLite/DuckDB migration for portability) | Rejected for V2; PostgreSQL remains canonical. | Deferred / rejected for V2 |
 
 ---
 
