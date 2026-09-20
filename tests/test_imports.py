@@ -9,8 +9,11 @@ def test_stockballdb_importable() -> None:
 
 def test_core_modules_importable() -> None:
     from stockballdb import check_db, config, db, logging_config
+    from stockballdb.app import catalog, status
 
     assert config.ConfigError is not None
     assert callable(db.check_connection)
     assert callable(logging_config.configure_logging)
     assert callable(check_db.main)
+    assert callable(catalog.list_instruments)
+    assert callable(status.get_status)

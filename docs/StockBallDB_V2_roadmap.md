@@ -425,7 +425,7 @@ StockBallDB V2 may be declared complete when **all** are true:
 
 | Phase | Status |
 | ----- | ------ |
-| P1 `stockballdb.app` foundation | Not started |
+| P1 `stockballdb.app` foundation | **Complete** |
 | P2 FastAPI read transport | Not started |
 | P3 React foundation + vertical slice | Not started |
 | P4 Prototype reconciliation | Blocked on prototype in GitHub |
@@ -440,4 +440,4 @@ StockBallDB V2 may be declared complete when **all** are true:
 | P13 Electron shell | Not started |
 | P14 V2 certification | Not started |
 
-**Next to execute:** **Phase 1**.
+**Next to execute:** **Phase 2** (FastAPI localhost transport).

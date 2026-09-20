@@ -403,3 +403,7 @@ Locked Electron as V2/V3 desktop shell; FastAPI as transport framework; Electron
 ## Step 101 — Publish StockBallDB V2 implementation roadmap
 
 Created `docs/StockBallDB_V2_roadmap.md` with ordered phases P1–P14, critical path, early vertical slice, façade/FastAPI/React order, prototype checkpoint, testing/Git/docs strategies, and V2 completion definition. Locked roadmap process decisions; updated progress/index/scope. Documentation only — implementation not started; next phase to execute is P1.
+
+## Step 102 — Implement V2 Phase 1 stockballdb.app Catalog + Status
+
+Created `src/stockballdb/app/` with read-only Catalog and Status façade over V1 universe/registry/health/validate/fingerprint. Added `tests/test_app_catalog_status.py`. Pytest 230 passed / 3 skipped. No FastAPI/React/Electron; no schema changes. Roadmap P1 marked complete; next is P2.
