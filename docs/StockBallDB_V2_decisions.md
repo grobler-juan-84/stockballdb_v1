@@ -1,7 +1,7 @@
 # StockBallDB — V2 Decisions
 
 **Purpose:** Decision log for StockBallDB V2 planning and implementation.  
-**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 progress](StockBallDB_V2_progress.md) · [future / deferred](StockBallDB_future.md)
+**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 architecture](StockBallDB_V2_architecture.md) · [V2 progress](StockBallDB_V2_progress.md) · [future / deferred](StockBallDB_future.md)
 
 Record:
 
@@ -314,3 +314,125 @@ V2 may eventually expose both kinds of operations. The normal Update Database wo
 * Greenfield rewrite of pipelines/schema to “simplify” portability — rejected.
 
 **Consequences:** New V2 surfaces should call into or extend existing StockBallDB capabilities. Material replacement of certified subsystems requires an explicit later decision.
+
+---
+
+## Locked application / backend architecture decisions
+
+Detailed rationale and diagrams: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md).
+
+### Decision: Thin in-process application façade
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** V2 introduces a thin in-process Python application façade (`stockballdb.app` as the planned package) between any UI and existing StockBallDB capabilities. The UI requests use-cases; it does not own PostgreSQL schema, provider clients, stage DAGs, snapshot internals, or env-var layout. No HTTP/local API server is required by this decision.
+
+**Why:** V1 already exposes callable domain APIs and Streamlit-independent explorer services. A façade gives UI independence and maintenance safety without rewriting certified pipelines.
+
+**Alternatives considered:**
+
+* UI calls V1 modules directly forever — rejected; couples presentation to internals and weakens read/mutate boundaries.
+* Introduce HTTP API now for hypothetical React — rejected as premature.
+* Rewrite domain into a new service framework — rejected; violates evolution rule.
+
+**Consequences:** Implement façade modules later; keep V1 packages in place; transport remains an open later decision.
+
+---
+
+### Decision: Layer A / B / C responsibility model
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** V2 uses a modular three-responsibility model: **A** application/use-case façade; **B** existing StockBallDB domain/data services; **C** infrastructure/persistence. Layer B is the certified V1 capability surface, not a greenfield rewrite. Finer V1 packages remain inside B/C.
+
+**Why:** Matches the desired modular philosophy without forcing artificial relocation of working V1 code.
+
+**Consequences:** New V2 code primarily adds Layer A and selective B extensions; mass package renames are out of scope.
+
+---
+
+### Decision: Read vs maintenance safety boundary
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Ordinary exploration (browse/filter/inspect/status viewing) uses read-only database access only. Mutating operations (Fresh Build, Update, Exact Rebuild, Backup/Restore, and universe **definition** sync) go only through explicit maintenance/universe façade entry points with the write/maintenance engine as appropriate. Health/validate/fingerprint remain read-safe inspection operations.
+
+**Why:** Preserves V1 Explorer’s read-only safety model while allowing deliberate maintenance in V2.
+
+**Consequences:** Fix dual write-engine usage for pure inspection as architecture is implemented; no multi-user auth system required for this personal local app.
+
+---
+
+### Decision: Reuse Explorer query stack as V2 read foundation
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** V2 read/query builds on existing `explorer/queries.py`, `explorer/registry.py`, `explorer/db.py`, and Streamlit-independent `explorer/services/*`. Future UI should consume Catalog/Explore/Day/Status façade APIs rather than importing registry/universe constants or models directly. Multi-symbol/compare needs may extend allowlisted queries later.
+
+**Why:** Inspection showed these modules are already the real read path and are not Streamlit-bound.
+
+**Consequences:** V1 `explorer/views` remain presentation only; query allowlisting is preserved.
+
+---
+
+### Decision: Maintenance via adapters over existing orchestrators
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** Fresh Build, Update, and Exact Rebuild are exposed to V2 through thin application adapters over `run_build_v1`, `run_update`, and `run_rebuild_exact`. Do not rewrite stage DAGs or domain pipelines for UI friendliness. Adapters should evolve toward structured results suitable for a desktop UI.
+
+**Why:** Those orchestrators are already callable and certified; CLI shaping is an adapter concern.
+
+**Consequences:** Progress/cancellation mechanisms remain open; Exact Rebuild stays semantically isolated; Backup/Restore is a separate new maintenance capability (format open).
+
+---
+
+### Decision: Narrow universe service in the application layer
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** V2 includes a Universe application service responsible for loading/validating/exposing the portable instrument definition, comparing/synchronizing definition (not DB rows), and reporting definition-vs-DB gaps. “Universe” remains **narrowly about market instruments**, including non-ETF kinds (e.g. WTI). Macro/event definition maps stay separate unless a later decision widens “StockBallDB definition.”
+
+**Why:** Aligns with locked portable-universe + GitHub SoT decisions and with V1’s real instrument diversity.
+
+**Consequences:** File format and GitHub transport remain open; `market_data/universe.py` is wrapped/adapted until replaced by a portable definition source.
+
+---
+
+### Decision: Façade service module boundaries
+
+| Field | Value |
+| ----- | ----- |
+| Status | Locked |
+| Date | 2026-09-20 |
+| Owner doc | [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+
+**Decision:** The application façade is split into Catalog, Explore, Day, Status, Universe, and Maintenance (build/update/rebuild/backup) rather than a single mega-service. Planned package root: `src/stockballdb/app/` (not created yet).
+
+**Why:** Matches distinct use-cases and keeps read vs mutate separable.
+
+**Consequences:** Implementation may adjust file names slightly, but the responsibility split is locked.

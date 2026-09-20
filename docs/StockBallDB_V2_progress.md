@@ -1,7 +1,7 @@
 # StockBallDB — V2 Progress
 
 **Purpose:** Living, concise status record for StockBallDB V2.  
-**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 decisions](StockBallDB_V2_decisions.md) · [future / deferred](StockBallDB_future.md) · [V1 status](StockBallDB_V1_status.md)
+**Companion docs:** [index](StockBallDB_index.md) · [V2 scope](StockBallDB_V2_scope.md) · [V2 decisions](StockBallDB_V2_decisions.md) · [V2 architecture](StockBallDB_V2_architecture.md) · [future / deferred](StockBallDB_future.md) · [V1 status](StockBallDB_V1_status.md)
 
 Use this document to answer quickly:
 
@@ -19,15 +19,16 @@ This is not a diary. Prefer short milestone / status entries.
 
 | Item | State |
 | ---- | ----- |
-| Overall | V2 planning — foundation architecture locked |
+| Overall | V2 planning — foundation + backend/application architecture locked |
 | Scope | **Locked** — [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) |
 | Documentation model | **Chosen** — Canonical + historical + V2 working |
-| Foundation / portability / universe architecture | **Locked** — [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) |
-| UI / packaging / app-layer architecture | **Not locked** |
-| Implementation | **Not started** |
-| V2 certification | Not applicable yet (`StockBallDB_V2_status.md` exists only after certification) |
+| Foundation / portability / universe architecture | **Locked** |
+| Backend / application architecture | **Locked** — [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) |
+| UI / packaging | **Not locked** |
+| Implementation | **Not started** (`stockballdb.app` not created yet) |
+| V2 certification | Not applicable yet |
 
-**Immediate next major planning task:** Choose V2 **application** architecture (UI framework, packaging, and local app/service shape). Foundation decisions above are already locked and must not be reopened casually.
+**Immediate next major planning task:** Choose V2 **UI / packaging** architecture (Streamlit vs other; desktop packaging), or begin implementing the locked application façade if UI choice is deferred deliberately.
 
 ---
 
@@ -36,8 +37,8 @@ This is not a diary. Prefer short milestone / status entries.
 | # | Milestone | Status |
 | - | --------- | ------ |
 | 1 | Lock V2 scope and establish V2 documentation | **Complete** |
-| 2 | Choose V2 application architecture | **Partial** — foundation/portability/universe locked; UI/packaging/app-layer still open |
-| 3 | Design backend / application layer | Not started |
+| 2 | Choose V2 application architecture | **Partial** — foundation + backend/app façade locked; UI/packaging still open |
+| 3 | Design backend / application layer | **Complete** (design/docs only) |
 | 4 | Build read / query layer | Not started |
 | 5 | Build Data Explorer V2 | Not started |
 | 6 | Build Day Inspector | Not started |
@@ -55,49 +56,46 @@ This is not a diary. Prefer short milestone / status entries.
 ## Completed
 
 * Locked V2 scope boundary (inspection / management vs research / experiment).
-* Established V2 working documentation: scope, decisions, progress, and deferred-future parking document.
-* Updated the documentation index to route Canonical / historical / V2 working authorities.
-* Locked foundation architecture decisions: PostgreSQL retained; local-first; portability via Fresh Build / Update / Backup-Restore / Exact Rebuild; PIT preserved; portable version-controlled universe; GitHub as universe SoT; universe-sync vs DB-update separation; preserve V1.
+* Established V2 working documentation and index routing.
+* Locked foundation architecture decisions (PostgreSQL, local-first, portability, PIT, portable universe, GitHub SoT, etc.).
+* Inspected V1 codebase (architecture map used as evidence; report in chat, not a committed artifact).
+* Designed and documented V2 backend/application architecture: thin in-process façade, Layer A/B/C, read vs maintenance safety, universe service boundary, maintenance adapters, package sketch.
 
 ---
 
 ## In progress
 
-* None (planning documentation update only).
+* None (architecture design documentation complete for this step).
 
 ---
 
 ## Next
 
-1. Choose V2 application architecture (UI / packaging / local app shape) and record locked decisions in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md).
-2. Before implementing universe sync: inspect existing V1 universe implementation (format and how symbols enter pipelines) — format/API/auth remain undecided.
-3. Only after application architecture is locked: design backend / application layer.
-
-Do not mark UI architecture or implementation work complete until it is actually done.
+1. Choose V2 UI / packaging approach (still open), **or** start implementing `stockballdb.app` read façade against existing explorer query stack.
+2. Before universe sync implementation: choose universe file format after deeper format design (transport/auth still open).
+3. Do not implement Fresh Build / Backup / GitHub sync until those designs are ready.
 
 ---
 
 ## Decided (pointers)
 
-Full entries live in [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md):
+Full entries: [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md); detail: [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md).
 
-* V2 is an evolution of V1 — Locked
-* V2 scope boundary — Locked
-* Documentation model — Locked
-* PostgreSQL remains the canonical database — Locked
-* V2 is local-first — Locked
-* Portability means reconstructability and transferability — Locked
-* Preserve StockBallDB point-in-time principles — Locked
-* Universe definition is portable and version-controlled — Locked
-* GitHub is the planned shared source of truth for the universe — Locked
-* Universe synchronization and database updating are conceptually separate — Locked
-* Preserve V1 rather than rewrite it — Locked
+Foundation locks plus:
+
+* Thin in-process application façade — Locked
+* Layer A / B / C responsibility model — Locked
+* Read vs maintenance safety boundary — Locked
+* Reuse Explorer query stack as V2 read foundation — Locked
+* Maintenance via adapters over existing orchestrators — Locked
+* Narrow universe service in the application layer — Locked
+* Façade service module boundaries — Locked
 
 ---
 
 ## Notes
 
 * V1 remains the certified baseline: [StockBallDB_V1_status.md](StockBallDB_V1_status.md).
-* Deferred research / experiment ideas: [StockBallDB_future.md](StockBallDB_future.md).
-* Existing V1 Explorer remains documented in [StockBallDB_explorer.md](StockBallDB_explorer.md); V2 application work has not replaced it.
-* Fresh Build, backup/restore, and GitHub universe sync are **planned properties**, not implemented features.
+* Deferred research ideas: [StockBallDB_future.md](StockBallDB_future.md).
+* Existing V1 Explorer remains documented in [StockBallDB_explorer.md](StockBallDB_explorer.md); V2 application packages are not created yet.
+* Fresh Build, backup/restore, and GitHub universe sync remain **planned**, not implemented.

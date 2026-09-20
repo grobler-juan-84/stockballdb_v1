@@ -46,6 +46,7 @@ A future `StockBallDB_V2_status.md` will be created only when V2 reaches certifi
 | -------- | -------------- |
 | [StockBallDB_V2_scope.md](StockBallDB_V2_scope.md) | **Authoritative V2 scope** — inspection/management boundary vs research/experiment |
 | [StockBallDB_V2_decisions.md](StockBallDB_V2_decisions.md) | **V2 decision log** — locked/proposed decisions, rationale, consequences |
+| [StockBallDB_V2_architecture.md](StockBallDB_V2_architecture.md) | **V2 backend/application architecture** — façade, layers, read vs maintenance, package sketch |
 | [StockBallDB_V2_progress.md](StockBallDB_V2_progress.md) | **Current V2 progress / status** — roadmap, completed, next |
 | [StockBallDB_future.md](StockBallDB_future.md) | **Deferred beyond V2** — research/experiment and other parked ideas (not promised) |
 
@@ -56,6 +57,7 @@ A future `StockBallDB_V2_status.md` will be created only when V2 reaches certifi
 | V1 certified baseline / what is in or out of V1 | V1_status |
 | V2 scope / what V2 may and may not do | V2_scope |
 | V2 decisions (locked vs proposed) | V2_decisions |
+| V2 backend / application architecture | V2_architecture |
 | Where V2 stands / roadmap / next task | V2_progress |
 | Deferred research or post-V2 ideas | future |
 | Why StockBallDB exists / operating rules | manifesto |

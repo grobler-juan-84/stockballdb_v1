@@ -387,3 +387,7 @@ Created V2 working docs: `StockBallDB_V2_scope.md` (locked scope), `StockBallDB_
 ## Step 97 — Lock V2 foundation architecture decisions
 
 Recorded eight locked architecture decisions in `StockBallDB_V2_decisions.md` (PostgreSQL retained, local-first, portability model, PIT, portable universe, GitHub universe SoT, universe vs DB update separation, preserve V1). Updated V2 scope status, progress roadmap (milestone 2 partial), and future parking for cloud/single-file ideas. Documentation/planning only — no implementation.
+
+## Step 98 — Design V2 backend/application architecture
+
+Created `docs/StockBallDB_V2_architecture.md` (façade, Layer A/B/C, read vs maintenance, universe service, maintenance adapters, package sketch, diagrams). Locked corresponding application-architecture decisions; updated scope, progress, and index. Documentation only — no `stockballdb.app` package or code changes.
