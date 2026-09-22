@@ -411,3 +411,7 @@ Created `src/stockballdb/app/` with read-only Catalog and Status façade over V1
 ## Step 103 — Implement V2 Phase 2 FastAPI read transport
 
 Created `src/stockballdb/api/` as thin FastAPI adapter over P1 Catalog/Status with `/ready`, catalog, and status routes; localhost bind; CORS for local React dev; structured error envelope. Added `tests/test_api_transport.py`. Dependencies: fastapi, uvicorn, httpx2 (tests). Full pytest 241 passed / 3 skipped. Manual smoke: ready + instruments. No React/Electron/writes/schema changes. Next is P3.
+
+## Step 104 — Implement V2 Phase 3 React foundation + vertical slice
+
+Created `frontend/` (Vite, React 19, TypeScript, npm) with application client, Status and Catalog pages, loading/API-down/DB-unavailable states. Vitest 9 passed; production build OK; smoke with FastAPI+Vite. Python regression unchanged 241/3. No Explorer/Electron/P4 prototype work. Next is P4.

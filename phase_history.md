@@ -493,10 +493,11 @@ Phase 9A architecture contract + Phase 9B implementation and certification deliv
 
 ## Phase 12 — StockBallDB V2 Planning
 
-**Status:** IN PROGRESS — planning complete; **P1–P2 implemented**; next P3 React
+**Status:** IN PROGRESS — planning complete; **P1–P3 implemented**; next P4 prototype reconciliation
 
 - Locked V2 scope, foundation, façade, React/FastAPI, Electron runtime; published roadmap P1–P14.
 - **P1 complete:** `stockballdb.app` Catalog + Status read façade.
-- **P2 complete:** `stockballdb.api` FastAPI localhost read transport over P1; pytest 241 passed / 3 skipped; V1 preserved.
-- Next: Phase 3 React foundation + vertical slice. Electron not started.
+- **P2 complete:** `stockballdb.api` FastAPI localhost read transport over P1.
+- **P3 complete:** `frontend/` Vite+React+TS Status/Catalog vertical slice; vitest 9; Python 241 passed / 3 skipped.
+- Next: Phase 4 AI Studio prototype reconciliation. Electron not started.
 

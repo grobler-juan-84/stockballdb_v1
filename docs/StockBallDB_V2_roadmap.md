@@ -135,6 +135,7 @@ Do **not** create empty stubs for every architecture box on day one.
 | **Completion gate** | Dev mode works: React dev server + FastAPI + PostgreSQL show live instruments/status; no Electron required. |
 | **Non-goals** | Full Explorer, Day Inspector, styling finalization, Electron, copying AI Studio wholesale. |
 | **Risk** | **Medium** — toolchain/bootstrap, keep dependencies minimal. |
+| **Status** | **Complete** — `frontend/` Vite+React+TS; Status+Catalog vertical slice; vitest 9 passed; Python 241/3; production build OK. |
 
 **Decisions required before P3 starts (minimal):** React+TS bundler baseline (e.g. Vite), router approach, how client points at localhost API. **Do not** lock data-grid/styling/state libraries yet unless blocking.
 
@@ -428,8 +429,8 @@ StockBallDB V2 may be declared complete when **all** are true:
 | ----- | ------ |
 | P1 `stockballdb.app` foundation | **Complete** |
 | P2 FastAPI read transport | **Complete** |
-| P3 React foundation + vertical slice | Not started |
-| P4 Prototype reconciliation | Blocked on prototype in GitHub |
+| P3 React foundation + vertical slice | **Complete** |
+| P4 Prototype reconciliation | Not started (blocked on prototype in GitHub until inspected) |
 | P5 Explore façade | Not started |
 | P6 Explorer V2 UI | Not started |
 | P7 Day Inspector | Not started |
@@ -441,4 +442,4 @@ StockBallDB V2 may be declared complete when **all** are true:
 | P13 Electron shell | Not started |
 | P14 V2 certification | Not started |
 
-**Next to execute:** **Phase 3** (React foundation + vertical slice).
+**Next to execute:** **Phase 4** (prototype reconciliation).
