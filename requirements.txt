@@ -7,3 +7,6 @@ python-dotenv
 pytest
 pandas_market_calendars==5.4.0
 streamlit>=1.40,<2
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx2>=0.1

@@ -111,13 +111,14 @@ Do **not** create empty stubs for every architecture box on day one.
 | ---- | ------- |
 | **Goal** | Thin FastAPI app on `127.0.0.1` wrapping P1 façade: readiness, catalog, status, structured success/error JSON. |
 | **Why now** | Prove React-compatible contracts before UI work. |
-| **Expected code areas** | New `src/stockballdb/transport/http/` (or equivalent); ASGI entrypoint. |
+| **Expected code areas** | `src/stockballdb/api/` (FastAPI factory, routes, schemas, settings); ASGI entry via `python -m stockballdb.api`. |
 | **Reuse V1** | Nothing rewritten — only call `app.*`. |
 | **New V2** | Transport adapters + API tests. |
 | **Tests** | Transport/contract tests (TestClient); error-envelope cases. |
 | **Completion gate** | Local curl/TestClient proves readiness + catalog + status; binds localhost only; façade remains HTTP-agnostic. |
 | **Non-goals** | Full endpoint catalog, SSE, auth system, Electron, React. |
 | **Risk** | **Low**. |
+| **Status** | **Complete** — endpoints `/ready`, `/api/catalog/*`, `/api/status`; pytest 241 passed / 3 skipped. |
 
 ---
 
@@ -426,7 +427,7 @@ StockBallDB V2 may be declared complete when **all** are true:
 | Phase | Status |
 | ----- | ------ |
 | P1 `stockballdb.app` foundation | **Complete** |
-| P2 FastAPI read transport | Not started |
+| P2 FastAPI read transport | **Complete** |
 | P3 React foundation + vertical slice | Not started |
 | P4 Prototype reconciliation | Blocked on prototype in GitHub |
 | P5 Explore façade | Not started |
@@ -440,4 +441,4 @@ StockBallDB V2 may be declared complete when **all** are true:
 | P13 Electron shell | Not started |
 | P14 V2 certification | Not started |
 
-**Next to execute:** **Phase 2** (FastAPI localhost transport).
+**Next to execute:** **Phase 3** (React foundation + vertical slice).

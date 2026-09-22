@@ -407,3 +407,7 @@ Created `docs/StockBallDB_V2_roadmap.md` with ordered phases P1–P14, critical 
 ## Step 102 — Implement V2 Phase 1 stockballdb.app Catalog + Status
 
 Created `src/stockballdb/app/` with read-only Catalog and Status façade over V1 universe/registry/health/validate/fingerprint. Added `tests/test_app_catalog_status.py`. Pytest 230 passed / 3 skipped. No FastAPI/React/Electron; no schema changes. Roadmap P1 marked complete; next is P2.
+
+## Step 103 — Implement V2 Phase 2 FastAPI read transport
+
+Created `src/stockballdb/api/` as thin FastAPI adapter over P1 Catalog/Status with `/ready`, catalog, and status routes; localhost bind; CORS for local React dev; structured error envelope. Added `tests/test_api_transport.py`. Dependencies: fastapi, uvicorn, httpx2 (tests). Full pytest 241 passed / 3 skipped. Manual smoke: ready + instruments. No React/Electron/writes/schema changes. Next is P3.
