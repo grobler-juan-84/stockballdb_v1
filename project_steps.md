@@ -419,3 +419,7 @@ Created `frontend/` (Vite, React 19, TypeScript, npm) with application client, S
 ## Step 105 — Confirm P3 background verification results
 
 Confirmed completed background jobs from P3: Python regression 241 passed / 3 skipped; API+Vite smoke succeeded (ready, 15 instruments including WTI, frontend HTTP 200). No further code changes.
+
+## Step 106 — Push V2 P1–P3 commits to GitHub
+
+Pushed local `main` to `origin/main` (`bb3e88d..923a03b`), including V2 docs through P3 React vertical slice. Unrelated unstaged deletion of `.cursor/rules/docs-audit.mdc` was not pushed.
